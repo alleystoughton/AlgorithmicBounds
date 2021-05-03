@@ -1,8 +1,10 @@
 (* Application of Adversarial Lower Bounds Framework to Or Function *)
 
-prover quorum=2 ["Z3" "Alt-Ergo"].
+prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
-require import AllCore List FSet.
+timeout 2.  (* can increase *)
+
+require import AllCore List FSet LowerBounds.
 
 type inp = bool.
 
@@ -163,7 +165,7 @@ proof.
 proc; auto.
 qed.
 
-pred all_queries_false (queries : int fset, inps : inp list) =
+op all_queries_false (queries : int fset, inps : inp list) : bool =
   all (fun i => nth witness inps i = false) (elems queries).
 
 lemma all_queries_falseP (queries : int fset, inps : inp list) :

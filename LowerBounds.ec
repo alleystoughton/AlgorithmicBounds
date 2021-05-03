@@ -1,6 +1,8 @@
 (* Adversarial Lower Bounds Framework *)
 
-prover quorum=2 ["Z3" "Alt-Ergo"].
+prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
+
+timeout 2.  (* can increase *)
 
 require import AllCore List FSet.
 
@@ -315,7 +317,8 @@ type aux.  (* auxiliary value, chosen by adversary *)
 op good : aux -> inp list -> bool.
 
 (* an argument xs to f aux should be a list of inputs of size arity,
-   all of whose elements are in univ, and where good aux xs holds *)
+   all of whose elements are in univ, and where good aux xs holds -
+   note that there may be no such lists *)
 
 op f : aux -> inp list -> out option.
 
@@ -334,7 +337,9 @@ axiom bad (aux : aux, xs : inp list) :
 (* end of theory parameters *)
 
 (* all possible lists of univ values of size arity that satisfy good
-   aux; i.e., all possible good arguments to f *)
+   aux; i.e., all possible good arguments to f
+
+   it is possible for this to be the empty list *)
 
 op init_inpss (aux : aux) : inp list list =
   List.filter (good aux) (AllLists.all_lists univ arity).
@@ -354,7 +359,8 @@ have H := AllLists.all_lists_arity_wanted univ arity _.
 smt(allP mapP mem_filter good).
 qed.
 
-lemma inpss_invar_filter (aux: aux, inpss : inp list list, g : inp list -> bool) :
+lemma inpss_invar_filter
+      (aux: aux, inpss : inp list list, g : inp list -> bool) :
   inpss_invar aux inpss => inpss_invar aux (filter g inpss).
 proof.
 rewrite /inpss_invar.
@@ -384,8 +390,21 @@ rewrite allP /= => all_of_inpss_size inps_in_inpss.
 by apply all_of_inpss_size.
 qed.
 
+(* filter a list of lists, keeping all the lists whose nth elements
+   are y (n should be a valid index of all elements of xss) *)
+
+op filter_nth (xss : 'a list list, n : int, y : 'a) : 'a list list =
+  filter (fun xs => nth witness xs n = y) xss.
+
+lemma mem_filter_nth (xss : 'a list list, n : int, y : 'a, ys : 'a list) :
+  ys \in filter_nth xss n y <=> ys \in xss /\ nth witness ys n = y.
+proof.
+by rewrite mem_filter.
+qed.
+
 (* the game is done when (f aux) agrees on all possible input lists
-   (filtering will never remove all elements) *)
+
+   note that this could be true because inpss is empty *)
 
 op inpss_done (aux : aux, inpss : inp list list) : bool =
   forall (x y : out option),
@@ -446,7 +465,7 @@ module G(Alg : ALG, Adv : ADV) = {
         inp <- mem univ inp ? inp : def;  (* use def if inp not in universe *)
         Alg.query_result(inp);  (* tell Alg result of its query *)
         (* get rid of lists of inputs that aren't consistent with answer *)
-        inpss <- filter (fun inps => nth witness inps i = inp) inpss;
+        inpss <- filter_nth inpss i inp;
         don <- inpss_done aux inpss;  (* perhaps we're done now? *)
       }
       else {
@@ -457,7 +476,7 @@ module G(Alg : ALG, Adv : ADV) = {
   }
 }.
 
-pred queries_in_range (queries : int fset) =
+op queries_in_range (queries : int fset) : bool =
   forall (i : int), i \in queries => 0 <= i < arity.
 
 lemma queries_in_range0 :
@@ -484,7 +503,7 @@ rewrite FRange.sub_range_card_leq 1:ge0_arity.
 apply qir_queries.
 qed.
 
-pred all_in_range_queries (queries : int fset) =
+op all_in_range_queries (queries : int fset) : bool =
   forall (i : int), 0 <= i < arity => i \in queries.
 
 lemma all_queries_cond (queries : int fset) :
@@ -500,7 +519,7 @@ by rewrite (FRange.sub_range_card_leq queries arity) 1:ge0_arity.
 by rewrite (FRange.all_range_card_geq queries arity) 1:ge0_arity.
 qed.
 
-pred queries_eq_all_range (queries : int fset) =
+op queries_eq_all_range (queries : int fset) : bool =
   queries_in_range queries /\ all_in_range_queries queries.
 
 lemma all_queries_predP (queries : int fset, f : int -> bool) :
