@@ -4,7 +4,9 @@ prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)
 
-require import AllCore List FSet LowerBounds.
+require import AllCore List FSet.
+
+require import AdvLowerBounds.  (* adversarial lower bounds framework *)
 
 type inp = bool.
 
@@ -106,6 +108,7 @@ clone import LB as LB' with
   op good  <- good,
   op f     <- f
 proof *.
+(* beginning of realization *)
 realize ge0_arity. rewrite ge0_arity. qed.
 
 realize univ_uniq. by rewrite /univ. qed.
@@ -123,6 +126,7 @@ move => aux xs [-> // | []].
 by have := all_mem_univ xs.
 by rewrite /good.
 qed.
+(* end of realization *)
 
 lemma init_inpss_all :
   init_inpss () = AllLists.all_lists univ arity.
@@ -137,7 +141,7 @@ rewrite init_inpss_all.
 by rewrite AllLists.all_lists_nseq 1:ge0_arity.
 qed.
 
-(* here is our adversary *)
+(* here is our (stateless!) adversary: *)
 
 module Adv : ADV = {
   proc init() : unit = {
@@ -204,8 +208,8 @@ rewrite /all_queries_false all_elemsP => x x_in_queries /=.
 by rewrite nth_nseq 1:qir_queries.
 qed.
 
-lemma filter_all_queries_false0 :
-  filter (all_queries_false fset0) (init_inpss ()) = init_inpss ().
+lemma filter_all_queries_false0 (inpss : inp list list) :
+  filter (all_queries_false fset0) inpss = inpss.
 proof.
 rewrite /all_queries_false /=.
 have -> :
@@ -217,19 +221,20 @@ have -> :
 by rewrite filter_predT.
 qed.
 
-lemma filter_all_queries_false_add (queries : int fset, i : int) :
-  filter (all_queries_false (queries `|` fset1 i)) (init_inpss ()) =
+lemma filter_all_queries_false_add
+      (queries : int fset, inpss : inp list list, i : int) :
+  filter (all_queries_false (queries `|` fset1 i)) inpss =
   filter
   (fun inps => nth witness inps i = false)
-  (filter (all_queries_false queries) (init_inpss ())).
+  (filter (all_queries_false queries) inpss).
 proof.   
-rewrite init_inpss_all -filter_predI /predI.
+rewrite -filter_predI /predI.
 congr.
 apply fun_ext => bs.
 by rewrite /all_queries_false all_elems_or elems_fset1 andbC.
 qed.
 
-lemma filter_all_queries_false_f_false (queries : int fset) :
+lemma filter_all_queries_false_init_inpss_f_false (queries : int fset) :
   queries_in_range queries =>
   exists (xs : inp list),
   (xs \in filter (all_queries_false queries) (init_inpss ())) /\
@@ -245,39 +250,40 @@ rewrite nseq_false_in_init_inpss.
 apply f_false_nseq.
 qed.
 
-lemma f_true_all_lists_make (queries : int fset, i : int) :
+lemma f_true_make_list_either (queries : int fset, i : int) :
   0 <= i < arity => ! (i \in queries) =>
-  f () (AllLists.all_lists_make false true (fun i => i \in queries) arity) =
+  f () (AllLists.make_list_either false true (fun i => i \in queries) arity) =
   Some true.
 proof.
 move => i_rng i_notin_queries.
-rewrite f_true 1:AllLists.all_lists_make_size 1:ge0_arity //
+rewrite f_true 1:AllLists.make_list_either_size 1:ge0_arity //
         /some_true.
 exists i.
 split => [// |].
-by rewrite AllLists.all_lists_make_nth // 1:ge0_arity /=
+by rewrite AllLists.make_list_either_nth // 1:ge0_arity /=
           i_notin_queries.
 qed.
 
-lemma filter_all_queries_false_f_true (queries : int fset, i : int) :
+lemma filter_all_queries_false_init_inpss_f_true
+      (queries : int fset, i : int) :
   queries_in_range queries => 0 <= i < arity => ! (i \in queries) =>
   exists (xs : inp list),
   (xs \in filter (all_queries_false queries) (init_inpss ())) /\
   f () xs = Some true.
 proof.
 move => qir_queries i_rng i_notin_queries.
-exists (AllLists.all_lists_make false true (fun i => i \in queries) arity).
+exists (AllLists.make_list_either false true (fun i => i \in queries) arity).
 split.
 rewrite mem_filter.
 split.
 rewrite all_queries_falseP // => j j_rng j_in_queries.
-rewrite AllLists.all_lists_make_nth 1:ge0_arity 1:qir_queries //
+rewrite AllLists.make_list_either_nth 1:ge0_arity 1:qir_queries //
            x_in_queries.
-rewrite init_inpss_all AllLists.all_lists_make_have 1:ge0_arity //.
-by rewrite (f_true_all_lists_make _ i).
+rewrite init_inpss_all AllLists.make_list_either_in_all_lists 1:ge0_arity //.
+by rewrite (f_true_make_list_either _ i).
 qed.
 
-lemma filter_all_queries_false_done (queries : int fset) :
+lemma filter_all_queries_init_inpss_false_done (queries : int fset) :
   queries_in_range queries =>
   (card queries = arity <=>
    inpss_done () (filter (all_queries_false queries) (init_inpss ()))).
@@ -306,12 +312,12 @@ have [] xs [#] xs_in_fil f_xs_false :
   exists (xs : inp list),
   xs \in filter (all_queries_false queries) (init_inpss ()) /\
   f () xs = Some false.
-  by rewrite filter_all_queries_false_f_false.
+  by rewrite filter_all_queries_false_init_inpss_f_false.
 have [] ys [#] ys_in_fil f_ys_true :
   exists (ys : inp list),
   ys \in filter (all_queries_false queries) (init_inpss ()) /\
   f () ys = Some true.
-  by rewrite (filter_all_queries_false_f_true _ i).
+  by rewrite (filter_all_queries_false_init_inpss_f_true _ i).
 have : f () xs = f () ys.
   apply done_filtering; by rewrite (map_f (f tt)).
 by rewrite f_xs_false f_ys_true.
@@ -350,10 +356,12 @@ auto; progress.
 by rewrite fcards0.
 by rewrite queries_in_range0.
 by rewrite filter_all_queries_false0.
-smt(filter_all_queries_false_done).
+smt(filter_all_queries_init_inpss_false_done).
 qed.
 
-lemma lower_bound_or &m :
+(* here is our main theorem: *)
+
+lemma lower_bound &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
   forall (Alg <: ALG{Adv}),

@@ -6,7 +6,7 @@ timeout 2.  (* can increase *)
 
 require import AllCore List FSet.
 
-(* Auxiliary Lemmas *)
+(* ------------------------- auxiliary lemmas ------------------------- *)
 
 lemma fcardUindep1 (xs : 'a fset, x : 'a) :
   ! x \in xs => card (xs `|` fset1 x) = card xs + 1.
@@ -37,7 +37,7 @@ by rewrite H1.
 by rewrite H2.
 qed.
 
-(* theory of finite set ranges *)
+(* ------------------- theory of finite set ranges -------------------- *)
 
 theory FRange.
 
@@ -132,8 +132,7 @@ qed.
 
 end FRange.
 
-(* theory for generating all lists of a given length whose
-   elements come from a given list *)
+(* ---- theory for generating all lists of length over a universe ----- *)
 
 theory AllLists.
 
@@ -246,51 +245,52 @@ qed.
    x1 or x2; when the elements index i is in zs, x1 is used;
    otherwise x2 is used *)
 
-op all_lists_make (x1 x2 : 'a, f : int -> bool, n : int) =
+op make_list_either (x1 x2 : 'a, f : int -> bool, n : int) : 'a list =
   mkseq (fun i => if f i then x1 else x2) n.
 
-lemma all_lists_make_size (x1 x2 : 'a, f : int -> bool, n : int) :
-  0 <= n => size (all_lists_make x1 x2 f n) = n.
+lemma make_list_either_size (x1 x2 : 'a, f : int -> bool, n : int) :
+  0 <= n => size (make_list_either x1 x2 f n) = n.
 proof.  
 rewrite lez_eqVlt => ge0_n.
-rewrite /all_lists_make size_mkseq /max.
+rewrite /make_list_either size_mkseq /max.
 by elim ge0_n => ->.
 qed.
 
-lemma all_lists_make_all_in
+lemma make_list_either_all_in
       (xs : 'a list, x1 x2 : 'a, f : int -> bool, n : int) :
   0 <= n => x1 \in xs => x2 \in xs =>
-  all (mem xs) (all_lists_make x1 x2 f n).
+  all (mem xs) (make_list_either x1 x2 f n).
 proof.
 move => ge0_n x1_in_xs x2_in_xs.
-rewrite /all_lists_make allP => z.
+rewrite /make_list_either allP => z.
 rewrite mkseqP => [] [i] [#] ge0_i i_rng -> /=.
 by case (f i).
 qed.
 
-lemma all_lists_make_have (xs : 'a list, x1 x2 : 'a, f : int -> bool, n : int) :
+lemma make_list_either_in_all_lists
+      (xs : 'a list, x1 x2 : 'a, f : int -> bool, n : int) :
   0 <= n => x1 \in xs => x2 \in xs =>
-  (all_lists_make x1 x2 f n) \in all_lists xs n.
+  (make_list_either x1 x2 f n) \in all_lists xs n.
 proof.
 move => ge0_n x1_in_xs x2_in_xs.
-by rewrite all_lists_arity_have // 1:all_lists_make_size //
-           all_lists_make_all_in.
+by rewrite all_lists_arity_have // 1:make_list_either_size //
+           make_list_either_all_in.
 qed.
 
-lemma all_lists_make_nth (x1 x2 : 'a, f : int -> bool, n, i : int) :
+lemma make_list_either_nth (x1 x2 : 'a, f : int -> bool, n, i : int) :
   0 <= n => 0 <= i < n =>
-  nth witness (all_lists_make x1 x2 f n) i = if f i then x1 else x2.
+  nth witness (make_list_either x1 x2 f n) i = if f i then x1 else x2.
 proof.
 move => ge0_n i_rng.
-rewrite /all_lists_make.
+rewrite /make_list_either.
 by rewrite nth_mkseq.
 qed.
 
 end AllLists.
 
-(* lower bounds theory *)
+(* ------------------- lower bounds abstract theory ------------------- *)
 
-theory LB.
+abstract theory LB.  (* must be cloned before use *)
 
 (* theory parameters *)
 
@@ -322,13 +322,15 @@ op good : aux -> inp list -> bool.
 
 op f : aux -> inp list -> out option.
 
-(* when argument to f is good, we get Some of an answer *)
+(* when argument to f has the correct arity, is over univ, and
+   satisfies good aux, we get Some of an answer *)
 
 axiom good (aux : aux, xs : inp list) :
   size xs = arity => all (mem univ) xs => good aux xs =>
   exists (y : out), f aux xs = Some y.
 
-(* when argument to f is bad, we get None *)
+(* when argument to f has the wrong arity, or is not over univ,
+   or does not satisfy good aux, we get None *)
 
 axiom bad (aux : aux, xs : inp list) :
   size xs <> arity \/ ! (all (mem univ) xs) \/ ! good aux xs =>
@@ -337,15 +339,14 @@ axiom bad (aux : aux, xs : inp list) :
 (* end of theory parameters *)
 
 (* all possible lists of univ values of size arity that satisfy good
-   aux; i.e., all possible good arguments to f
-
-   it is possible for this to be the empty list *)
+   aux; i.e., all possible arguments to f that will result in Some
+   ...; it is possible for this to be the empty list *)
 
 op init_inpss (aux : aux) : inp list list =
   List.filter (good aux) (AllLists.all_lists univ arity).
 
-(* all lists of possible inputs must cause f to return non-None
-   answers: *)
+(* inpss invariant: all lists of possible inputs must cause (f aux) to
+   return non-None answers: *)
 
 op inpss_invar (aux : aux, inpss : inp list list) : bool =
   all is_some (map (f aux) inpss).
@@ -379,7 +380,8 @@ have H := all_is_some_map_f_inpss (f aux inps) _.
 smt(good bad).
 qed.
 
-lemma inpss_invar_size_alt (aux : aux, inpss : inp list list, inps : inp list) :
+lemma inpss_invar_size_alt
+      (aux : aux, inpss : inp list list, inps : inp list) :
   inpss_invar aux inpss => inps \in inpss =>
   size inps = arity.
 proof.
@@ -462,7 +464,7 @@ module G(Alg : ALG, Adv : ADV) = {
         queries <- queries `|` fset1 i;
         stage <- stage + 1;
         inp <@ Adv.ans_query(i);  (* ask Adv to answer query *)
-        inp <- mem univ inp ? inp : def;  (* use def if inp not in universe *)
+        inp <- (inp \in univ) ? inp : def;  (* use def if inp not in universe *)
         Alg.query_result(inp);  (* tell Alg result of its query *)
         (* get rid of lists of inputs that aren't consistent with answer *)
         inpss <- filter_nth inpss i inp;

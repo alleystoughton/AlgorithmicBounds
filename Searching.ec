@@ -8,8 +8,8 @@ timeout 2.  (* can increase *)
 require import AllCore List FSet StdOrder IntDiv.
 import IntOrder.
 
-require import LowerBounds.  (* lower bounds framework *)
-require import IntLog.       (* integer logarithms *)
+require import AdvLowerBounds.  (* adversarial lower bounds framework *)
+require import IntLog.          (* integer logarithms *)
 
 type inp = int.
 
@@ -53,34 +53,33 @@ op arity : {int | 1 <= arity} as ge1_arity.
 
 type aux = int.  (* value to be searched for *)
 
-(* a list xs of inputs that are in univ is good relative to aux iff it
-   contains aux and is sorted in (not-necessarily strictly) ascending
-   order
+(* a list xs of size arity of inputs that are in univ is good relative
+   to aux iff it contains aux and is sorted in (not-necessarily
+   strictly) ascending order (according to the usual total ordering on
+   int)
 
-   note that if aux is not in univ, then there will be no good input
-   lists *)
+   note that if aux is not in univ, then there will be no input lists
+   meeting this criteria *)
 
 op good (aux : aux, xs : inp list) : bool =
   aux \in xs /\
   forall (i j : int),
   0 <= i <= j < arity => nth witness xs i <= nth witness xs j.
 
+(* we need a definition to help define our f *)
+
 op min_aux_index_rel (aux : aux, xs : inp list, i : out) : bool =
   0 <= i < size xs /\ nth witness xs i = aux /\
   (forall (j : int),
-   0 <= j < size xs => nth witness xs j = aux =>
-   i <= j).
+   0 <= j < size xs => nth witness xs j = aux => i <= j).
 
 lemma min_aux_index_rel_unique (aux : aux, xs : inp list, i j : out) :
   min_aux_index_rel aux xs i => min_aux_index_rel aux xs j =>
   i = j.
-proof.
-smt().
-qed.
+proof. smt(). qed.
 
 lemma min_aux_index_rel_exists (aux : aux, xs : inp list) :
-  aux \in xs =>
-  exists (i : int), min_aux_index_rel aux xs i.
+  aux \in xs => exists (i : int), min_aux_index_rel aux xs i.
 proof.
 elim xs => [// | x xs IH /=].
 rewrite -oraE => [[<- | aux_ne_x aux_in_xs]].
@@ -93,6 +92,8 @@ exists (i + 1).
 rewrite /min_aux_index_rel.
 smt(size_ge0).
 qed.
+
+(* now we can use the choice function to define: *)
 
 op min_aux_index (aux : aux, xs : inp list) : out =
   choiceb (min_aux_index_rel aux xs) 0.
@@ -115,7 +116,9 @@ pose i := min_aux_index aux xs.
 smt().
 qed.
 
-op f (aux : aux) (xs : inp list) : out option =
+(* here is our searching function, f: *)
+
+op f (aux : aux, xs : inp list) : out option =
   if size xs = arity /\ all (mem univ) xs /\ good aux xs
   then Some (min_aux_index aux xs)
   else None.
@@ -130,6 +133,7 @@ clone import LB as LB' with
   op good  <- good,
   op f     <- f
 proof *.
+(* beginning of realization *)
 realize ge0_arity.
 rewrite (lez_trans 1) // ge1_arity.
 qed.
@@ -175,7 +179,11 @@ proof. smt(). qed.
 (* here is our adversary: *)
 
 module Adv : ADV = {
-  (* invariant: 0 <= win_beg <= win_end < arity *)
+  (* invariant: 0 <= win_beg <= win_end < arity
+
+     the beginning and end of the "window" of elements that are still
+     unknown *)
+
   var win_beg, win_end : int
 
   proc init() : aux = {
@@ -222,6 +230,9 @@ lemma query_gt_mid (win_beg win_end i : int) :
   (win_size win_beg win_end) %/ 2 <= win_size win_beg (i - 1).
 proof. smt(). qed.
 
+(* invariant relating current list of input lists and window
+   beginning and end: *)
+
 op inpss_win_invar
    (inpss : inp list list, win_beg win_end : int) : bool =
   0 <= win_beg <= win_end < arity /\
@@ -252,7 +263,7 @@ rewrite AllLists.all_lists_arity_have 1:/# 1:/#.
 smt(all_nthP mem_nth a_in_univ b_in_univ c_in_univ).
 qed.
 
-lemma inpss_win_invar_filter_empty_window_b
+lemma inpss_win_invar_filter_size1_window_b
       (inpss : inp list list, win_beg win_end : int) :
   inpss_win_invar inpss win_beg win_end => win_beg = win_end =>
   inpss_win_invar (filter_nth inpss win_beg b) win_beg win_end.
@@ -290,7 +301,7 @@ lemma inpss_win_invar_filter_mid_low_a
   inpss_win_invar inpss win_beg win_end => win_beg <= k < win_end =>
   inpss_win_invar (filter_nth inpss k a) (k + 1) win_end.
 proof.
-move => start_invar [le_win_beg_k le_k_win_end].
+move => start_invar [le_win_beg_k lt_k_win_end].
 rewrite /inpss_win_invar.
 split; first smt().
 smt(mem_filter_nth).
@@ -338,7 +349,7 @@ lemma nth_make_uniq_inps_lt (j k : int) :
   0 <= k => 0 <= j < k =>
   nth witness (make_uniq_inps k) j = a.
 proof.
-move => ge0_k lt_j_k.
+move => ge0_k j_rng.
 rewrite /make_uniq_inps.
 smt(size_cat size_nseq nth_cat nth_nseq).
 qed.
@@ -355,14 +366,13 @@ lemma nth_make_uniq_inps_gt (j k : int) :
   0 <= k => k < j < arity =>
   nth witness (make_uniq_inps k) j = c.
 proof.
-move => ge0_k lt_k_j.
+move => ge0_k j_rng.
 rewrite /make_uniq_inps.
 smt(size_cat size_nseq nth_cat nth_nseq).
 qed.
 
 lemma all_in_univ_make_uniq_inps (k : int) :
-  0 <= k < arity =>
-  all (mem univ) (make_uniq_inps k).
+  0 <= k < arity => all (mem univ) (make_uniq_inps k).
 proof.
 move => [ge0_k lt_k_arity].
 rewrite /make_uniq_inps !all_cat /= !all_nseq.
@@ -426,7 +436,7 @@ have /# : Some win_beg = Some (win_beg + 1).
   smt(f_make_uniq_inps).
 qed.
 
-lemma inpss_win_invar_done_implies_win_beg_eq_win_end
+lemma inpss_win_invar_done_implies_win_size1
       (inpss : inp list list, win_beg win_end : int) :
   inpss_win_invar inpss win_beg win_end => inpss_done b inpss =>
   win_beg = win_end.
@@ -434,13 +444,15 @@ proof.
 smt(inpss_win_invar_win_size_ge2_implies_not_inpss_done).
 qed.
 
+(* now we consider the bound *)
+
 lemma div_2n_eq_div_n_div_2 (m n : int) :
   0 <= m => 0 < n =>
   m %/ (n * 2) = m %/ n %/ 2.
 proof.
 move => ge0_m ge1_n.
 have ne0_n_tim2 : n * 2 <> 0.
-  rewrite gtr_eqF 1:pmulr_lgt0 //.
+  by rewrite gtr_eqF 1:pmulr_lgt0.
 rewrite {2}(divz_eq m (n * 2)).
 have -> : m %/ (n * 2) * (n * 2) = m %/ (n * 2) * 2 * n.
   by rewrite -mulrA (mulrC 2).
@@ -462,16 +474,15 @@ lemma stage_int_log (stage : int) :
   stage = int_log 2 arity.
 proof.
 rewrite /stage_metric.
-move => ge0_stage arity_div_two2stage_eq_1.
-rewrite (int_logPuniq 2 arity stage) //.
-rewrite exprS //.
+move => ge0_stage eq1_sm.
+rewrite (int_logPuniq 2 arity stage) // exprS //.
 split => [| _].
 case (2 ^ stage <= arity) => [// |].
 rewrite -ltzNge => arity_lt_two2stage.
 have : arity %/ 2 ^ stage = 0.
   rewrite divz_small 1:ge0_arity /= 1:ltr_normr //.
   by left.
-by rewrite arity_div_two2stage_eq_1.
+by rewrite eq1_sm.
 case (arity < 2 * 2 ^ stage) => [// |].
 rewrite -lerNgt => two_time_two2stage_le_arity.
 have := leq_div2r (2 ^ stage) (2 * 2 ^ stage) arity _ _.
@@ -479,6 +490,8 @@ have := leq_div2r (2 ^ stage) (2 * 2 ^ stage) arity _ _.
   by rewrite expr_ge0.
 rewrite mulzK 1:gtr_eqF 1:expr_gt0 // /#.
 qed.
+
+(* invariant relating current stage and window size: *)
 
 op stage_win_size_invar (stage win_size : int) : bool =
   1 <= stage_metric stage <= win_size \/
@@ -577,7 +590,7 @@ auto; progress [-delta].
 by rewrite fcardUindep1.
 smt(queries_in_range_add).
 rewrite b_in_univ /=.
-by apply inpss_win_invar_filter_empty_window_b.
+by apply inpss_win_invar_filter_size1_window_b.
 by rewrite stage_win_size_invar_next_same_window 1:fcard_ge0.
 if.
 auto; progress [-delta].
@@ -613,7 +626,6 @@ rewrite c_in_univ /=.
 rewrite
   (inpss_win_invar_filter_mid_high_c _ _ Adv.win_end{hr} i{hr})
   // /#.
-rewrite -ltrNge in H10.
 rewrite
   (stage_win_size_invar_next_smaller_window (card queries)
    (win_size Adv.win_beg{hr} Adv.win_end{hr})
@@ -625,11 +637,12 @@ by rewrite fcards0.
 by rewrite queries_in_range0.
 rewrite inpss_win_invar_init.
 rewrite stage_win_size_invar_init.
-smt(inpss_win_invar_done_implies_win_beg_eq_win_end
-    fcard_ge0 stage_int_log).
+smt(inpss_win_invar_done_implies_win_size1 fcard_ge0 stage_int_log).
 qed.
 
-lemma lower_bound_or &m :
+(* here is our main theorem: *)
+
+lemma lower_bound &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
   forall (Alg <: ALG{Adv}),
