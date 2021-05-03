@@ -62,7 +62,7 @@ have // : n < n.
   by rewrite (ltr_le_trans (b ^ (k2 + 1))) // (lez_trans (b ^ k1)).
 qed.
 
-(* integer logarithm *)
+(* integer logarithm (should not be applied when b <= 1 or n <= 0) *)
 
 op int_log (b n : int) : int =
   choiceb

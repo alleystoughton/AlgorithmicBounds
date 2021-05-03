@@ -47,7 +47,8 @@ qed.
 
 type out = int.
 
-(* arity can be any positive number *)
+(* arity can be any positive number (otherwise int_log 2 arity would
+   be undefined - see our main theorem at end) *)
 
 op arity : {int | 1 <= arity} as ge1_arity.
 
