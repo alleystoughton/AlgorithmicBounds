@@ -236,6 +236,7 @@ proof. smt(). qed.
 
 op inpss_win_invar
    (inpss : inp list list, win_beg win_end : int) : bool =
+  inpss_invar b inpss /\  (* not necessary, but easier to understand *)
   0 <= win_beg <= win_end < arity /\
   (forall (i : int),
    win_beg <= i <= win_end =>
@@ -250,6 +251,7 @@ lemma inpss_win_invar_init :
   inpss_win_invar (init_inpss b) 0 (arity - 1).
 proof.
 rewrite /inpss_win_invar.
+split; first apply inpss_invar_init.
 split; first smt(ge1_arity).
 move =>
  i [ge0_i le_i_arity_min1] inps sz_inps low_eq_a ith_eq_b high_eq_c.
@@ -269,8 +271,9 @@ lemma inpss_win_invar_filter_size1_window_b
   inpss_win_invar inpss win_beg win_end => win_beg = win_end =>
   inpss_win_invar (filter_nth inpss win_beg b) win_beg win_end.
 proof.
-move => start_invar eq_win_beg_win_end.
+move => [inpss_invar rest_invar] eq_win_beg_win_end.
 rewrite /inpss_win_invar.
+split; first by apply inpss_invar_filter.
 split; first smt().
 smt(mem_filter_nth).
 qed.
@@ -280,8 +283,9 @@ lemma inpss_win_invar_filter_low_a
   inpss_win_invar inpss win_beg win_end => 0 <= k < win_beg =>
   inpss_win_invar (filter_nth inpss k a) win_beg win_end.
 proof.
-move => start_invar [ge0_k lt_k_win_beg].
+move => [inpss_invar rest_invar] [ge0_k lt_k_win_beg].
 rewrite /inpss_win_invar.
+split; first by apply inpss_invar_filter.
 split; first smt().
 smt(mem_filter_nth).
 qed.
@@ -291,8 +295,9 @@ lemma inpss_win_invar_filter_high_c
   inpss_win_invar inpss win_beg win_end => win_end < k < arity =>
   inpss_win_invar (filter_nth inpss k c) win_beg win_end.
 proof.
-move => start_invar [lt_win_end_k lt_k_arity].
+move => [inpss_invar rest_invar] [lt_win_end_k lt_k_arity].
 rewrite /inpss_win_invar.
+split; first by apply inpss_invar_filter.
 split; first smt().
 smt(mem_filter_nth).
 qed.
@@ -302,8 +307,9 @@ lemma inpss_win_invar_filter_mid_low_a
   inpss_win_invar inpss win_beg win_end => win_beg <= k < win_end =>
   inpss_win_invar (filter_nth inpss k a) (k + 1) win_end.
 proof.
-move => start_invar [le_win_beg_k lt_k_win_end].
+move => [inpss_invar rest_invar] [le_win_beg_k lt_k_win_end].
 rewrite /inpss_win_invar.
+split; first by apply inpss_invar_filter.
 split; first smt().
 smt(mem_filter_nth).
 qed.
@@ -313,8 +319,9 @@ lemma inpss_win_invar_filter_mid_high_c
   inpss_win_invar inpss win_beg win_end => win_beg < k <= win_end =>
   inpss_win_invar (filter_nth inpss k c) win_beg (k - 1).
 proof.
-move => start_invar [le_win_beg_k le_k_win_end].
+move => [inpss_invar rest_invar] [le_win_beg_k le_k_win_end].
 rewrite /inpss_win_invar.
+split; first by apply inpss_invar_filter.
 split; first smt().
 smt(mem_filter_nth).
 qed.
@@ -413,7 +420,7 @@ lemma inpss_win_invar_win_size_ge2_implies_not_inpss_done
   win_beg < win_end => ! inpss_done b inpss.
 proof.
 rewrite /inpss_win_invar =>
-  [[#] ge0_win_beg _ lt_win_end_arity invar_body
+  [[#] inpss_inv ge0_win_beg _ lt_win_end_arity invar_body
    lt_win_beg_win_end].
 case (inpss_done b inpss) => [contrad | //].
 rewrite /inpss_done in contrad.
