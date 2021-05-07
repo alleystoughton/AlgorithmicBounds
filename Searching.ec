@@ -447,7 +447,7 @@ qed.
 lemma inpss_win_invar_done_implies_win_size1
       (inpss : inp list list, win_beg win_end : int) :
   inpss_win_invar inpss win_beg win_end => inpss_done b inpss =>
-  win_beg = win_end.
+  win_size win_beg win_end = 1.
 proof.
 smt(inpss_win_invar_win_size_ge2_implies_not_inpss_done).
 qed.
@@ -503,7 +503,14 @@ qed.
 
 op stage_win_size_invar (stage win_size : int) : bool =
   1 <= stage_metric stage <= win_size \/
+  int_log 2 arity < stage.
+
+lemma stage_win_size_invar_win_size1 (stage : int) :
+  0 <= stage => stage_win_size_invar stage 1 =>
   int_log 2 arity <= stage.
+proof.
+smt(stage_int_log).
+qed.
 
 (* we start at stage 0 and with the window size being arity *)
 
@@ -513,7 +520,10 @@ proof.
 by rewrite /stage_win_size_invar /stage_metric expr0 divz1 ge1_arity.
 qed.
 
-lemma stage_win_size_invar_next_smaller_window
+(* and the next two lemmas are how we move to the next stage,
+   possibly with a smaller window size *)
+
+lemma stage_win_size_invar_next_poss_smaller_window
       (stage win_size new_win_size : int) :
   0 <= stage => stage_win_size_invar stage win_size =>
   win_size %/ 2 <= new_win_size =>
@@ -523,20 +533,19 @@ rewrite /stage_win_size_invar.
 move =>
   ge0_stage
   [[ge1_sm le_sm_win_size le_win_size_div2_new_win_size] |].
-case (arity %/ 2 ^ stage = 1) => [eq1_sm | ne1_sm].
+case (stage_metric stage = 1) => [eq1_sm | ne1_sm].
 right.
 rewrite (stage_int_log stage) // /#.
 left.
-rewrite /stage_metric exprS //.
-rewrite mulrC (div_2n_eq_div_n_div_2 arity (2 ^ stage)) 1:ge0_arity
+rewrite /stage_metric exprS // mulrC
+        (div_2n_eq_div_n_div_2 arity (2 ^ stage)) 1:ge0_arity
         1:expr_gt0 //.
 split => [| _]; first smt().
 by rewrite (lez_trans (win_size %/ 2)) 1:leq_div2r.
 smt().
 qed.
 
-lemma stage_win_size_invar_next_same_window
-      (stage win_size : int) :
+lemma stage_win_size_invar_next_same_window (stage win_size : int) :
   0 <= stage => stage_win_size_invar stage win_size =>
   stage_win_size_invar (stage + 1) win_size.
 proof.
@@ -546,13 +555,15 @@ case (stage_metric stage = 1) => [eq1_sm | ne1_sm].
 right.
 rewrite (stage_int_log stage) // /#.
 left.
-rewrite /stage_metric exprS //.
-rewrite mulrC (div_2n_eq_div_n_div_2 arity (2 ^ stage)) 1:ge0_arity
+rewrite /stage_metric exprS // mulrC
+        (div_2n_eq_div_n_div_2 arity (2 ^ stage)) 1:ge0_arity
         1:expr_gt0 //.
 split => [| _]; first smt().
 rewrite (lez_trans (win_size %/ 2)) /#.
 smt().
 qed.
+
+(* adversary is lossless *)
 
 lemma Adv_init_ll : islossless Adv.init.
 proof.
@@ -563,6 +574,8 @@ lemma Adv_ans_query_ll : islossless Adv.ans_query.
 proof.
 proc; auto.
 qed.
+
+(* the main lemma *)
 
 lemma G_Adv_main (Alg <: ALG{Adv}) :
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log 2 arity <= res.`2].
@@ -623,7 +636,7 @@ rewrite
   (inpss_win_invar_filter_mid_low_a _ Adv.win_beg{hr} _ i{hr})
   // /#.
 rewrite
-  (stage_win_size_invar_next_smaller_window (card queries)
+  (stage_win_size_invar_next_poss_smaller_window (card queries)
    (win_size Adv.win_beg{hr} Adv.win_end{hr})
    (win_size (i{hr} + 1) Adv.win_end{hr}))
   1:fcard_ge0 // query_le_mid /#.
@@ -635,7 +648,7 @@ rewrite
   (inpss_win_invar_filter_mid_high_c _ _ Adv.win_end{hr} i{hr})
   // /#.
 rewrite
-  (stage_win_size_invar_next_smaller_window (card queries)
+  (stage_win_size_invar_next_poss_smaller_window (card queries)
    (win_size Adv.win_beg{hr} Adv.win_end{hr})
    (win_size Adv.win_beg{hr} (i{hr} - 1)))
   1:fcard_ge0 // query_gt_mid /#.
@@ -645,7 +658,12 @@ by rewrite fcards0.
 by rewrite queries_in_range0.
 rewrite inpss_win_invar_init.
 rewrite stage_win_size_invar_init.
-smt(inpss_win_invar_done_implies_win_size1 fcard_ge0 stage_int_log).
+rewrite negb_and /= in H.
+elim H => [inpss_done_b_inpss0 | -> //].
+right.
+rewrite stage_win_size_invar_win_size1 1:fcard_ge0.
+have <- // : win_size win_beg win_end = 1.
+  by rewrite (inpss_win_invar_done_implies_win_size1 inpss0).
 qed.
 
 (* here is our main theorem: *)
