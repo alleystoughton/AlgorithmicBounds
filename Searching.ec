@@ -563,6 +563,22 @@ rewrite (lez_trans (win_size %/ 2)) /#.
 smt().
 qed.
 
+(* from the invariants and knowing the game is done, we have our
+   bound: *)
+
+lemma inpss_done_lower_bound
+      (inpss : inp list list, stage win_beg win_end : int) :
+  0 <= stage => inpss_done b inpss =>
+  inpss_win_invar inpss win_beg win_end =>
+  stage_win_size_invar stage (win_size win_beg win_end) =>
+  int_log 2 arity <= stage.
+proof.
+move => ge0_stage id iwi swsi.
+rewrite stage_win_size_invar_win_size1 //.
+have <- // : win_size win_beg win_end = 1.
+  by rewrite (inpss_win_invar_done_implies_win_size1 inpss).
+qed.
+
 (* adversary is lossless *)
 
 lemma Adv_init_ll : islossless Adv.init.
@@ -661,9 +677,7 @@ rewrite stage_win_size_invar_init.
 rewrite negb_and /= in H.
 elim H => [inpss_done_b_inpss0 | -> //].
 right.
-rewrite stage_win_size_invar_win_size1 1:fcard_ge0.
-have <- // : win_size win_beg win_end = 1.
-  by rewrite (inpss_win_invar_done_implies_win_size1 inpss0).
+by rewrite (inpss_done_lower_bound inpss0 _ win_beg win_end) 1:fcard_ge0.
 qed.
 
 (* here is our main theorem: *)
