@@ -4,6 +4,12 @@ prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)
 
+(* the algorithm is trying to compute the or-function of a list of
+   booleans of size-arity, i.e., determine whether at least one
+   element of the list is true
+
+   it can query the values of elements of the list *)
+
 require import AllCore List FSet.
 
 require import AdvLowerBounds.  (* adversarial lower bounds framework *)

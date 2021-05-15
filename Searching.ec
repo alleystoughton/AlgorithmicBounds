@@ -5,6 +5,12 @@ prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)
 
+(* given a list of size arity at least one element of which is
+   equal to k, the algorithm is trying to find the least list
+   index such that the list has k at that position
+
+   it can query the values of elements of the list *)
+
 require import AllCore List FSet StdOrder IntDiv.
 import IntOrder.
 
