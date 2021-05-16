@@ -5,7 +5,7 @@ prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 timeout 2.  (* can increase *)
 
 (* the algorithm is trying to compute the or-function of a list of
-   booleans of size-arity, i.e., determine whether at least one
+   booleans of size arity, i.e., determine whether at least one
    element of the list is true
 
    it can query the values of elements of the list *)
@@ -16,7 +16,7 @@ require import AdvLowerBounds.  (* adversarial lower bounds framework *)
 
 type inp = bool.
 
-op univ = [true; false].
+op univ = [true; false].  (* all of bool *)
 
 type out = bool.
 
@@ -66,7 +66,8 @@ rewrite /all_false => i i_rng.
 by rewrite nth_nseq.
 qed.
 
-(* good says nothing more *)
+(* good says nothing more; so we start with all lists of booleans of
+   size arity *)
 
 op good (_ : aux, xs : inp list) : bool = true.
 
