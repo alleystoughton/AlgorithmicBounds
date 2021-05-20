@@ -464,7 +464,7 @@ lemma div_2n_eq_div_n_div_2 (m n : int) :
   0 <= m => 0 < n =>
   m %/ (n * 2) = m %/ n %/ 2.
 proof.
-move => ge0_m ge1_n.
+move => ge0_m gt0_n.
 have ne0_n_tim2 : n * 2 <> 0.
   by rewrite gtr_eqF 1:pmulr_lgt0.
 rewrite {2}(divz_eq m (n * 2)).
