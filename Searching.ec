@@ -227,12 +227,23 @@ lemma win_size_full :
   win_size 0 (arity - 1) = arity.
 proof. smt(). qed.
 
-lemma query_le_mid (win_beg win_end i : int) :
+lemma query_le_mid_new_le (win_beg win_end i : int) :
+  win_beg <= i <= win_end => win_beg < win_end =>
+  i <= (win_beg + win_end) %/ 2 =>
+  i + 1 <= win_end.
+proof. smt(). qed.
+
+lemma query_le_mid_new_size_lb (win_beg win_end i : int) :
   win_beg <= i <= win_end => i <= (win_beg + win_end) %/ 2 =>
   (win_size win_beg win_end) %/ 2 <= win_size (i + 1) win_end.
 proof. smt(). qed.
 
-lemma query_gt_mid (win_beg win_end i : int) :
+lemma query_gt_mid_new_le (win_beg win_end i : int) :
+  win_beg <= i <= win_end => (win_beg + win_end) %/ 2 < i =>
+  win_beg <= i - 1.
+proof. smt(). qed.
+
+lemma query_gt_mid_new_size_lb (win_beg win_end i : int) :
   win_beg <= i <= win_end => (win_beg + win_end) %/ 2 < i =>
   (win_size win_beg win_end) %/ 2 <= win_size win_beg (i - 1).
 proof. smt(). qed.
@@ -661,7 +672,7 @@ rewrite
   (stage_win_size_invar_next_poss_smaller_window (card queries)
    (win_size Adv.win_beg{hr} Adv.win_end{hr})
    (win_size (i{hr} + 1) Adv.win_end{hr}))
-  1:fcard_ge0 // query_le_mid /#.
+  1:fcard_ge0 // query_le_mid_new_size_lb /#.
 auto; progress [-delta].
 by rewrite fcardUindep1.
 smt(queries_in_range_add).
@@ -673,7 +684,7 @@ rewrite
   (stage_win_size_invar_next_poss_smaller_window (card queries)
    (win_size Adv.win_beg{hr} Adv.win_end{hr})
    (win_size Adv.win_beg{hr} (i{hr} - 1)))
-  1:fcard_ge0 // query_gt_mid /#.
+  1:fcard_ge0 // query_gt_mid_new_size_lb /#.
 auto.
 auto; progress [-delta].
 by rewrite fcards0.
