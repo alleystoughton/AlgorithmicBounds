@@ -97,7 +97,7 @@ move => ge2_b ge1_n.
 have := int_logP b n _ _ => //.
 qed.
 
-lemma int_log_up_lt (b n : int) :
+lemma int_log_ub_lt (b n : int) :
   2 <= b => 1 <= n => n < b ^ (int_log b n + 1).
 proof.
 move => ge2_b ge1_n.
@@ -119,7 +119,7 @@ qed.
 (* integer logarithm rounding up (should not be applied when b <= 1 or
    n <= 0) *)
 
-op nosmt int_log_up (b n : int) : int =
+op int_log_up (b n : int) : int =
   int_log b n + ((b ^ int_log b n = n) ? 0 : 1).
 
 lemma int_log_int_log_up_le (b n : int) :
