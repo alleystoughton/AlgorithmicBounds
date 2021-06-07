@@ -122,6 +122,14 @@ qed.
 op nosmt int_log_up (b n : int) : int =
   int_log b n + ((b ^ int_log b n = n) ? 0 : 1).
 
+lemma int_log_int_log_up_le (b n : int) :
+  int_log b n <= int_log_up b n.
+proof.
+rewrite /int_log_up.
+case (b ^ int_log b n = n) => [// | _].
+by rewrite ler_paddr.
+qed.
+
 lemma int_log_upP (b n : int) :
   2 <= b => 1 <= n =>
   (int_log_up b n = 0 /\ n = 1 \/
