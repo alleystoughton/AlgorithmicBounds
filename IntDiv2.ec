@@ -348,6 +348,14 @@ rewrite (divpow2_next_new_ub n k m m) // leq_div //.
 by rewrite (ler_trans (divpow2 n k)) // divpow2_ge0 1:(ler_trans 1).
 qed.
 
+lemma divpow2_next_when_eq1 (n k : int) :
+  1 <= n => 0 <= k => divpow2 n k = 1 =>
+  divpow2 n (k + 1) = 0.
+proof.
+move => ge1_n ge0_k eq1_dp2_n_k.
+by rewrite divpow2_le1_next_eq0 // eq1_dp2_n_k.
+qed.
+
 (* integer division rounding up by power of two *)
 
 op divpow2up (n k : int) : int =
