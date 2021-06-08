@@ -16,6 +16,7 @@ import IntOrder.
 
 require import AdvLowerBounds.  (* adversarial lower bounds framework *)
 require import IntLog.          (* integer logarithms *)
+require import IntDiv2.         (* division by powers of two *)
 
 type inp = int.
 
@@ -471,62 +472,19 @@ qed.
 
 (* now we consider the bound *)
 
-lemma div_2n_eq_div_n_div_2 (m n : int) :
-  0 <= m => 0 < n =>
-  m %/ (n * 2) = m %/ n %/ 2.
-proof.
-move => ge0_m gt0_n.
-have ne0_n_tim2 : n * 2 <> 0.
-  by rewrite gtr_eqF 1:pmulr_lgt0.
-rewrite {2}(divz_eq m (n * 2)).
-have -> : m %/ (n * 2) * (n * 2) = m %/ (n * 2) * 2 * n.
-  by rewrite -mulrA (mulrC 2).
-rewrite divzMDl 1:gtr_eqF // 1:divzMDl //.
-have -> // : m %% (n * 2) %/ n %/ 2 = 0.
-  rewrite divz_small //.
-  split => [| _].
-  by rewrite divz_ge0 // modz_ge0 ne0_n_tim2.
-  rewrite ltz_divLR // ger0_norm // (mulrC 2).
-  rewrite -{2}(ger0_norm (n * 2)) 1:mulr_ge0 1:ltzW //.
-  by rewrite ltz_mod ne0_n_tim2.
-qed.
-
 op stage_metric (stage : int) : int =
-  arity %/ (2 ^ stage).
-
-lemma stage_int_log (stage : int) :
-  0 <= stage => stage_metric stage = 1 =>
-  stage = int_log 2 arity.
-proof.
-rewrite /stage_metric.
-move => ge0_stage eq1_sm.
-rewrite (int_logPuniq 2 arity stage) // exprS //.
-split => [| _].
-case (2 ^ stage <= arity) => [// |].
-rewrite -ltzNge => arity_lt_two2stage.
-have : arity %/ 2 ^ stage = 0.
-  rewrite divz_small 1:ge0_arity /= 1:ltr_normr //.
-  by left.
-by rewrite eq1_sm.
-case (arity < 2 * 2 ^ stage) => [// |].
-rewrite -lerNgt => two_time_two2stage_le_arity.
-have := leq_div2r (2 ^ stage) (2 * 2 ^ stage) arity _ _.
-  trivial.
-  by rewrite expr_ge0.
-rewrite mulzK 1:gtr_eqF 1:expr_gt0 // /#.
-qed.
+  divpow2 arity stage.  (* see IntDiv2 *)
 
 (* invariant relating current stage and window size: *)
 
 op stage_win_size_invar (stage win_size : int) : bool =
-  1 <= stage_metric stage <= win_size \/
-  int_log 2 arity < stage.
+  stage_metric stage <= win_size.
 
 lemma stage_win_size_invar_win_size1 (stage : int) :
   0 <= stage => stage_win_size_invar stage 1 =>
   int_log 2 arity <= stage.
 proof.
-smt(stage_int_log).
+smt(divpow2_le1_int_log ge1_arity).
 qed.
 
 (* we start at stage 0 and with the window size being arity *)
@@ -534,7 +492,7 @@ qed.
 lemma stage_win_size_invar_init :
   stage_win_size_invar 0 arity.
 proof.
-by rewrite /stage_win_size_invar /stage_metric expr0 divz1 ge1_arity.
+smt(ge1_arity divpow2_start).
 qed.
 
 (* and the next two lemmas are how we move to the next stage,
@@ -546,38 +504,19 @@ lemma stage_win_size_invar_next_poss_smaller_window
   win_size %/ 2 <= new_win_size =>
   stage_win_size_invar (stage + 1) new_win_size.
 proof.
-rewrite /stage_win_size_invar.
-move =>
-  ge0_stage
-  [[ge1_sm le_sm_win_size le_win_size_div2_new_win_size] |].
-case (stage_metric stage = 1) => [eq1_sm | ne1_sm].
-right.
-rewrite (stage_int_log stage) // /#.
-left.
-rewrite /stage_metric exprS // mulrC
-        (div_2n_eq_div_n_div_2 arity (2 ^ stage)) 1:ge0_arity
-        1:expr_gt0 //.
-split => [| _]; first smt().
-by rewrite (lez_trans (win_size %/ 2)) 1:leq_div2r.
-smt().
+rewrite /stage_win_size_invar /stage_metric.
+move => ge0_stage sm_le_ws ws_div2_le_nws.
+by rewrite (divpow2_next_new_ub arity stage new_win_size win_size)
+           1:ge1_arity.
 qed.
 
 lemma stage_win_size_invar_next_same_window (stage win_size : int) :
   0 <= stage => stage_win_size_invar stage win_size =>
   stage_win_size_invar (stage + 1) win_size.
 proof.
-rewrite /stage_win_size_invar.
-move => ge0_stage [[ge1_sm le_sm_win_size] |].
-case (stage_metric stage = 1) => [eq1_sm | ne1_sm].
-right.
-rewrite (stage_int_log stage) // /#.
-left.
-rewrite /stage_metric exprS // mulrC
-        (div_2n_eq_div_n_div_2 arity (2 ^ stage)) 1:ge0_arity
-        1:expr_gt0 //.
-split => [| _]; first smt().
-rewrite (lez_trans (win_size %/ 2)) /#.
-smt().
+rewrite /stage_win_size_invar /stage_metric.
+move => ge0_stage sm_le_ws.
+by rewrite divpow2_next_same_ub 1:ge1_arity.
 qed.
 
 (* from the invariants and knowing the game is done, we have our

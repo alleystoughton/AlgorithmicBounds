@@ -15,6 +15,10 @@ timeout 2.  (* can increase *)
 require import AllCore List IntDiv StdOrder IntMin.
 import IntOrder.
 
+require import AdvLowerBounds.  (* adversarial lower bounds framework *)
+require import IntLog.          (* integer logarithms *)
+require import IntDiv2.         (* division by powers of two *)
+
 op len : int.
 
 axiom ge1_len : 1 <= len.
@@ -605,3 +609,60 @@ have := choicebP (sorted_perm_len_rel xs) [] _.
   by rewrite sorted_perm_rel_exists.
 by rewrite /f /sorted_perm_len_rel tot_ord_xs.
 qed.
+
+lemma f_is_some (xs : inp list) :
+  total_ordering xs => is_some (f () xs).
+proof.
+move => tot_ord_xs.
+smt(f_prop).
+qed.
+
+lemma f_is_perm_len (xs : inp list) :
+  total_ordering xs => is_perm_len (oget (f () xs)).
+proof.
+move => tot_ord_xs.
+smt(f_prop).
+qed.
+
+lemma f_sorted (xs : inp list) :
+  total_ordering xs => sorted xs (oget (f () xs)).
+proof.
+move => tot_ord_xs.
+smt(f_prop).
+qed.
+
+lemma f_bad (xs : inp list) :
+  ! total_ordering xs => f () xs = None.
+proof. smt(). qed.
+
+clone import LB as LB' with
+  type inp <- inp,
+  op univ  <- univ,
+  op def   <- true,
+  type out <- out,
+  op arity <- arity,
+  type aux <- aux,
+  op good  <- good,
+  op f     <- f
+proof *.
+(* beginning of realization *)
+realize ge0_arity.
+rewrite (lez_trans 1) // ge1_arity.
+qed.
+
+realize univ_uniq. by rewrite /univ. qed.
+
+realize univ_def. by rewrite /univ. qed.
+
+realize good. smt(f_is_some). qed.
+
+realize bad.
+move => aux xs H.
+have not_tot_ord_xs : ! total_ordering xs.
+  elim H.
+  rewrite /total_ordering !negb_and => -> //.
+  elim.
+  have // : all (mem univ) xs by smt(allP).
+  by rewrite /good.
+smt(f_bad).
+(* end of realization *)
