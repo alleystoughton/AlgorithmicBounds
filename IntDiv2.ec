@@ -111,6 +111,14 @@ qed.
 op (%%/) (m d : int) : int =
   m %/ d + ((d %| m) ? 0 : 1).
 
+lemma int_div2_le_int_div2_up (m d : int) :
+  m %/ d <= m %%/ d.
+proof.
+rewrite /(%%/).
+case (d %| m) => [d_dvdz_m // | not_d_dvdz_m].
+by rewrite ler_paddr.
+qed.
+
 lemma int_div2_up_eq0_implies_eq0 (m d : int) :
   0 %%/ 2 = 0.
 proof. trivial. qed.
