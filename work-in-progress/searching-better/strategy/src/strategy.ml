@@ -205,7 +205,7 @@ let anony_args_ref : string list ref = ref []
 let anony_args (s : string) =
   (anony_args_ref := (! anony_args_ref) @ [s]; ())
 
-let () = parse arg_specs anony_args "Usage: strategy [options] arity mid"
+let () = parse arg_specs anony_args "Usage: strategy [options] arity elt"
 
 let process_arity (arity : string) : int =
   match (try Some (int_of_string arity) with
@@ -217,22 +217,26 @@ let process_arity (arity : string) : int =
       then (eprintf "arity must be at least one: %d\n" n; exit 1)
       else n
 
-let process_mid (mid : string) : inp =
-  match (try string_to_inp_opt mid with
+let process_elt (elt : string) : inp =
+  match (try string_to_inp_opt elt with
          | Failure _ -> None) with
   | None     ->
-      (eprintf "mid must be element of type inp: %s\n" mid; exit 1)
-  | Some mid -> mid
+      (eprintf
+       ("element to be searched for must be element of type " ^^
+        "inp: %s\n")
+       elt;
+       exit 1)
+  | Some elt -> elt
 
 let () =
   match ! anony_args_ref with
-  | [arity; mid] ->
+  | [arity; elt] ->
       let arity = process_arity arity in
-      let mid = process_mid mid in
-      let str = optimal_strategy arity mid in
+      let elt = process_elt elt in
+      let str = optimal_strategy arity elt in
       if ! mpl_ref
       then printf "minimum path length: %d\n" (min_path_length str)
       else display str
   | _           ->
-      (usage arg_specs "Usage: strategy [options] arity mid";
+      (usage arg_specs "Usage: strategy [options] arity elt";
        exit 1)
