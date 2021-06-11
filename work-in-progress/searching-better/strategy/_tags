@@ -1,0 +1,13 @@
+# ocamlbuild tags
+
+# compile with debugging information
+true : debug
+
+# dump detailed information about the compilation into *.cmt/cmti files
+true : bin_annot
+
+<src> : include
+
+# the packages used for our targets
+
+<src/*> : package(batteries,menhirLib,pcre,why3,inifiles,zarith,yojson)
