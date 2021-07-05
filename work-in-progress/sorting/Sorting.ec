@@ -12,12 +12,13 @@ timeout 2.  (* can increase *)
    the jth element (the answer is true or false); it can't ask
    questions about the values of the list elements themselves *)
 
-require import AllCore List IntDiv StdOrder IntMin.
+require import AllCore List IntDiv StdOrder IntMin FSetAux.
 import IntOrder.
 
-require import AdvLowerBounds.  (* adversarial lower bounds framework *)
-require import IntLog.          (* integer logarithms *)
-require import IntDiv2.         (* division by powers of two *)
+require AdvLowerBounds.   (* adversarial lower bounds framework *)
+require import AllLists.  (* generating all lists of length over universe *)
+require import IntLog.    (* integer logarithms *)
+require import IntDiv2.   (* division by powers of two *)
 
 op len : int.
 
@@ -635,7 +636,7 @@ lemma f_bad (xs : inp list) :
   ! total_ordering xs => f () xs = None.
 proof. smt(). qed.
 
-clone import LB as LB' with
+clone import AdvLowerBounds as ALB with
   type inp <- inp,
   op univ  <- univ,
   op def   <- true,

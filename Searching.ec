@@ -11,12 +11,13 @@ timeout 2.  (* can increase *)
 
    it can query the values of elements of the list *)
 
-require import AllCore List FSet StdOrder IntDiv.
+require import AllCore List FSetAux StdOrder IntDiv.
 import IntOrder.
 
-require import AdvLowerBounds.  (* adversarial lower bounds framework *)
-require import IntLog.          (* integer logarithms *)
-require import IntDiv2.         (* division by powers of two *)
+require AdvLowerBounds.   (* adversarial lower bounds framework *)
+require import AllLists.  (* generating all lists of length over universe *)
+require import IntLog.    (* integer logarithms *)
+require import IntDiv2.   (* division by powers of two *)
 
 type inp = int.
 
@@ -131,7 +132,7 @@ op f (aux : aux, xs : inp list) : out option =
   then Some (min_aux_index aux xs)
   else None.
 
-clone import LB as LB' with
+clone import AdvLowerBounds as ALB with
   type inp <- inp,
   op univ  <- univ,
   op def   <- min_inp,

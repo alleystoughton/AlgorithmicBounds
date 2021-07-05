@@ -10,9 +10,9 @@ timeout 2.  (* can increase *)
 
    it can query the values of elements of the list *)
 
-require import AllCore List FSet.
+require import AllCore List FSetAux.
 
-require import AdvLowerBounds.  (* adversarial lower bounds framework *)
+require AdvLowerBounds.   (* adversarial lower bounds framework *)
 
 type inp = bool.
 
@@ -105,7 +105,7 @@ rewrite /univ /=.
 by case x.
 qed.
 
-clone import LB as LB' with
+clone import AdvLowerBounds as LB with
   type inp <- inp,
   op univ  <- univ,
   op def   <- true,
