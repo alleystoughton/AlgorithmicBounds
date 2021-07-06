@@ -15,7 +15,7 @@ in collaboration with Boston University doctoral student
 
 We have a general EasyCrypt framework for expressing lower bounds problems:
 
- * [`AdvLowerBounds.ec` - general adversarial lower bounds framework](../main/AdvLowerBounds.ec)
+ * [`AdvLowerBounds.eca` - general adversarial lower bounds framework](../main/AdvLowerBounds.eca)
 
 We have completed these lower bounds proofs using the general
 framework:
@@ -25,6 +25,6 @@ framework:
 
 We also have a general EasyCrypt framework for expressing upper bounds problems:
 
- * [`UpperBounds.ec` - general upper bounds framework](../main/UpperBounds.ec)
+ * [`UpperBounds.eca` - general upper bounds framework](../main/UpperBounds.eca)
 
 We also have some [work-in-progress](../main/work-in-progress).
