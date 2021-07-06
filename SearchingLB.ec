@@ -1,5 +1,5 @@
 (* Application of Adversarial Lower Bounds Framework to Searching in
-   Ordered List *)
+   Ordered Lists *)
 
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 

@@ -1,0 +1,203 @@
+(* Upper Bounds Framework *)
+
+(* general framework for proving upper bounds results *)
+
+prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
+
+timeout 2.  (* can increase *)
+
+require import AllCore List FSetAux.
+require import FRange.    (* finite ranges as sets *)
+require import AllLists.  (* generating all lists of length over universe *)
+
+(* theory parameters *)
+
+type inp.  (* type of inputs *)
+
+op univ : inp list.  (* universe with concrete ordering *)
+
+op def : inp.  (* default inp *)
+
+axiom univ_def : mem univ def.  (* default inp is in univ *)
+
+axiom univ_uniq : uniq univ.  (* no duplicates in univ *)
+
+type out.  (* type of outputs *)
+
+op arity : {int | 0 <= arity} as ge0_arity.  (* arity of f *)
+
+type aux.  (* auxiliary value, chosen by adversary *)
+
+(* if xs : inp list has size arity and all of its elements are in
+   univ, then good aux xs returns true iff xs is a valid argument to f
+   aux *)
+
+op good : aux -> inp list -> bool.
+
+(* an argument xs to f aux should be a list of inputs of size arity,
+   all of whose elements are in univ, and where good aux xs holds -
+   note that there may be no such lists *)
+
+op f : aux -> inp list -> out option.
+
+(* when argument to f has the correct arity, is over univ, and
+   satisfies good aux, we get Some of an answer *)
+
+axiom good (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  exists (y : out), f aux xs = Some y.
+
+(* when argument to f has the wrong arity, or is not over univ,
+   or does not satisfy good aux, we get None *)
+
+axiom bad (aux : aux, xs : inp list) :
+  size xs <> arity \/ ! (all (mem univ) xs) \/ ! good aux xs =>
+  f aux xs = None.
+
+(* end of theory parameters *)
+
+(* an algorithm *)
+
+type response = [
+  | Response_Query  of int  (* int is index into input list *)
+  | Response_Report of out  (* out is the algorithm's output *)
+].
+
+op dec_response_query (resp : response) : int option =
+  with resp = Response_Query i  => Some i
+  with resp = Response_Report _ => None.
+
+op dec_response_report (resp : response) : out option =
+  with resp = Response_Query _  => None
+  with resp = Response_Report x => Some x.
+
+op is_response_query (resp : response) : bool =
+  dec_response_query resp <> None.
+
+op is_response_report (resp : response) : bool =
+  dec_response_report resp <> None.
+
+module type ALG = {
+  (* tell algorithm to initialize itself, giving it aux *)
+  proc init(aux : aux) : unit
+
+  (* ask algorithm to either: make an input query, choosing an input
+     list index i such that 0 <= i < arity; or report its output *)
+  proc make_query_or_report_output() : response
+
+  (* tell algorithm the result of its query *)
+  proc query_result(x : inp) : unit
+}.
+
+(* game parameterized by algorithm *)
+
+module G(Alg : ALG) = {
+  (* precondition: size inps = arity /\ all (mem univ) inps /\
+     good aux inps *)
+  proc main(aux  : aux,        (* auxiliary value *)
+            inps : inp list)   (* input list *)
+         : out option *        (* None if error occurred, else Some of
+                                  Alg's output *)
+           int = {             (* stage at termination *)
+    var out_opt : out option;  (* optionally algorithm's output *)
+    var stage   : int;         (* stage of game *)
+    var queries : int fset;    (* valid queries made by algorithm *)
+    var error   : bool;        (* has game made illegal query? *)
+
+    var resp : response;
+    var i : int;
+    var out : out;
+
+    Alg.init(aux);     (* initialize Alg, giving it aux *)
+    out_opt <- None;   (* no reported output, yet *)
+    stage <- 0;        (* counts number of queries *)
+    queries <- fset0;  (* no queries initially *)
+    error <- false;    (* no error so far *)
+    while (out_opt = None /\ !error) {
+      (* let Alg make query or report output *)
+      resp <@ Alg.make_query_or_report_output();
+      if (is_response_query resp) {
+        i <- oget (dec_response_query resp);
+        if (0 <= i < arity /\ ! i \in queries) {
+          queries <- queries `|` fset1 i;
+          stage <- stage + 1;
+          (* tell Alg result of its query *)
+          Alg.query_result(nth witness inps i);
+        }
+        else {
+          error <- true;  (* query was invalid *)
+        }
+      }
+      else {  (* is_response_report resp *)
+        out <- oget (dec_response_report resp);
+        out_opt <- Some out;
+      }
+    }
+    return (error ? None : out_opt, stage);
+  }
+}.
+
+op queries_in_range (queries : int fset) : bool =
+  forall (i : int), i \in queries => 0 <= i < arity.
+
+lemma queries_in_range0 :
+  queries_in_range fset0.
+proof.
+move => i.
+by rewrite in_fset0.
+qed.
+
+lemma queries_in_range_add (queries : int fset, i : int) :
+  0 <= i < arity => queries_in_range queries =>
+  queries_in_range (queries `|` fset1 i).
+proof.
+move => i_in_rng @/queries_in_range qir_queries j.
+rewrite in_fsetU1 => [] [j_in_queries | -> //].
+by apply qir_queries.
+qed.
+
+lemma queries_in_range_card_le_arity (queries : int fset) :
+  queries_in_range queries => card queries <= arity.
+proof.
+move => qir_queries.
+rewrite FRange.sub_range_card_leq 1:ge0_arity.
+apply qir_queries.
+qed.
+
+lemma G_ll (Alg <: ALG) :
+  islossless Alg.init => islossless Alg.make_query_or_report_output =>
+  islossless Alg.query_result =>
+  islossless G(Alg).main.
+proof.
+move =>
+  Alg_init_ll Alg_make_query_or_report_output_ll Alg_query_result_ll.
+proc.
+while
+  (queries_in_range queries /\ stage = card queries)
+  (if out_opt <> None \/ error then 0 else arity - stage + 1).
+move => z.
+seq 1 :
+  (queries_in_range queries /\ stage = card queries /\ out_opt = None /\
+   !error /\ (if out_opt <> None \/ error then 0 else arity - stage + 1) = z).
+call (_ : true); first auto.
+call (_ : true); first auto.
+if.
+sp.
+if.
+call (_ : true).
+auto; progress.
+by rewrite queries_in_range_add.
+by rewrite fcardUindep1.
+smt().
+auto; smt(queries_in_range_card_le_arity).
+auto; smt(queries_in_range_card_le_arity).
+hoare.
+call (_ : true); first auto.
+trivial.
+wp.
+call (_ : true).
+auto; progress.
+rewrite queries_in_range0.
+by rewrite fcards0.
+smt(queries_in_range_card_le_arity).
+qed.

@@ -1,5 +1,8 @@
 (* Adversarial Lower Bounds Framework *)
 
+(* general framework for proving lower bounds results using the
+   adversarial method *)
+
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)
@@ -144,8 +147,8 @@ module type ALG = {
   (* tell algorithm to initialize itself, giving it aux *)
   proc init(aux : aux) : unit
 
-  (* ask algorithm to make an input query, choosing an input index i
-     such that 0 <= i < arity *)
+  (* ask algorithm to make an input query, choosing an input list
+     index i such that 0 <= i < arity *)
   proc make_query() : int
 
   (* tell algorithm the result of its query *)
@@ -157,11 +160,11 @@ module type ALG = {
 module G(Alg : ALG, Adv : ADV) = {
   proc main() : bool * int = {
     var inpss : inp list list;  (* current possible lists of inputs *)
-    var don : bool;  (* is game done? *)
-    var error : bool;  (* has game made illegal query? *)
-    var stage : int;  (* stage of game *)
-    var queries : int fset;  (* valid queries made by algorithm *)
-    var aux : aux;  (* auxiliary value chosen by adversary *)
+    var don : bool;             (* is game done? *)
+    var error : bool;           (* has game made illegal query? *)
+    var stage : int;            (* stage of game *)
+    var queries : int fset;     (* valid queries made by algorithm *)
+    var aux : aux;              (* auxiliary value chosen by adversary *)
 
     var i : int;
     var inp : inp;
@@ -270,8 +273,7 @@ seq 1 :
   (queries_in_range queries /\ stage = card queries /\ !don /\ !error /\
   (if error then 0 else arity - stage + 1) = z).
 auto.
-call (_ : true).
-auto.
+call (_ : true); first auto.
 if.
 wp.
 call (_ : true).
@@ -281,10 +283,9 @@ auto; progress.
 by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
 smt().
-auto; progress; smt(queries_in_range_card_le_arity).
+auto; smt(queries_in_range_card_le_arity).
 hoare.
-call (_ : true).
-auto.
+call (_ : true); first auto.
 smt().
 wp.
 call (_ : true).

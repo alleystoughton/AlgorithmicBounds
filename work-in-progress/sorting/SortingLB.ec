@@ -1,4 +1,5 @@
-(* Comparison-based Sorting *)
+(* Application of Adversarial Lower Bounds Framework to
+   Comparison-based Sorting *)
 
 prover quorum=2 ["Alt-Ergo" "Z3"].
 

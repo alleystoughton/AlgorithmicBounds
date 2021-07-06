@@ -18,14 +18,17 @@ check() {
   fi;
 }
 
+check IntLog.ec
+check IntDiv2.ec
 check FSetAux.ec
 check FRange.ec
 check AllLists.ec
+
 check AdvLowerBounds.ec
-check IntLog.ec
-check IntDiv2.ec
-check OrFunction.ec
-check Searching.ec
+check OrFunctionLB.ec
+check SearchingUB.ec
+
+check UpperBounds.ec
 
 # success!
 
