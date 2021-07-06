@@ -237,7 +237,7 @@ move => ge0_n ge0_k.
 by rewrite /divpow2 int_div_ge0 // exprn_ege1.
 qed.
 
-lemma divpow2_decr (n k : int) :
+lemma divpow2_next_lt (n k : int) :
   1 <= n => 0 <= k => 1 <= divpow2 n k =>
   divpow2 n (k + 1) < divpow2 n k.
 proof.
@@ -290,7 +290,7 @@ rewrite mulzK 1:gtr_eqF 1:expr_gt0 // => le_2_n_div_two2k.
 have // : 2 <= 1 by rewrite (ler_trans (n %/ (2 ^ k))) // eq1_dp2.
 qed.
 
-lemma divpow2_eq0_int_log_up (n k : int) :
+lemma divpow2_eq0_int_log_up_le (n k : int) :
   1 <= n => 0 <= k => divpow2 n k = 0 =>
   int_log_up 2 n <= k.
 proof.
@@ -308,15 +308,15 @@ have // : n < n.
   by rewrite (ler_lt_trans (2 ^ (int_log_up 2 n - 1))) 1:ler_weexpn2l.
 qed.
 
-lemma divpow2_eq0_int_log (n k : int) :
+lemma divpow2_eq0_int_log_le (n k : int) :
   1 <= n => 0 <= k => divpow2 n k = 0 => int_log 2 n <= k.
 proof.
 move => ge1_n ge0_k eq0_dp2_n_k.
 rewrite (ler_trans (int_log_up 2 n)) 1:(int_log_int_log_up_le).
-by rewrite divpow2_eq0_int_log_up.
+by rewrite divpow2_eq0_int_log_up_le.
 qed.
 
-lemma divpow2_le1_int_log (n k : int) :
+lemma divpow2_le1_int_log_le (n k : int) :
   1 <= n => 0 <= k => divpow2 n k <= 1 =>
   int_log 2 n <= k.
 proof.
@@ -327,7 +327,7 @@ have [eq0_dp2 | eq1_dp2] : divpow2 n k = 0 \/ divpow2 n k = 1.
   have ge1_dp2_n_k : 0 < divpow2 n k by rewrite ltz_def.
   rewrite ltzE /= in ge1_dp2_n_k.
   by apply ler_anti.
-by rewrite divpow2_eq0_int_log.
+by rewrite divpow2_eq0_int_log_le.
 by rewrite (divpow2_eq1_int_log n k).
 qed.
 
@@ -389,7 +389,7 @@ rewrite -two2k_dvdz_n ler_pmull 1:expr_gt0 //.
 by rewrite ler_paddl // int_div_ge0 1:(ler_trans 1) // exprn_ege1.
 qed.
 
-lemma divpow2up_decr (n k : int) :
+lemma divpow2up_next_lt (n k : int) :
   1 <= n => 0 <= k => 2 <= divpow2up n k =>
   divpow2up n (k + 1) < divpow2up n k.
 proof.
@@ -399,7 +399,7 @@ rewrite exprS // mulrC divru_2n_eq_divru_n_divru_2 1:(ler_trans 1)
 by rewrite int_div2_up_le_self_if_ge2.
 qed.
 
-lemma divpow2up_eq1_int_log_up (n k : int) :
+lemma divpow2up_eq1_int_log_up_le (n k : int) :
   1 <= n => 0 <= k => divpow2up n k = 1 =>
   int_log_up 2 n <= k.
 proof.
@@ -415,7 +415,7 @@ rewrite two2k_dvdz_n /= in n_eq.
 rewrite eq1_n_div_two2k /= in n_eq.
 by rewrite n_eq.
 rewrite eq_sym -subr_eq /= eq_sym in eq1_n_div_two2k_plus1.
-by rewrite divpow2_eq0_int_log_up.
+by rewrite divpow2_eq0_int_log_up_le.
 qed.
 
 lemma divpow2up_start (n k l m : int) :

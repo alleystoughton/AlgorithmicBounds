@@ -485,7 +485,7 @@ lemma stage_win_size_invar_win_size1 (stage : int) :
   0 <= stage => stage_win_size_invar stage 1 =>
   int_log 2 arity <= stage.
 proof.
-smt(divpow2_le1_int_log ge1_arity).
+smt(divpow2_le1_int_log_le ge1_arity).
 qed.
 
 (* we start at stage 0 and with the window size being arity *)
