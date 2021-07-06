@@ -24,11 +24,11 @@ check FSetAux.ec
 check FRange.ec
 check AllLists.ec
 
-check AdvLowerBounds.ec
+check AdvLowerBounds.eca
 check OrFunctionLB.ec
-check SearchingUB.ec
+check SearchingLB.ec
 
-check UpperBounds.ec
+check UpperBounds.eca
 
 # success!
 
