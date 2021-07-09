@@ -12,8 +12,7 @@ import IntOrder.
 lemma mul2r (x : int) :
   x * 2 = x + x.
 proof.
-have -> : 2 = ofint_id 2.
-  by rewrite /ofint_id mulr2z.
+have -> : 2 = ofint_id 2 by rewrite /ofint_id mulr2z.
 by rewrite mul1r2z.
 qed.
 
