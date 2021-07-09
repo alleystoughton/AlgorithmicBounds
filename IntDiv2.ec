@@ -9,6 +9,20 @@ import IntOrder.
 
 (* basic facts *)
 
+lemma mul2r (x : int) :
+  x * 2 = x + x.
+proof.
+have -> : 2 = ofint_id 2.
+  by rewrite /ofint_id mulr2z.
+by rewrite mul1r2z.
+qed.
+
+lemma mul2l (x : int) :
+  2 * x = x + x.
+proof.
+by rewrite mulrC mul2r.
+qed.
+
 lemma ne0_mod2 (m : int) :
   m %% 2 <> 0 <=> m %% 2 = 1.
 proof.
@@ -331,6 +345,24 @@ by rewrite divpow2_eq0_int_log_le.
 by rewrite (divpow2_eq1_int_log n k).
 qed.
 
+lemma divpow2_ge2_lt_int_log (n k : int) :
+  1 <= n => 0 <= k => 2 <= divpow2 n k =>
+  k < int_log 2 n.
+proof.
+rewrite /divpow2 => ge1_n ge0_k dp2_n_k.
+have lt_two2k_n : 2 ^ (k + 1) <= n.
+  rewrite lez_divRL 1:expr_gt0 // in dp2_n_k.
+  by rewrite exprS.
+have [#] := int_logP 2 n _ _ => //.
+pose il := int_log 2 n.
+move => ge0_il le_two2il_n lt_n_two2_ilplus1.
+case (k < il) => [// | le_il_k]; rewrite -lezNgt in le_il_k.
+have // : n < n.
+  rewrite (ltr_le_trans (2 ^ (il + 1))) // (ler_trans (2 ^ (k + 1))) //.
+  by rewrite -(ge2_exp_le_equiv 2) // 1:addz_ge0 //
+             1:addz_ge0 // ler_add2r.
+qed.
+
 lemma divpow2_start (n : int) :
   divpow2 n 0 = n.
 proof.
@@ -356,6 +388,16 @@ rewrite (divpow2_next_new_ub n k m m) // leq_div //.
 by rewrite (ler_trans (divpow2 n k)) // divpow2_ge0 1:(ler_trans 1).
 qed.
 
+lemma divpow2_next_new_lb (n k l m : int) :
+  1 <= n => 0 <= k => m <= divpow2 n k => l <= m %/ 2 =>
+  l <= divpow2 n (k + 1).
+proof.
+rewrite /divpow2 => ge1_n ge0_k m_le_dp2_n_k l_le_m_div2.
+rewrite exprS // mulrC.
+rewrite div_2n_eq_div_n_div_2 1:(ler_trans 1) // 1:expr_gt0 //.
+by rewrite (ler_trans (m %/ 2)) // leq_div2r.
+qed.
+
 lemma divpow2_next_when_eq1 (n k : int) :
   1 <= n => 0 <= k => divpow2 n k = 1 =>
   divpow2 n (k + 1) = 0.
@@ -368,6 +410,14 @@ qed.
 
 op divpow2up (n k : int) : int =
   n %%/ (2 ^ k).
+
+lemma le_divpow2_divpow2up (n k : int) :
+  divpow2 n k <= divpow2up n k.
+proof.
+rewrite /divpow2 /divpow2up /(%%/).
+case (2 ^ k %| n) => [two2k_dvdz_n // | not_two2k_dvdz_n].
+by rewrite ler_paddr.
+qed.
 
 lemma divpow2up_ge1 (n k : int) :
   1 <= n => 0 <= k => 1 <= divpow2up n k.
@@ -418,6 +468,37 @@ rewrite eq_sym -subr_eq /= eq_sym in eq1_n_div_two2k_plus1.
 by rewrite divpow2_eq0_int_log_up_le.
 qed.
 
+lemma divpow2up_ge2_lt_int_log_up (n k : int) :
+  1 <= n => 0 <= k => 2 <= divpow2up n k =>
+  k < int_log_up 2 n.
+proof.
+rewrite /divpow2up => ge1_n ge0_k dp2u_n_k.
+have lt_two2k_n : 2 ^ k < n.
+  move : dp2u_n_k; rewrite /(%%/).
+  case (2 ^ k %| n) =>
+    /= [_ | not_two2k_dvdz_n ge2_ndivtwo2k_plus1].
+  rewrite lez_divRL 1:expr_gt0 // mul2l => le_two2k_plus_more_n.
+  by rewrite (ltr_le_trans (2 ^ k + 2 ^ k)) // ltr_spaddr 1:expr_gt0.
+  rewrite -ler_subl_addr /= lez_divRL 1:expr_gt0 // 1:mul1r
+    in ge2_ndivtwo2k_plus1.
+  rewrite ltz_def ge2_ndivtwo2k_plus1 /=.
+  case (n = 2 ^ k) => [eq_n_two2k | //].
+  move : not_two2k_dvdz_n; by rewrite eq_n_two2k dvdzz.
+have ge2_n : 2 <= n.
+  rewrite ltzE in lt_two2k_n.
+  rewrite (ler_trans (2 ^ k + 1)) //.
+  have {1}-> : 2 = 1 + 1 by trivial.
+  by rewrite lez_add2r exprn_ege1.
+have [[_ eq1_n] | [#]] := int_log_upP 2 n _ _ => //.
+move : ge2_n; by rewrite eq1_n.
+pose ilu := int_log_up 2 n.
+move => ge1_ilu lt_two2ilu_min1_n le_n_ilu.
+case (k < ilu) => [// | le_ilu_k]; rewrite -lezNgt in le_ilu_k.
+have // : n < n.
+  rewrite (ler_lt_trans (2 ^ ilu)) // (ler_lt_trans (2 ^ k)) //.
+  by rewrite -(ge2_exp_le_equiv 2) // int_log_up_ge0.
+qed.
+
 lemma divpow2up_start (n k l m : int) :
   divpow2up n 0 = n.
 proof.
@@ -443,10 +524,12 @@ rewrite (divpow2up_next_new_ub n k m m) // int_div2_up_le_self.
 by rewrite (ler_trans 1) // (ler_trans (divpow2up n k)) 1:divpow2up_ge1.
 qed.
 
-lemma le_divpow2_divpow2up (n k : int) :
-  divpow2 n k <= divpow2up n k.
+lemma divpow2up_next_new_lb (n k l m : int) :
+  1 <= n => 0 <= k => m <= divpow2up n k => l <= m %%/ 2 =>
+  l <= divpow2up n (k + 1).
 proof.
-rewrite /divpow2 /divpow2up /(%%/).
-case (2 ^ k %| n) => [two2k_dvdz_n // | not_two2k_dvdz_n].
-by rewrite ler_paddr.
+rewrite /divpow2up => ge1_n ge0_k m_le_dp2u_n_k l_le_m_div2u.
+rewrite exprS // mulrC.
+rewrite divru_2n_eq_divru_n_divru_2 1:(ler_trans 1) // 1:expr_gt0 //.
+by rewrite (ler_trans (m %%/ 2)) // le_div_rnd_up.
 qed.

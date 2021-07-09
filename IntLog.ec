@@ -6,6 +6,42 @@ prover [""].  (* no use of SMT provers *)
 require import AllCore StdOrder IntDiv.
 import IntOrder.
 
+(* lemmas about exponentiation *)
+
+lemma ge2_exp_le_equiv (d n m : int) :
+  2 <= d => 0 <= n => 0 <= m =>
+  n <= m <=> d ^ n <= d ^ m.
+proof.
+move => ge2_d ge0_n ge0_m.
+split => [le_n_m | le_d2n_d2m].
+by rewrite ler_weexpn2l 1:(ler_trans 2).
+case (n <= m) => [// | lt_m_n]; rewrite -ltrNge in lt_m_n.
+have le_d2m_d2n : d ^ m <= d ^ n.
+  by rewrite ler_weexpn2l // 1:(ler_trans 2) // 1:ge0_m /= ltzW.
+have eq_d2m_d2n : d ^ m = d ^ n by apply ler_asym.
+have eq_m_n : m = n.
+  rewrite (ieexprIn d _ _ m n) 1:(ltr_le_trans 1) // 1:(ler_trans 2) //.
+  by rewrite gtr_eqF 1:(ltr_le_trans 2).
+move : lt_m_n; by rewrite eq_m_n.
+qed.
+
+lemma ge2_exp_lt_equiv (d n m : int) :
+  2 <= d => 0 <= n => 0 <= m =>
+  n < m <=> d ^ n < d ^ m.
+proof.
+move => ge2_d ge0_n ge0_m.
+split => [lt_n_m | lt_d2n_d2m].
+rewrite ltz_def -ge2_exp_le_equiv // ltzW //=.
+case (d ^ m = d ^ n) => [eq_d2m_d2n | //].
+have eq_m_n : m = n.
+  rewrite (ieexprIn d _ _ m n) 1:(ltr_le_trans 1) // 1:(ler_trans 2) //.
+  by rewrite gtr_eqF 1:(ltr_le_trans 2).
+move : lt_n_m; by rewrite eq_m_n.
+rewrite ltz_def (ge2_exp_le_equiv d) // ltzW //=.
+case (m = n) => [eq_m_n | //].
+move : lt_d2n_d2m; by rewrite eq_m_n.
+qed.
+
 (* rounding down integer logarithm (default) *)
 
 lemma exists_int_log (b n : int) :
@@ -209,7 +245,7 @@ rewrite expf_eq0 => [[_ eq0_b]].
 have // : 2 <= 0 by rewrite (ler_trans b) // eq0_b.
 qed.
 
-lemma int_log_up_nonzero_ge1 (b n : int) :
+lemma int_log_up_ge2_implies_ge1 (b n : int) :
   2 <= b => 2 <= n => 1 <= int_log_up b n.
 proof.
 move => ge2_b ge2_n.
@@ -218,7 +254,7 @@ have [[_ eq1_n] |] := int_log_upP b n _ _ => //.
 have // : 2 <= 1 by rewrite -eq1_n.
 qed.
 
-lemma int_log_up_nonzero_lb_lt (b n : int) :
+lemma int_log_up_ge2_lb_lt (b n : int) :
   2 <= b => 2 <= n => b ^ (int_log_up b n - 1) < n.
 proof.
 move => ge2_b ge2_n.
@@ -227,7 +263,7 @@ have [[_ eq1_n] |] := int_log_upP b n _ _ => //.
 have // : 2 <= 1 by rewrite -eq1_n.
 qed.
 
-lemma int_log_up_nonzero_ub_le (b n : int) :
+lemma int_log_up_ge2_ub_le (b n : int) :
   2 <= b => 2 <= n => n <= b ^ (int_log_up b n).
 proof.
 move => ge2_b ge2_n.
@@ -236,7 +272,7 @@ have [[_ eq1_n] |] := int_log_upP b n _ _ => //.
 have // : 2 <= 1 by rewrite -eq1_n.
 qed.
 
-lemma int_log_up_uniq (b n k1 k2 : int) :
+lemma int_log_up_ge2_uniq (b n k1 k2 : int) :
   2 <= b => 2 <= n =>
   1 <= k1 => b ^ (k1 - 1) < n <= b ^ k1 =>
   1 <= k2 => b ^ (k2 - 1) < n <= b ^ k2 =>
@@ -264,7 +300,7 @@ have // : n < n.
              (ler_lt_trans (b ^ (k1 - 1))).
 qed.
 
-lemma int_log_upPuniq (b n l : int) :
+lemma int_log_up_ge2_Puniq (b n l : int) :
   2 <= b => 2 <= n =>
   1 <= l => b ^ (l - 1) < n <= b ^ l =>
   l = int_log_up b n.
@@ -275,5 +311,5 @@ have [[_ eq1_n] |] := int_log_upP b n _ _ => //.
 have // : 2 <= 1 by rewrite -eq1_n.
 pose l' := int_log_up b n.
 move => [#] ge1_l' lt_b2l'min1_n le_n_b2l'.
-by apply (int_log_up_uniq b n).
+by apply (int_log_up_ge2_uniq b n).
 qed.
