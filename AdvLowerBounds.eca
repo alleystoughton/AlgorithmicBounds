@@ -27,7 +27,7 @@ type out.  (* type of outputs *)
 
 op arity : {int | 0 <= arity} as ge0_arity.  (* arity of f *)
 
-type aux.  (* auxiliary value, chosen by adversary *)
+type aux.  (* auxiliary value, given to f *)
 
 (* if xs : inp list has size arity and all of its elements
    are in univ, then good aux xs returns true iff xs is

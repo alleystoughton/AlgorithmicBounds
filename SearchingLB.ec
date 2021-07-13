@@ -68,7 +68,8 @@ type aux = int.  (* value to be searched for *)
    int)
 
    note that if aux is not in univ, then there will be no input lists
-   meeting this criteria *)
+   xs of size arity, all of whose elements are in univ, and where good
+   aux xs holds *)
 
 op good (aux : aux, xs : inp list) : bool =
   aux \in xs /\

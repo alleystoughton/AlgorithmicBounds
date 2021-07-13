@@ -26,7 +26,7 @@ type out.  (* type of outputs *)
 
 op arity : {int | 0 <= arity} as ge0_arity.  (* arity of f *)
 
-type aux.  (* auxiliary value, chosen by adversary *)
+type aux.  (* auxiliary value, given to f *)
 
 (* if xs : inp list has size arity and all of its elements are in
    univ, then good aux xs returns true iff xs is a valid argument to f
@@ -56,7 +56,7 @@ axiom bad (aux : aux, xs : inp list) :
 
 (* end of theory parameters *)
 
-(* an algorithm *)
+(* response from algorithm *)
 
 type response = [
   | Response_Query  of int  (* int is index into input list *)
@@ -71,11 +71,37 @@ op dec_response_report (resp : response) : out option =
   with resp = Response_Query _  => None
   with resp = Response_Report x => Some x.
 
+lemma dec_response_query_none_equiv (resp : response) :
+  dec_response_query resp = None <=>
+  dec_response_report resp <> None.
+proof. by case resp. qed.
+
+lemma dec_response_report_none_equiv (resp : response) :
+  dec_response_report resp = None <=>
+  dec_response_query resp <> None.
+proof. by case resp. qed.
+
 op is_response_query (resp : response) : bool =
   dec_response_query resp <> None.
 
 op is_response_report (resp : response) : bool =
   dec_response_report resp <> None.
+
+lemma not_is_response_query (resp : response) :
+  ! is_response_query resp <=> is_response_report resp.
+proof.
+rewrite /is_response_query /is_response_report /=.
+by rewrite dec_response_query_none_equiv.
+qed.
+
+lemma not_is_response_report (resp : response) :
+  ! is_response_report resp <=> is_response_query resp.
+proof.
+rewrite /is_response_query /is_response_report /=.
+by rewrite dec_response_report_none_equiv.
+qed.
+
+(* an algorithm *)
 
 module type ALG = {
   (* tell algorithm to initialize itself, giving it aux *)
@@ -102,15 +128,15 @@ module G(Alg : ALG) = {
     var out_opt : out option;  (* optionally algorithm's output *)
     var stage   : int;         (* stage of game *)
     var queries : int fset;    (* valid queries made by algorithm *)
-    var error   : bool;        (* has game made illegal query? *)
+    var error   : bool;        (* has algorithm made illegal query? *)
 
     var resp : response;
-    var i : int;
-    var out : out;
+    var i    : int;
+    var out  : out;
 
     Alg.init(aux);     (* initialize Alg, giving it aux *)
     out_opt <- None;   (* no reported output, yet *)
-    stage <- 0;        (* counts number of queries *)
+    stage <- 0;        (* stage counts number of queries *)
     queries <- fset0;  (* no queries initially *)
     error <- false;    (* no error so far *)
     while (out_opt = None /\ !error) {
@@ -129,8 +155,7 @@ module G(Alg : ALG) = {
         }
       }
       else {  (* is_response_report resp *)
-        out <- oget (dec_response_report resp);
-        out_opt <- Some out;
+        out_opt <- dec_response_report resp;  (* not None *)
       }
     }
     return (error ? None : out_opt, stage);
@@ -190,7 +215,7 @@ by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
 smt().
 auto; smt(queries_in_range_card_le_arity).
-auto; smt(queries_in_range_card_le_arity).
+auto; smt(not_is_response_query queries_in_range_card_le_arity).
 hoare.
 call (_ : true); first auto.
 trivial.

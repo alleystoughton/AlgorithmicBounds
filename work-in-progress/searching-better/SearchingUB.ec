@@ -14,9 +14,9 @@ timeout 2.  (* can increase *)
 require import AllCore List FSetAux StdOrder IntDiv.
 import IntOrder.
 
-require UpperBounds.      (* upper bounds framework *)
-require import IntLog.    (* integer logarithms *)
-require import IntDiv2.   (* division by powers of two *)
+require UpperBounds.     (* upper bounds framework *)
+require import IntLog.   (* integer logarithms *)
+require import IntDiv2.  (* division by powers of two *)
 
 type inp = int.
 
@@ -67,7 +67,8 @@ type aux = int.  (* value to be searched for *)
    int)
 
    note that if aux is not in univ, then there will be no input lists
-   meeting this criteria *)
+   xs of size arity, all of whose elements are in univ, and where good
+   aux xs holds *)
 
 op good (aux : aux, xs : inp list) : bool =
   aux \in xs /\
@@ -192,9 +193,11 @@ qed.
 (* the main lemma: *)
 
 lemma G_main (aux' : aux, inps' : inp list) :
-  hoare [G(Alg).main :
-         aux = aux' /\ inps = inps' /\ good aux inps ==>
-         res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity].
+  hoare
+  [G(Alg).main :
+   aux = aux' /\ inps = inps' /\ size inps = arity /\
+   all (mem univ) inps /\ good aux inps ==>
+   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity].
 proof.
 admit.
 qed.
