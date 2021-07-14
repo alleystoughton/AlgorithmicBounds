@@ -159,17 +159,36 @@ realize bad. smt(). qed.
 (* here is our algorithm: *)
 
 module Alg : ALG = {
-  (* global variables ... *)
+  var aux : aux
+  var i : int
+  var found : bool
 
-  proc init(aux : aux) : unit = {
+  (* more global variables .... *)
 
+  proc init(aux' : aux) : unit = {
+    aux <- aux';
+    i <- 0;
+    found <- false;
   }
 
   proc make_query_or_report_output() : response = {
-    return Response_Query 0;  (* just to make it typecheck *)
+    var r : response;
+    if (found) {
+      r <- Response_Report i;
+    }
+    else {
+      r <- Response_Query i;
+    }
+    return r;
   }
 
   proc query_result(x : inp) : unit = {
+    if (x = aux) {
+      found <- true;
+    }
+    else {
+      i <- i + 1;
+    }
   }
 }.
 
