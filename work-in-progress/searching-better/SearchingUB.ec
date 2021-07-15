@@ -162,6 +162,9 @@ module Alg : ALG = {
   var aux : aux
   var i : int
   var found : bool
+  var low : int
+  var high : int
+  var mid : int
 
   (* more global variables .... *)
 
@@ -169,6 +172,9 @@ module Alg : ALG = {
     aux <- aux';
     i <- 0;
     found <- false;
+    low <- 0;
+    high <- arity;
+    mid <- (low + high) %/ 2;
   }
 
   proc make_query_or_report_output() : response = {
@@ -186,7 +192,14 @@ module Alg : ALG = {
     if (x = aux) {
       found <- true;
     }
+    else if (x < aux) {
+      low <- mid;
+      mid <- (low + high) %/ 2;
+      i <- i + 1;
+    }
     else {
+      high <- mid - 1;
+      mid <- (low + high) %/ 2;
       i <- i + 1;
     }
   }
