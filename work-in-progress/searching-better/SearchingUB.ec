@@ -222,7 +222,8 @@ op invar
   0 <= low <= high < arity /\
   mem_in_range inps aux' low high /\
   ! mem_in_range inps aux' 0 (low - 1) /\
-  (forall (k : int), low <= k < high => ! k \in queries).
+  (forall (k : int), low <= k < high => ! k \in queries) /\
+  (out_opt <> None => out_opt = Some low).
 
 (* the main lemma: *)
 
