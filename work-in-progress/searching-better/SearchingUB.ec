@@ -159,68 +159,70 @@ realize bad. smt(). qed.
 (* here is our algorithm: *)
 
 module Alg : ALG = {
-  var aux : aux
-  var i : int
-  var found : bool
-  var low : int
-  var high : int
-  var mid : int
-
-  (* more global variables .... *)
+  var aux  : aux  (* what we're searching for *)
+  var low  : int  (* low <= high; definitely at least one aux at index *)
+  var high : int  (* in this range, but no aux at index < low *)
+  var mid  : int  (* temporary *)
 
   proc init(aux' : aux) : unit = {
     aux <- aux';
-    i <- 0;
-    found <- false;
     low <- 0;
-    high <- arity;
-    mid <- (low + high) %/ 2;
+    high <- arity - 1;
   }
 
   proc make_query_or_report_output() : response = {
     var r : response;
-    if (found) {
-      r <- Response_Report i;
+
+    if (low = high) {
+      r <- Response_Report low;
     }
-    else {
-      r <- Response_Query i;
+    else {  (* low < high *)
+      mid <- (low + high) %/ 2;
+      r <- Response_Query mid;
     }
     return r;
   }
 
   proc query_result(x : inp) : unit = {
-    if (x = aux) {
-      found <- true;
+    if (x < aux) {
+      low <- mid + 1;
     }
-    else if (x < aux) {
-      low <- mid;
-      mid <- (low + high) %/ 2;
-      i <- i + 1;
-    }
-    else {
-      high <- mid - 1;
-      mid <- (low + high) %/ 2;
-      i <- i + 1;
+    else {  (* aux <= x *)
+      high <- mid;
     }
   }
 }.
 
 lemma Alg_init_ll : islossless Alg.init.
 proof.
-admit.
+proc; auto.
 qed.
 
 lemma Alg_make_query_or_report_output_ll :
   islossless Alg.make_query_or_report_output.
 proof.
-admit.
+proc; auto.
 qed.
 
 lemma Alg_query_result_ll :
   islossless Alg.query_result.
 proof.
-admit.
+proc; auto.
 qed.
+
+op mem_in_range (xs : 'a list, y : 'a, i j : int) : bool =
+  exists (k : int), i <= k <= j /\ nth witness xs k = y.
+
+op invar
+   (inps inps' : inp list, aux' : aux, out_opt : out option,
+    stage : int, queries : int fset, error : bool, aaux : aux,
+    low high : int) : bool =
+  inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
+  good aux' inps /\ stage = card queries /\ !error /\ aaux = aux' /\
+  0 <= low <= high < arity /\
+  mem_in_range inps aux' low high /\
+  ! mem_in_range inps aux' 0 (low - 1) /\
+  (forall (k : int), low <= k < high => ! k \in queries).
 
 (* the main lemma: *)
 
@@ -229,8 +231,18 @@ lemma G_main (aux' : aux, inps' : inp list) :
   [G(Alg).main :
    aux = aux' /\ inps = inps' /\ size inps = arity /\
    all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity].
+   res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)].
 proof.
+proc => /=.
+seq 5 :
+  (inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
+   good aux' inps /\ out_opt = None /\ stage = 0 /\ queries = fset0 /\
+   ! error /\ Alg.aux = aux' /\ Alg.low = 0 /\ Alg.high = arity - 1).
+inline Alg.init; auto.
+while
+  (invar inps inps' aux' out_opt stage queries error
+   Alg.aux Alg.low Alg.high).
+admit.
 admit.
 qed.
 
@@ -242,7 +254,7 @@ lemma upper_bound &m :
   (forall (aux : aux, inps : inp list),
    size inps = arity => all (mem univ) inps => good aux inps =>
    Pr[G(Alg).main(aux, inps) @ &m :
-      res.`1 = f aux inps /\ res.`2 <= int_log_up 2 arity] = 1%r).
+      res.`1 = f aux inps (*/\ res.`2 <= int_log_up 2 arity*)] = 1%r).
 proof.
 split; first apply Alg_init_ll.
 split; first apply Alg_make_query_or_report_output_ll.
@@ -252,13 +264,13 @@ byphoare
   (_ :
    aux = aux' /\ inps = inps' /\ size inps = arity /\
    all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity) => //.
+   res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)) => //.
 conseq
   (_ : true ==> true)
   (_ :
    aux = aux' /\ inps = inps' /\ size inps = arity /\
    all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity) => //.
+   res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)) => //.
 by conseq (G_main aux' inps').
 rewrite (G_ll Alg) 1:Alg_init_ll 1:Alg_make_query_or_report_output_ll
         Alg_query_result_ll.
