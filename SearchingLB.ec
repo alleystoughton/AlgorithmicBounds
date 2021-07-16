@@ -76,62 +76,89 @@ op good (aux : aux, xs : inp list) : bool =
   forall (i j : int),
   0 <= i <= j < arity => nth witness xs i <= nth witness xs j.
 
-(* we need a definition to help define our f *)
-
-op min_aux_index_rel (aux : aux, xs : inp list, i : out) : bool =
-  0 <= i < size xs /\ nth witness xs i = aux /\
-  (forall (j : int),
-   0 <= j < size xs => nth witness xs j = aux => i <= j).
-
-lemma min_aux_index_rel_unique (aux : aux, xs : inp list, i j : out) :
-  min_aux_index_rel aux xs i => min_aux_index_rel aux xs j =>
-  i = j.
-proof. smt(). qed.
-
-lemma min_aux_index_rel_exists (aux : aux, xs : inp list) :
-  aux \in xs => exists (i : int), min_aux_index_rel aux xs i.
-proof.
-elim xs => [// | x xs IH /=].
-rewrite -oraE => [[<- | aux_ne_x aux_in_xs]].
-exists 0.
-rewrite /min_aux_index_rel /=.
-smt(size_ge0).
-have [i mair_aux_xs_i] := IH _.
-  trivial.
-exists (i + 1).
-rewrite /min_aux_index_rel.
-smt(size_ge0).
-qed.
-
-(* now we can use the choice function to define: *)
-
-op min_aux_index (aux : aux, xs : inp list) : out =
-  choiceb (min_aux_index_rel aux xs) 0.
-
-(* min_aux_index works as we want: *)
-
-lemma min_aux_indexP (aux : aux, xs : inp list) :
-  aux \in xs =>
-  0 <= min_aux_index aux xs < size xs /\
-  nth witness xs (min_aux_index aux xs) = aux /\
-  (forall (j : int),
-   0 <= j < size xs => nth witness xs j = aux =>
-   min_aux_index aux xs <= j).
-proof.
-move => aux_in_xs.
-have := choicebP (min_aux_index_rel aux xs) 0 _.
-  by apply min_aux_index_rel_exists.
-rewrite -/(min_aux_index aux xs).
-pose i := min_aux_index aux xs.
-smt().
-qed.
-
 (* here is our searching function, f: *)
 
 op f (aux : aux, xs : inp list) : out option =
   if size xs = arity /\ all (mem univ) xs /\ good aux xs
-  then Some (min_aux_index aux xs)
+  then Some (index aux xs)
   else None.
+
+lemma f_good_not_none (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  f aux xs <> None.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs.
+by rewrite /f size_eq_xs all_xs_in_univ good_aux_xs.
+qed.
+
+lemma f_goodP (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  let i = oget (f aux xs) in
+  0 <= i < arity /\ nth witness xs i = aux /\
+  (forall (j : int),
+   0 <= j < size xs => nth witness xs j = aux => i <= j).
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have [i f_aux_eq] : exists (i : int), f aux xs = Some i.
+  exists (oget (f aux xs)).
+  by rewrite -some_oget /f size_eq_xs all_xs_in_univ good_aux_xs.
+rewrite f_aux_eq oget_some.
+have -> : i = index aux xs.
+  move : f_aux_eq.
+  by rewrite {1}/f size_eq_xs all_xs_in_univ good_aux_xs.
+have mem_aux_xs : mem xs aux.
+  move : good_aux_xs; by rewrite /good.
+split; first by rewrite -size_eq_xs index_ge0 /= index_mem.
+split; first by rewrite nth_index.
+move => j [ge0_j lt_j_size_xs] eq_nth_xs_j_aux.
+case (index aux xs <= j) => [// |].
+rewrite -ltrNge => lt_j_index.
+have // : nth witness xs j <> aux by rewrite before_index.
+qed.
+
+lemma f_good_range (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  0 <= oget (f aux xs) < arity.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_goodP aux xs _ _ _ => //.
+qed.
+
+lemma f_good_ge0 (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  0 <= oget (f aux xs).
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_good_range aux xs _ _ _ => //.
+qed.
+
+lemma f_good_lt_arity (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  oget (f aux xs) < arity.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_good_range aux xs _ _ _ => //.
+qed.
+
+lemma f_good_nth (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  nth witness xs (oget (f aux xs)) = aux.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_goodP aux xs _ _ _ => //.
+qed.
+
+lemma f_good_best (aux : aux, xs : inp list, j : int) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  0 <= j < size xs => nth witness xs j = aux =>
+  oget (f aux xs) <= j.
+proof.
+move =>
+  size_eq_xs all_xs_in_univ good_aux_xs [ge0_j lt_j_sz_xs]
+  nth_xs_j_eq_aux.
+have [#] _ _ _ H := f_goodP aux xs _ _ _ => //.
+by rewrite H.
+qed.
 
 clone import AdvLowerBounds as ALB with
   type inp <- inp,
@@ -355,12 +382,12 @@ lemma f_uniq (inps : inp list, k : int) :
 proof.
 move =>
   size_inps all_in_univ [ge0_k lt_k_arity] low_eq_a kth_eq_b high_eq_c.
-rewrite /f.
-rewrite size_inps all_in_univ.
-have -> /= : good b inps.
-  smt(mem_nth).
-have /# := min_aux_indexP b inps _.
-  smt(mem_nth).
+have good_b_inps : good b inps by smt(mem_nth).
+have := f_goodP b inps _ _ _ => //=.
+pose i := oget (f b inps).
+move => [#] ge0_i lt_i_arity nth_inps_i_eq_b i_min.
+have <- : oget (f b inps) = k by smt().
+by rewrite -some_oget 1:f_good_not_none.
 qed.
 
 op make_uniq_inps (k : int) : inp list =
