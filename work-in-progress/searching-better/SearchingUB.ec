@@ -163,16 +163,13 @@ module Alg : ALG = {
   var low  : int  (* low <= high; definitely at least one aux at index *)
   var high : int  (* in this range, but no aux at index < low *)
   var mid  : int  (* temporary *)
-
   proc init(aux' : aux) : unit = {
     aux <- aux';
     low <- 0;
     high <- arity - 1;
   }
-
   proc make_query_or_report_output() : response = {
     var r : response;
-
     if (low = high) {
       r <- Response_Report low;
     }
@@ -182,7 +179,6 @@ module Alg : ALG = {
     }
     return r;
   }
-
   proc query_result(x : inp) : unit = {
     if (x < aux) {
       low <- mid + 1;
@@ -210,6 +206,7 @@ proof.
 proc; auto.
 qed.
 
+
 op mem_in_range (xs : 'a list, y : 'a, i j : int) : bool =
   exists (k : int), i <= k <= j /\ nth witness xs k = y.
 
@@ -225,6 +222,7 @@ op invar
   (forall (k : int), low <= k < high => ! k \in queries) /\
   (out_opt <> None => out_opt = Some low).
 
+
 (* the main lemma: *)
 
 lemma G_main (aux' : aux, inps' : inp list) :
@@ -235,6 +233,7 @@ lemma G_main (aux' : aux, inps' : inp list) :
    res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)].
 proof.
 proc => /=.
+inline Alg.make_query_or_report_output.
 seq 5 :
   (inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
    good aux' inps /\ out_opt = None /\ stage = 0 /\ queries = fset0 /\
@@ -243,12 +242,36 @@ inline Alg.init; auto.
 while
   (invar inps inps' aux' out_opt stage queries error
    Alg.aux Alg.low Alg.high).
+if.
+seq 2 : (r = Response_Report Alg.low /\ resp = r).
+auto.
+if.
+seq 1 : (i = oget(dec_response_query resp)).
+auto.
+if.
+sp.
+
 admit.
 admit.
+admit.
+
+seq 3 : (Alg.mid = (Alg.low + Alg.high) %/ 2 /\ r = Response_Query Alg.mid /\ resp = r).
+auto.
+if.
+seq 1 : (i = oget(dec_response_query resp)).
+auto.
+if.
+sp.
+
+admit.
+admit.
+admit.
+admit.
+
 qed.
 
-(* here is our main theorem: *)
 
+(* here is our main theorem: *)
 lemma upper_bound &m :
   islossless Alg.init /\ islossless Alg.make_query_or_report_output /\
   islossless Alg.query_result /\
