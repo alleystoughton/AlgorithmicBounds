@@ -75,62 +75,89 @@ op good (aux : aux, xs : inp list) : bool =
   forall (i j : int),
   0 <= i <= j < arity => nth witness xs i <= nth witness xs j.
 
-(* we need a definition to help define our f *)
-
-op min_aux_index_rel (aux : aux, xs : inp list, i : out) : bool =
-  0 <= i < size xs /\ nth witness xs i = aux /\
-  (forall (j : int),
-   0 <= j < size xs => nth witness xs j = aux => i <= j).
-
-lemma min_aux_index_rel_unique (aux : aux, xs : inp list, i j : out) :
-  min_aux_index_rel aux xs i => min_aux_index_rel aux xs j =>
-  i = j.
-proof. smt(). qed.
-
-lemma min_aux_index_rel_exists (aux : aux, xs : inp list) :
-  aux \in xs => exists (i : int), min_aux_index_rel aux xs i.
-proof.
-elim xs => [// | x xs IH /=].
-rewrite -oraE => [[<- | aux_ne_x aux_in_xs]].
-exists 0.
-rewrite /min_aux_index_rel /=.
-smt(size_ge0).
-have [i mair_aux_xs_i] := IH _.
-  trivial.
-exists (i + 1).
-rewrite /min_aux_index_rel.
-smt(size_ge0).
-qed.
-
-(* now we can use the choice function to define: *)
-
-op min_aux_index (aux : aux, xs : inp list) : out =
-  choiceb (min_aux_index_rel aux xs) 0.
-
-(* min_aux_index works as we want: *)
-
-lemma min_aux_indexP (aux : aux, xs : inp list) :
-  aux \in xs =>
-  0 <= min_aux_index aux xs < size xs /\
-  nth witness xs (min_aux_index aux xs) = aux /\
-  (forall (j : int),
-   0 <= j < size xs => nth witness xs j = aux =>
-   min_aux_index aux xs <= j).
-proof.
-move => aux_in_xs.
-have := choicebP (min_aux_index_rel aux xs) 0 _.
-  by apply min_aux_index_rel_exists.
-rewrite -/(min_aux_index aux xs).
-pose i := min_aux_index aux xs.
-smt().
-qed.
-
 (* here is our searching function, f: *)
 
 op f (aux : aux, xs : inp list) : out option =
   if size xs = arity /\ all (mem univ) xs /\ good aux xs
-  then Some (min_aux_index aux xs)
+  then Some (index aux xs)
   else None.
+
+lemma f_good_not_none (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  f aux xs <> None.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs.
+by rewrite /f size_eq_xs all_xs_in_univ good_aux_xs.
+qed.
+
+lemma f_goodP (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  let i = oget (f aux xs) in
+  0 <= i < arity /\ nth witness xs i = aux /\
+  (forall (j : int),
+   0 <= j < size xs => nth witness xs j = aux => i <= j).
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have [i f_aux_eq] : exists (i : int), f aux xs = Some i.
+  exists (oget (f aux xs)).
+  by rewrite -some_oget /f size_eq_xs all_xs_in_univ good_aux_xs.
+rewrite f_aux_eq oget_some.
+have -> : i = index aux xs.
+  move : f_aux_eq.
+  by rewrite {1}/f size_eq_xs all_xs_in_univ good_aux_xs.
+have mem_aux_xs : mem xs aux.
+  move : good_aux_xs; by rewrite /good.
+split; first by rewrite -size_eq_xs index_ge0 /= index_mem.
+split; first by rewrite nth_index.
+move => j [ge0_j lt_j_size_xs] eq_nth_xs_j_aux.
+case (index aux xs <= j) => [// |].
+rewrite -ltrNge => lt_j_index.
+have // : nth witness xs j <> aux by rewrite before_index.
+qed.
+
+lemma f_good_range (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  0 <= oget (f aux xs) < arity.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_goodP aux xs _ _ _ => //.
+qed.
+
+lemma f_good_ge0 (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  0 <= oget (f aux xs).
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_good_range aux xs _ _ _ => //.
+qed.
+
+lemma f_good_lt_arity (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  oget (f aux xs) < arity.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_good_range aux xs _ _ _ => //.
+qed.
+
+lemma f_good_nth (aux : aux, xs : inp list) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  nth witness xs (oget (f aux xs)) = aux.
+proof.
+move => size_eq_xs all_xs_in_univ good_aux_xs /=.
+have := f_goodP aux xs _ _ _ => //.
+qed.
+
+lemma f_good_best (aux : aux, xs : inp list, j : int) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  0 <= j < size xs => nth witness xs j = aux =>
+  oget (f aux xs) <= j.
+proof.
+move =>
+  size_eq_xs all_xs_in_univ good_aux_xs [ge0_j lt_j_sz_xs]
+  nth_xs_j_eq_aux.
+have [#] _ _ _ H := f_goodP aux xs _ _ _ => //.
+by rewrite H.
+qed.
 
 clone import UpperBounds as UB with
   type inp <- inp,
@@ -206,22 +233,67 @@ proof.
 proc; auto.
 qed.
 
-
 op mem_in_range (xs : 'a list, y : 'a, i j : int) : bool =
   exists (k : int), i <= k <= j /\ nth witness xs k = y.
 
-op invar
-   (inps inps' : inp list, aux' : aux, out_opt : out option,
-    stage : int, queries : int fset, error : bool, aaux : aux,
-    low high : int) : bool =
-  inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
-  good aux' inps /\ stage = card queries /\ !error /\ aaux = aux' /\
+op correct_invar
+   (inps : inp list, aux : aux, out_opt : out option,
+    queries : int fset, low high : int) : bool =
   0 <= low <= high < arity /\
-  mem_in_range inps aux' low high /\
-  ! mem_in_range inps aux' 0 (low - 1) /\
+  mem_in_range inps aux low high /\
+  ! mem_in_range inps aux 0 (low - 1) /\
   (forall (k : int), low <= k < high => ! k \in queries) /\
+  (low < high => out_opt = None) /\
   (out_opt <> None => out_opt = Some low).
 
+lemma correct_invar_start (inps : inp list, aux : aux) :
+  size inps = arity => all (mem univ) inps => good aux inps =>
+  correct_invar inps aux None fset0 0 (arity - 1).
+proof.
+admit.
+qed.
+
+lemma correct_invar_report
+      (inps : inp list, aux : aux, queries : int fset, low : int) :
+  size inps = arity => all (mem univ) inps =>
+  good aux inps =>
+  correct_invar inps aux None queries low low =>
+  correct_invar inps aux (Some low) queries low low.
+proof.
+smt().
+qed.
+
+lemma correct_invar_new_window_strictly_up
+      (inps : inp list, aux : aux, queries : int fset, low high : int) :
+  size inps = arity => all (mem univ) inps => good aux inps =>
+  low < high => nth witness inps ((low + high) %/ 2) < aux =>
+  correct_invar inps aux None queries low high =>
+  correct_invar inps aux None
+  (queries `|` fset1 ((low + high) %/ 2)) ((low + high) %/ 2 + 1) high.
+proof.
+admit.
+qed.
+
+lemma correct_invar_new_window_down
+      (inps : inp list, aux : aux, queries : int fset, low high : int) :
+  size inps = arity => all (mem univ) inps => good aux inps =>
+  low < high => aux <= nth witness inps ((low + high) %/ 2) =>
+  correct_invar inps aux None queries low high =>
+  correct_invar inps aux None
+  (queries `|` fset1 ((low + high) %/ 2)) low ((low + high) %/ 2).
+proof.
+admit.
+qed.
+
+lemma correct_invar_answer
+      (inps : inp list, aux : aux, queries : int fset, low high : int,
+       out_opt : out option) :
+  size inps = arity => all (mem univ) inps => good aux inps =>
+  out_opt <> None => correct_invar inps aux out_opt queries low high =>
+  out_opt = f aux inps.
+proof.
+admit.
+qed.
 
 (* the main lemma: *)
 
@@ -233,43 +305,45 @@ lemma G_main (aux' : aux, inps' : inp list) :
    res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)].
 proof.
 proc => /=.
-inline Alg.make_query_or_report_output.
 seq 5 :
   (inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
    good aux' inps /\ out_opt = None /\ stage = 0 /\ queries = fset0 /\
    ! error /\ Alg.aux = aux' /\ Alg.low = 0 /\ Alg.high = arity - 1).
 inline Alg.init; auto.
 while
-  (invar inps inps' aux' out_opt stage queries error
-   Alg.aux Alg.low Alg.high).
-if.
-seq 2 : (r = Response_Report Alg.low /\ resp = r).
-auto.
-if.
-seq 1 : (i = oget(dec_response_query resp)).
-auto.
+  (inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
+   good aux' inps /\ stage = card queries /\ !error /\
+   Alg.aux = aux' /\
+   correct_invar inps aux' out_opt queries Alg.low Alg.high).
+inline Alg.make_query_or_report_output.
 if.
 sp.
-
-admit.
-admit.
-admit.
-
-seq 3 : (Alg.mid = (Alg.low + Alg.high) %/ 2 /\ r = Response_Query Alg.mid /\ resp = r).
-auto.
-if.
-seq 1 : (i = oget(dec_response_query resp)).
-auto.
-if.
+rcondf 1; first auto.
+auto; progress [-delta].
+by apply correct_invar_report.
 sp.
-
-admit.
-admit.
-admit.
-admit.
-
+rcondt 1; first auto.
+sp.
+rcondt 1; first auto; progress; smt().
+sp.
+elim* => stage' queries'.
+inline Alg.query_result.
+sp 1.
+if.
+auto; progress [-delta].
+admit.  (* do searching and smt *)
+rewrite correct_invar_new_window_strictly_up // /#.
+auto; progress [-delta].
+admit.  (* do searching and smt *)
+rewrite correct_invar_new_window_down // /#.
+auto; progress [-delta].
+admit.  (* do searching and smt *)
+by rewrite correct_invar_start.
+rewrite H7 /=.
+have out_opt0_ne_none :out_opt0 <> None.
+  move : H3; by rewrite negb_and /= H7.
+by rewrite (correct_invar_answer inps{hr} Alg.aux{hr} queries0 low high).
 qed.
-
 
 (* here is our main theorem: *)
 lemma upper_bound &m :
