@@ -250,6 +250,7 @@ lemma correct_invar_start (inps : inp list, aux : aux) :
   size inps = arity => all (mem univ) inps => good aux inps =>
   correct_invar inps aux None fset0 0 (arity - 1).
 proof.
+move => correct_size all_in_univ is_good.
 admit.
 qed.
 
@@ -271,6 +272,7 @@ lemma correct_invar_new_window_strictly_up
   correct_invar inps aux None
   (queries `|` fset1 ((low + high) %/ 2)) ((low + high) %/ 2 + 1) high.
 proof.
+move => correct_size all_in_univ is_good lelow_high lewitness_aux correct_invar_old.
 admit.
 qed.
 
@@ -282,6 +284,7 @@ lemma correct_invar_new_window_down
   correct_invar inps aux None
   (queries `|` fset1 ((low + high) %/ 2)) low ((low + high) %/ 2).
 proof.
+move => correct_size all_in_univ is_good lelow_high leaux_witness correct_invar_old.
 admit.
 qed.
 
@@ -292,11 +295,11 @@ lemma correct_invar_answer
   out_opt <> None => correct_invar inps aux out_opt queries low high =>
   out_opt = f aux inps.
 proof.
+move => correct_size all_in_univ is_good none_output.
 admit.
 qed.
 
 (* the main lemma: *)
-
 lemma G_main (aux' : aux, inps' : inp list) :
   hoare
   [G(Alg).main :
@@ -331,13 +334,15 @@ inline Alg.query_result.
 sp 1.
 if.
 auto; progress [-delta].
-admit.  (* do searching and smt *)
+search card 1.
+smt(fcardUindep1).
 rewrite correct_invar_new_window_strictly_up // /#.
 auto; progress [-delta].
-admit.  (* do searching and smt *)
+smt(fcardUindep1).
 rewrite correct_invar_new_window_down // /#.
 auto; progress [-delta].
-admit.  (* do searching and smt *)
+search card fset0.
+smt(fcards0).
 by rewrite correct_invar_start.
 rewrite H7 /=.
 have out_opt0_ne_none :out_opt0 <> None.
