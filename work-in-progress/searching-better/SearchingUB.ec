@@ -251,6 +251,7 @@ lemma correct_invar_start (inps : inp list, aux : aux) :
   correct_invar inps aux None fset0 0 (arity - 1).
 proof.
 move => correct_size all_in_univ is_good.
+rewrite /correct_invar.
 admit.
 qed.
 
@@ -261,7 +262,10 @@ lemma correct_invar_report
   correct_invar inps aux None queries low low =>
   correct_invar inps aux (Some low) queries low low.
 proof.
-smt().
+move => correct_size all_in_univ is_good.
+rewrite /correct_invar.
+move => [#] ge0_low _ lt_low_arity.
+admit.
 qed.
 
 lemma correct_invar_new_window_strictly_up
@@ -284,7 +288,9 @@ lemma correct_invar_new_window_down
   correct_invar inps aux None
   (queries `|` fset1 ((low + high) %/ 2)) low ((low + high) %/ 2).
 proof.
-move => correct_size all_in_univ is_good lelow_high leaux_witness correct_invar_old.
+move => correct_size all_in_univ is_good lelow_high leaux_witness
+        correct_invar_old.
+(* hint: lt_low_high *)
 admit.
 qed.
 
@@ -299,13 +305,45 @@ move => correct_size all_in_univ is_good none_output.
 admit.
 qed.
 
+op win_size (low high : int) : int =
+  high - low + 1.
+
+op bound_invar (low high stage : int) : bool =
+  0 <= low <= high < arity /\
+  0 <= stage <= int_log_up 2 arity /\
+  win_size low high <= divpow2up arity stage.
+
+(* hint: look in IntLog.ec IntDiv2.ec for lemmas *)
+
+lemma bound_invar_start :
+  bound_invar 0 (arity - 1) 0.
+proof.
+rewrite /bound_invar /win_size.
+admit.
+qed.
+
+lemma bound_invar_new_window_strictly_up (low high stage) :
+  bound_invar low high stage => low < high =>
+  bound_invar ((low + high) %/ 2 + 1) high (stage + 1).
+proof.
+admit.
+qed.
+
+lemma bound_invar_new_window_down (low high stage) :
+  bound_invar low high stage => low < high =>
+  bound_invar low ((low + high) %/ 2) (stage + 1).
+proof.
+admit.
+qed.
+
 (* the main lemma: *)
+
 lemma G_main (aux' : aux, inps' : inp list) :
   hoare
   [G(Alg).main :
    aux = aux' /\ inps = inps' /\ size inps = arity /\
    all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)].
+   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity].
 proof.
 proc => /=.
 seq 5 :
@@ -317,7 +355,8 @@ while
   (inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
    good aux' inps /\ stage = card queries /\ !error /\
    Alg.aux = aux' /\
-   correct_invar inps aux' out_opt queries Alg.low Alg.high).
+   correct_invar inps aux' out_opt queries Alg.low Alg.high /\
+   bound_invar Alg.low Alg.high stage).
 inline Alg.make_query_or_report_output.
 if.
 sp.
@@ -334,20 +373,22 @@ inline Alg.query_result.
 sp 1.
 if.
 auto; progress [-delta].
-search card 1.
 smt(fcardUindep1).
 rewrite correct_invar_new_window_strictly_up // /#.
+rewrite bound_invar_new_window_strictly_up // /#.
 auto; progress [-delta].
 smt(fcardUindep1).
 rewrite correct_invar_new_window_down // /#.
+rewrite bound_invar_new_window_down // /#.
 auto; progress [-delta].
-search card fset0.
 smt(fcards0).
 by rewrite correct_invar_start.
+rewrite bound_invar_start.
 rewrite H7 /=.
 have out_opt0_ne_none :out_opt0 <> None.
   move : H3; by rewrite negb_and /= H7.
 by rewrite (correct_invar_answer inps{hr} Alg.aux{hr} queries0 low high).
+smt().
 qed.
 
 (* here is our main theorem: *)
@@ -357,7 +398,7 @@ lemma upper_bound &m :
   (forall (aux : aux, inps : inp list),
    size inps = arity => all (mem univ) inps => good aux inps =>
    Pr[G(Alg).main(aux, inps) @ &m :
-      res.`1 = f aux inps (*/\ res.`2 <= int_log_up 2 arity*)] = 1%r).
+      res.`1 = f aux inps /\ res.`2 <= int_log_up 2 arity] = 1%r).
 proof.
 split; first apply Alg_init_ll.
 split; first apply Alg_make_query_or_report_output_ll.
@@ -367,13 +408,13 @@ byphoare
   (_ :
    aux = aux' /\ inps = inps' /\ size inps = arity /\
    all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)) => //.
+   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity) => //.
 conseq
   (_ : true ==> true)
   (_ :
    aux = aux' /\ inps = inps' /\ size inps = arity /\
    all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' (*/\ res.`2 <= int_log_up 2 arity*)) => //.
+   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity) => //.
 by conseq (G_main aux' inps').
 rewrite (G_ll Alg) 1:Alg_init_ll 1:Alg_make_query_or_report_output_ll
         Alg_query_result_ll.
