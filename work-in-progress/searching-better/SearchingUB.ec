@@ -249,6 +249,9 @@ move => correct_size all_in_univ is_good.
 progress.
 smt(ge1_arity).
 smt().
+print good.
+print mem_in_range.
+search mem nth.
 rewrite /mem_in_range.
 smt(f_goodP).
 rewrite /mem_in_range.
@@ -263,13 +266,6 @@ lemma correct_invar_report
   correct_invar inps aux None queries low low =>
   correct_invar inps aux (Some low) queries low low.
 proof.
-move => correct_size all_in_univ is_good.
-progress.
-smt().
-smt().
-rewrite /mem_in_range.
-smt(f_goodP).
-smt(f_goodP).
 smt().
 qed.
 
@@ -281,14 +277,8 @@ lemma correct_invar_new_window_strictly_up
   correct_invar inps aux None
   (queries `|` fset1 ((low + high) %/ 2)) ((low + high) %/ 2 + 1) high.
 proof.
-move => correct_size all_in_univ is_good lelow_high lewitness_aux correct_invar_old.
-progress.
-smt().
-smt().
-smt().
-rewrite /mem_in_range.
-smt(f_goodP).
-smt(f_goodP).
+move => correct_size all_in_univ is_good lt_low_high lt_witness_aux correct_invar_old.
+progress; first 5 smt().
 smt(in_fsetU1).
 qed.
 
@@ -300,15 +290,9 @@ lemma correct_invar_new_window_down
   correct_invar inps aux None
   (queries `|` fset1 ((low + high) %/ 2)) low ((low + high) %/ 2).
 proof.
-move => correct_size all_in_univ is_good lelow_high leaux_witness
+move => correct_size all_in_univ is_good lt_low_high le_aux_witness
         correct_invar_old.
-progress.
-smt().
-smt().
-smt().
-rewrite /mem_in_range.
-smt(f_goodP).
-smt(f_goodP).
+progress; first 5 smt().
 smt(in_fsetU1).
 qed.
 
@@ -330,7 +314,6 @@ op bound_invar (low high stage : int) : bool =
   0 <= stage <= int_log_up 2 arity /\
   win_size low high <= divpow2up arity stage.
 
-(* hint: look in IntLog.ec IntDiv2.ec for lemmas *)
 lemma bound_invar_start :
   bound_invar 0 (arity - 1) 0.
 proof.
@@ -347,29 +330,18 @@ lemma bound_invar_new_window_strictly_up (low high stage) :
   bound_invar low high stage => low < high =>
   bound_invar ((low + high) %/ 2 + 1) high (stage + 1).
 proof.
-progress.
-smt().
-smt().
-smt().
-smt().
-smt(int_log_upP).
-rewrite /win_size.
-search divpow2up.
-admit.
+progress; first 4 smt().
+smt(divpow2up_ge2_lt_int_log_up).
+rewrite (divpow2up_next_new_lb _ _ _ (win_size low high)) 1:ge1_arity /#.
 qed.
 
 lemma bound_invar_new_window_down (low high stage) :
   bound_invar low high stage => low < high =>
   bound_invar low ((low + high) %/ 2) (stage + 1).
 proof.
-progress.
-smt().
-smt().
-smt().
-smt().
-smt(int_log_upP).
-rewrite /win_size.
-admit.
+progress; first 4 smt().
+smt(divpow2up_ge2_lt_int_log_up).
+rewrite (divpow2up_next_new_lb _ _ _ (win_size low high)) 1:ge1_arity /#.
 qed.
 
 (* the main lemma: *)
