@@ -13,6 +13,10 @@ in collaboration with Boston University doctoral student
 
 * [Weihao Qu](https://www.bu.edu/cs/profiles/weihao-qu/) (weihaoqu@bu.edu)
 
+and Stuyvesant High School student and BU RISE program intern
+
+* Carol Chen
+
 We have a general EasyCrypt framework for expressing lower bounds problems:
 
  * [`AdvLowerBounds.eca` - general adversarial lower bounds framework](../main/AdvLowerBounds.eca)
@@ -26,5 +30,10 @@ framework:
 We also have a general EasyCrypt framework for expressing upper bounds problems:
 
  * [`UpperBounds.eca` - general upper bounds framework](../main/UpperBounds.eca)
+
+We have completed this upper bounds proof using the general
+framework:
+
+ * [`SearchingUB.ec` - application to searching in ordered list](../main/SearchingUB.ec)
 
 We also have some [work-in-progress](../main/work-in-progress).
