@@ -190,11 +190,13 @@ module Alg : ALG = {
   var low  : int  (* low <= high; definitely at least one aux at index *)
   var high : int  (* in this range, but no aux at index < low *)
   var mid  : int  (* temporary *)
+
   proc init(aux' : aux) : unit = {
     aux <- aux';
     low <- 0;
     high <- arity - 1;
   }
+
   proc make_query_or_report_output() : response = {
     var r : response;
     if (low = high) {
@@ -206,6 +208,7 @@ module Alg : ALG = {
     }
     return r;
   }
+
   proc query_result(x : inp) : unit = {
     if (x < aux) {
       low <- mid + 1;
@@ -215,22 +218,29 @@ module Alg : ALG = {
     }
   }
 }.
+
 lemma Alg_init_ll : islossless Alg.init.
 proof.
 proc; auto.
 qed.
+
 lemma Alg_make_query_or_report_output_ll :
   islossless Alg.make_query_or_report_output.
 proof.
 proc; auto.
 qed.
+
 lemma Alg_query_result_ll :
   islossless Alg.query_result.
 proof.
 proc; auto.
 qed.
+
+(* correctness part of loop invariant *)
+
 op mem_in_range (xs : 'a list, y : 'a, i j : int) : bool =
   exists (k : int), i <= k <= j /\ nth witness xs k = y.
+
 op correct_invar
    (inps : inp list, aux : aux, out_opt : out option,
     queries : int fset, low high : int) : bool =
@@ -249,13 +259,10 @@ move => correct_size all_in_univ is_good.
 progress.
 smt(ge1_arity).
 smt().
-print good.
-print mem_in_range.
-search mem nth.
 rewrite /mem_in_range.
-smt(f_goodP).
-rewrite /mem_in_range.
-smt(f_goodP).
+exists (index aux inps).
+smt(index_ge0 index_mem nth_index).
+smt().
 smt(in_fset0).
 qed.
 
@@ -277,7 +284,8 @@ lemma correct_invar_new_window_strictly_up
   correct_invar inps aux None
   (queries `|` fset1 ((low + high) %/ 2)) ((low + high) %/ 2 + 1) high.
 proof.
-move => correct_size all_in_univ is_good lt_low_high lt_witness_aux correct_invar_old.
+move => correct_size all_in_univ is_good lt_low_high lt_nth_inps_mid_aux
+        correct_invar_old.
 progress; first 5 smt().
 smt(in_fsetU1).
 qed.
@@ -290,7 +298,7 @@ lemma correct_invar_new_window_down
   correct_invar inps aux None
   (queries `|` fset1 ((low + high) %/ 2)) low ((low + high) %/ 2).
 proof.
-move => correct_size all_in_univ is_good lt_low_high le_aux_witness
+move => correct_size all_in_univ is_good lt_low_high le_aux_nth_inps_mid
         correct_invar_old.
 progress; first 5 smt().
 smt(in_fsetU1).
@@ -303,12 +311,15 @@ lemma correct_invar_answer
   out_opt <> None => correct_invar inps aux out_opt queries low high =>
   out_opt = f aux inps.
 proof.
-move => correct_size all_in_univ is_good none_output good_invar.
+move => correct_size all_in_univ is_good out_opt_ne_none invar.
 smt(f_goodP).
 qed.
 
+(* bound part of loop invariant *)
+
 op win_size (low high : int) : int =
   high - low + 1.
+
 op bound_invar (low high stage : int) : bool =
   0 <= low <= high < arity /\
   0 <= stage <= int_log_up 2 arity /\
@@ -321,8 +332,6 @@ progress.
 smt(ge1_arity).
 smt(ge1_arity).
 smt(int_log_up_ge0 ge1_arity).
-rewrite /win_size.
-simplify.
 smt(divpow2up_start).
 qed.
 
@@ -345,6 +354,7 @@ rewrite (divpow2up_next_new_lb _ _ _ (win_size low high)) 1:ge1_arity /#.
 qed.
 
 (* the main lemma: *)
+
 lemma G_main (aux' : aux, inps' : inp list) :
   hoare
   [G(Alg).main :
@@ -360,8 +370,7 @@ seq 5 :
 inline Alg.init; auto.
 while
   (inps = inps' /\ size inps = arity /\ all (mem univ) inps /\
-   good aux' inps /\ stage = card queries /\ !error /\
-   Alg.aux = aux' /\
+   good aux' inps /\ stage = card queries /\ !error /\ Alg.aux = aux' /\
    correct_invar inps aux' out_opt queries Alg.low Alg.high /\
    bound_invar Alg.low Alg.high stage).
 inline Alg.make_query_or_report_output.
@@ -399,6 +408,7 @@ smt().
 qed.
 
 (* here is our main theorem: *)
+
 lemma upper_bound &m :
   islossless Alg.init /\ islossless Alg.make_query_or_report_output /\
   islossless Alg.query_result /\
