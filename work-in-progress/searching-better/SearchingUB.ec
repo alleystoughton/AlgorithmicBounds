@@ -215,27 +215,22 @@ module Alg : ALG = {
     }
   }
 }.
-
 lemma Alg_init_ll : islossless Alg.init.
 proof.
 proc; auto.
 qed.
-
 lemma Alg_make_query_or_report_output_ll :
   islossless Alg.make_query_or_report_output.
 proof.
 proc; auto.
 qed.
-
 lemma Alg_query_result_ll :
   islossless Alg.query_result.
 proof.
 proc; auto.
 qed.
-
 op mem_in_range (xs : 'a list, y : 'a, i j : int) : bool =
   exists (k : int), i <= k <= j /\ nth witness xs k = y.
-
 op correct_invar
    (inps : inp list, aux : aux, out_opt : out option,
     queries : int fset, low high : int) : bool =
@@ -251,8 +246,14 @@ lemma correct_invar_start (inps : inp list, aux : aux) :
   correct_invar inps aux None fset0 0 (arity - 1).
 proof.
 move => correct_size all_in_univ is_good.
-rewrite /correct_invar.
-admit.
+progress.
+smt(ge1_arity).
+smt().
+rewrite /mem_in_range.
+smt(f_goodP).
+rewrite /mem_in_range.
+smt(f_goodP).
+smt(in_fset0).
 qed.
 
 lemma correct_invar_report
@@ -263,9 +264,13 @@ lemma correct_invar_report
   correct_invar inps aux (Some low) queries low low.
 proof.
 move => correct_size all_in_univ is_good.
-rewrite /correct_invar.
-move => [#] ge0_low _ lt_low_arity.
-admit.
+progress.
+smt().
+smt().
+rewrite /mem_in_range.
+smt(f_goodP).
+smt(f_goodP).
+smt().
 qed.
 
 lemma correct_invar_new_window_strictly_up
@@ -277,7 +282,14 @@ lemma correct_invar_new_window_strictly_up
   (queries `|` fset1 ((low + high) %/ 2)) ((low + high) %/ 2 + 1) high.
 proof.
 move => correct_size all_in_univ is_good lelow_high lewitness_aux correct_invar_old.
-admit.
+progress.
+smt().
+smt().
+smt().
+rewrite /mem_in_range.
+smt(f_goodP).
+smt(f_goodP).
+smt(in_fsetU1).
 qed.
 
 lemma correct_invar_new_window_down
@@ -290,8 +302,14 @@ lemma correct_invar_new_window_down
 proof.
 move => correct_size all_in_univ is_good lelow_high leaux_witness
         correct_invar_old.
-(* hint: lt_low_high *)
-admit.
+progress.
+smt().
+smt().
+smt().
+rewrite /mem_in_range.
+smt(f_goodP).
+smt(f_goodP).
+smt(in_fsetU1).
 qed.
 
 lemma correct_invar_answer
@@ -301,31 +319,42 @@ lemma correct_invar_answer
   out_opt <> None => correct_invar inps aux out_opt queries low high =>
   out_opt = f aux inps.
 proof.
-move => correct_size all_in_univ is_good none_output.
-admit.
+move => correct_size all_in_univ is_good none_output good_invar.
+smt(f_goodP).
 qed.
 
 op win_size (low high : int) : int =
   high - low + 1.
-
 op bound_invar (low high stage : int) : bool =
   0 <= low <= high < arity /\
   0 <= stage <= int_log_up 2 arity /\
   win_size low high <= divpow2up arity stage.
 
 (* hint: look in IntLog.ec IntDiv2.ec for lemmas *)
-
 lemma bound_invar_start :
   bound_invar 0 (arity - 1) 0.
 proof.
-rewrite /bound_invar /win_size.
-admit.
+progress.
+smt(ge1_arity).
+smt(ge1_arity).
+smt(int_log_up_ge0 ge1_arity).
+rewrite /win_size.
+simplify.
+smt(divpow2up_start).
 qed.
 
 lemma bound_invar_new_window_strictly_up (low high stage) :
   bound_invar low high stage => low < high =>
   bound_invar ((low + high) %/ 2 + 1) high (stage + 1).
 proof.
+progress.
+smt().
+smt().
+smt().
+smt().
+smt(int_log_upP).
+rewrite /win_size.
+search divpow2up.
 admit.
 qed.
 
@@ -333,11 +362,17 @@ lemma bound_invar_new_window_down (low high stage) :
   bound_invar low high stage => low < high =>
   bound_invar low ((low + high) %/ 2) (stage + 1).
 proof.
+progress.
+smt().
+smt().
+smt().
+smt().
+smt(int_log_upP).
+rewrite /win_size.
 admit.
 qed.
 
 (* the main lemma: *)
-
 lemma G_main (aux' : aux, inps' : inp list) :
   hoare
   [G(Alg).main :
