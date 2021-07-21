@@ -22,12 +22,12 @@ require import IntDiv2.   (* division by powers of two *)
 type inp = int.
 
 (* univ consists of min_inp ... max_inp, and there are
-   at least three elements *)
+   at least two elements *)
 
 op min_inp : inp.
 op max_inp : inp.
 
-axiom min_plus1_lt_max : min_inp + 1 < max_inp.
+axiom lt_min_max : min_inp < max_inp.
 
 op univ = range min_inp (max_inp + 1).
 
@@ -35,7 +35,7 @@ lemma univ_size :
   size univ = max_inp - min_inp + 1.
 proof.
 rewrite size_range ler_maxr.
-smt(min_plus1_lt_max).
+smt(lt_min_max).
 smt().
 qed.
 
@@ -43,19 +43,19 @@ lemma min_inp_univ :
   min_inp \in univ.
 proof.
 rewrite mem_range.
-smt(min_plus1_lt_max).
+smt(lt_min_max).
 qed.
 
 lemma max_inp_univ :
   max_inp \in univ.
 proof.
 rewrite mem_range.
-smt(min_plus1_lt_max).
+smt(lt_min_max).
 qed.
 
 type out = int.
 
-(* arity can be any positive number (otherwise int_log 2 arity would
+(* arity can be any positive number (otherwise int_logup 2 arity would
    be meaningless - see our main theorem at end) *)
 
 op arity : {int | 1 <= arity} as ge1_arity.
@@ -188,7 +188,6 @@ realize bad. smt(). qed.
 
 op a : inp = min_inp.
 op b : inp = min_inp + 1.
-op c : inp = min_inp + 2.
 
 lemma a_in_univ : a \in univ.
 proof. smt(min_inp_univ). qed.
@@ -197,85 +196,90 @@ lemma b_in_univ : b \in univ.
 proof.
 rewrite /b.
 rewrite mem_range.
-smt(min_plus1_lt_max).
-qed.
-
-lemma c_in_univ : c \in univ.
-proof.
-rewrite /c.
-rewrite mem_range.
-smt(min_plus1_lt_max).
+smt(lt_min_max).
 qed.
 
 lemma lt_a_b : a < b.
 proof. smt(). qed.
 
-lemma lt_b_c : b < c.
-proof. smt(). qed.
-
 (* here is our adversary: *)
 
 module Adv : ADV = {
-  (* invariant: 0 <= win_beg <= win_end < arity
+  (* invariant:
+       0 <= win_beg <= win_end < arity /\
+       (win_beg < win_end => ! win_empty) /\
+       (win_empty => win_beg = win_end)
 
      the beginning and end of the "window" of elements that are still
      unknown *)
 
   var win_beg, win_end : int
+  var win_empty : bool
 
   proc init() : aux = {
     win_beg <- 0; win_end <- arity - 1;
+    win_empty <- false;
     return b;
   }
 
   proc ans_query(i : int) : inp = {
     var j : out;
 
-    if (win_beg = win_end /\ i = win_beg) {
+    if (win_empty) {  (* this should never happen *)
       j <- b;
+    }
+    elif (win_beg = win_end /\ i = win_beg) {
+      j <- b; win_empty <- true;
     }
     elif (i < win_beg) {
       j <- a;
     }
     elif (win_end < i) {
-      j <- c;
+      j <- b;
     }
-    elif (i <= (win_beg + win_end) %/ 2) {
+    elif (i < (win_beg + win_end) %%/ 2) {  (* < midpoint (as real) *)
       j <- a; win_beg <- i + 1;
     }
-    else {
-      j <- c; win_end <- i - 1;
+    else {  (* >= midpoint (as real) *)
+      j <- b; win_end <- i - 1;
     }
     return j;
   }
 }.
 
-op win_size (win_beg win_end : int) : int =
-  win_end - win_beg + 1.
+op win_size (win_empty : bool, win_beg win_end : int) : int =
+  win_empty ? 0 : (win_end - win_beg + 1).
 
 lemma win_size_full :
-  win_size 0 (arity - 1) = arity.
+  win_size false 0 (arity - 1) = arity.
 proof. smt(). qed.
 
-lemma query_le_mid_new_le (win_beg win_end i : int) :
+lemma win_size_empty (win_beg : int) :
+  win_size true win_beg win_beg = 0.
+proof. smt(). qed.
+
+lemma query_lt_mid_new_le (win_beg win_end i : int) :
   win_beg <= i <= win_end => win_beg < win_end =>
-  i <= (win_beg + win_end) %/ 2 =>
+  i < (win_beg + win_end) %%/ 2 =>
   i + 1 <= win_end.
 proof. smt(). qed.
 
-lemma query_le_mid_new_size_lb (win_beg win_end i : int) :
-  win_beg <= i <= win_end => i <= (win_beg + win_end) %/ 2 =>
-  (win_size win_beg win_end) %/ 2 <= win_size (i + 1) win_end.
+lemma query_lt_mid_new_size_lb (win_beg win_end i : int) :
+  win_beg <= i <= win_end => i < (win_beg + win_end) %%/ 2 =>
+  (win_size false win_beg win_end) %%/ 2 <=
+  win_size false (i + 1) win_end.
 proof. smt(). qed.
 
-lemma query_gt_mid_new_le (win_beg win_end i : int) :
-  win_beg <= i <= win_end => (win_beg + win_end) %/ 2 < i =>
+lemma query_ge_mid_new_le (win_beg win_end i : int) :
+  win_beg <= i <= win_end => win_beg < win_end =>
+ (win_beg + win_end) %%/ 2 <= i =>
   win_beg <= i - 1.
 proof. smt(). qed.
 
-lemma query_gt_mid_new_size_lb (win_beg win_end i : int) :
-  win_beg <= i <= win_end => (win_beg + win_end) %/ 2 < i =>
-  (win_size win_beg win_end) %/ 2 <= win_size win_beg (i - 1).
+lemma query_ge_mid_new_size_lb (win_beg win_end i : int) :
+  win_beg <= i <= win_end => (win_beg + win_end) %%/ 2 <= i =>
+  (win_size false win_beg win_end) %/ 2 <=
+  win_size false win_beg (i - 1).
 proof. smt(). qed.
 
 (* invariant relating current list of input lists and window
