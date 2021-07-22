@@ -301,22 +301,22 @@ op inpss_win_invar
    (inpss : inp list list, win_beg win_end : int,
     win_empty : bool) : bool =
   inpss_invar b inpss /\  (* not necessary, but easier to understand *)
-  ! win_empty =>
-  (forall (i : int),
-   win_beg <= i <= win_end =>
-   forall (inps : inp list),
-   size inps = arity =>
-   (forall (j : int), 0 <= j < i => nth witness inps j = a) =>
-   (forall (j : int), i <= j < arity => nth witness inps j = b) =>
-   inps \in inpss) /\
-  (win_end < arity - 1 =>
-   forall (inps : inp list),
-   size inps = arity =>
-   (forall (j : int),
-    0 <= j <= win_end => nth witness inps j = a) =>
-   (forall (j : int),
-    win_end < j < arity => nth witness inps j = b) =>
-   inps \in inpss).
+  (! win_empty =>
+   (forall (i : int),
+    win_beg <= i <= win_end =>
+    forall (inps : inp list),
+    size inps = arity =>
+    (forall (j : int), 0 <= j < i => nth witness inps j = a) =>
+    (forall (j : int), i <= j < arity => nth witness inps j = b) =>
+    inps \in inpss) /\
+   (win_end < arity - 1 =>
+    forall (inps : inp list),
+    size inps = arity =>
+    (forall (j : int),
+     0 <= j <= win_end => nth witness inps j = a) =>
+    (forall (j : int),
+     win_end < j < arity => nth witness inps j = b) =>
+    inps \in inpss)).
 
 (* invariant about lower bound *)
 
