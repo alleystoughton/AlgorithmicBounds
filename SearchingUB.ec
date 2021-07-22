@@ -26,7 +26,7 @@ type inp = int.
 op min_inp : inp.
 op max_inp : inp.
 
-axiom min_lt_max : min_inp < max_inp.
+axiom lt_min_max : min_inp < max_inp.
 
 op univ = range min_inp (max_inp + 1).
 
@@ -34,7 +34,7 @@ lemma univ_size :
   size univ = max_inp - min_inp + 1.
 proof.
 rewrite size_range ler_maxr.
-smt(min_lt_max).
+smt(lt_min_max).
 smt().
 qed.
 
@@ -42,14 +42,14 @@ lemma min_inp_univ :
   min_inp \in univ.
 proof.
 rewrite mem_range.
-smt(min_lt_max).
+smt(lt_min_max).
 qed.
 
 lemma max_inp_univ :
   max_inp \in univ.
 proof.
 rewrite mem_range.
-smt(min_lt_max).
+smt(lt_min_max).
 qed.
 
 type out = int.

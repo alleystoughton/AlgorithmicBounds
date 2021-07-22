@@ -207,13 +207,13 @@ proof. smt(). qed.
 module Adv : ADV = {
   (* invariant:
        0 <= win_beg <= win_end < arity /\
-       (win_beg < win_end => ! win_empty) /\
-       (win_empty => win_beg = win_end)
+       (win_empty =>
+        win_beg = win_end /\ win_end < arity - 1) *)
 
-     the beginning and end of the "window" of elements that are still
-     unknown *)
-
+  (* window where answers still unclear *)
   var win_beg, win_end : int
+
+  (* when win_beg = win_end and window is empty *)
   var win_empty : bool
 
   proc init() : aux = {
@@ -225,11 +225,8 @@ module Adv : ADV = {
   proc ans_query(i : int) : inp = {
     var j : out;
 
-    if (win_empty) {  (* this should never happen *)
-      j <- b;
-    }
-    elif (win_beg = win_end /\ i = win_beg) {
-      j <- b; win_empty <- true;
+    if (win_empty) {
+      j <- witness;  (* answer doesn't matter? *)
     }
     elif (i < win_beg) {
       j <- a;
@@ -237,6 +234,16 @@ module Adv : ADV = {
     elif (win_end < i) {
       j <- b;
     }
+    (* win_beg <= i <= win_end /\ ! win_empty *)
+    elif (win_beg = win_end) {  (* so i = win_beg *)
+      if (win_end = arity - 1) {
+        j <- witness;  (* answer doesn't matter? *)
+      }
+      else {
+        j <- b; win_empty <- true;
+      }
+    }
+    (* win_beg <= i <= win_end /\ win_beg < win_end*)
     elif (i < (win_beg + win_end) %%/ 2) {  (* < midpoint (as real) *)
       j <- a; win_beg <- i + 1;
     }
@@ -282,21 +289,45 @@ lemma query_ge_mid_new_size_lb (win_beg win_end i : int) :
   win_size false win_beg (i - 1).
 proof. smt(). qed.
 
-(* invariant relating current list of input lists and window
-   beginning and end: *)
+(* window invariant *)
+
+op win_invar (win_beg win_end : int, win_empty : bool) : bool =
+  0 <= win_beg <= win_end < arity /\
+  (win_empty => win_beg = win_end /\ win_end < arity - 1).
+
+(* invariant relating current list of input lists and window *)
 
 op inpss_win_invar
-   (inpss : inp list list, win_beg win_end : int) : bool =
+   (inpss : inp list list, win_beg win_end : int,
+    win_empty : bool) : bool =
   inpss_invar b inpss /\  (* not necessary, but easier to understand *)
-  0 <= win_beg <= win_end < arity /\
+  ! win_empty =>
   (forall (i : int),
    win_beg <= i <= win_end =>
-   (forall (inps : inp list),
-    size inps = arity =>
-    (forall (j : int), 0 <= j < i => nth witness inps j = a) =>
-    nth witness inps i = b =>
-    (forall (j : int), i < j < arity => nth witness inps j = c) =>
-    inps \in inpss)).   
+   forall (inps : inp list),
+   size inps = arity =>
+   (forall (j : int), 0 <= j < i => nth witness inps j = a) =>
+   (forall (j : int), i <= j < arity => nth witness inps j = b) =>
+   inps \in inpss) /\
+  (win_end < arity - 1 =>
+   forall (inps : inp list),
+   size inps = arity =>
+   (forall (j : int),
+    0 <= j <= win_end => nth witness inps j = a) =>
+   (forall (j : int),
+    win_end < j < arity => nth witness inps j = b) =>
+   inps \in inpss).
+
+(* invariant about lower bound *)
+
+op bound_invar
+   (win_beg win_end : int, win_empty : bool, stage : int) : bool =
+  (win_end = arity - 1 =>
+   divpow2up arity stage <= win_size win_empty win_beg win_end) /\
+  (win_end < arity - 1 =>
+   divpow2 arity stage <= win_size win_empty win_beg win_end).
+
+(*
 
 lemma inpss_win_invar_init :
   inpss_win_invar (init_inpss b) 0 (arity - 1).
@@ -567,6 +598,7 @@ rewrite stage_win_size_invar_win_size1 //.
 have <- // : win_size win_beg win_end = 1.
   by rewrite (inpss_win_invar_done_implies_win_size1 inpss).
 qed.
+*)
 
 (* adversary is lossless *)
 
@@ -583,27 +615,29 @@ qed.
 (* the main lemma *)
 
 lemma G_Adv_main (Alg <: ALG{Adv}) :
-  hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log 2 arity <= res.`2].
+  hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log_up 2 arity <= res.`2].
 proof.
 proc.
 seq 7 :
   (inpss = init_inpss aux /\ error = false /\ don = inpss_done aux inpss /\
    stage = 0 /\ queries = fset0 /\ Adv.win_beg = 0 /\
-   Adv.win_end = arity - 1 /\ aux = b).
+   Adv.win_end = arity - 1 /\ Adv.win_empty = false /\ aux = b).
 wp.
 call (_ : true).
 inline Adv.init.
 auto.
 while
   (stage = card queries /\ queries_in_range queries /\
-   inpss_win_invar inpss Adv.win_beg Adv.win_end /\
-   stage_win_size_invar stage (win_size Adv.win_beg Adv.win_end) /\
-   don = inpss_done aux inpss).
+   don = inpss_done aux inpss /\
+   win_invar Adv.win_beg Adv.win_end Adv.win_empty /\
+   inpss_win_invar inpss Adv.win_beg Adv.win_end Adv.win_empty /\
+   bound_invar Adv.win_beg Adv.win_end Adv.win_empty stage).
 seq 1 :
   (stage = card queries /\ queries_in_range queries /\
-   inpss_win_invar inpss Adv.win_beg Adv.win_end /\
-   stage_win_size_invar stage (win_size Adv.win_beg Adv.win_end) /\
-   don = inpss_done aux inpss /\ !don /\ !error).
+   don = inpss_done aux inpss /\ !don /\ !error /\
+   win_invar Adv.win_beg Adv.win_end Adv.win_empty /\
+   inpss_win_invar inpss Adv.win_beg Adv.win_end Adv.win_empty /\
+   bound_invar Adv.win_beg Adv.win_end Adv.win_empty stage).
 call (_ : true); first auto.
 if.
 wp.
@@ -612,6 +646,34 @@ sp; elim* => stage queries.
 inline Adv.ans_query.
 sp 1.
 if.
+auto; progress [-delta].
+admit.
+admit.
+smt().
+admit.
+
+
+
+
+
+
+
+rcondf 1
+auto; progress [-delta].
+print win_invar.
+
+
+
+
+
+not done and so still multiple possible answers inpss
+
+
+admit.  (* formulate and use a helper lemma *)
+
+
+
+
 auto; progress [-delta].
 by rewrite fcardUindep1.
 smt(queries_in_range_add).
@@ -677,7 +739,7 @@ lemma lower_bound &m :
   forall (Alg <: ALG{Adv}),
   islossless Alg.init => islossless Alg.make_query =>
   islossless Alg.query_result =>
-  Pr[G(Alg, Adv).main() @ &m : res.`1 \/ int_log 2 arity <= res.`2] = 1%r.
+  Pr[G(Alg, Adv).main() @ &m : res.`1 \/ int_log_up 2 arity <= res.`2] = 1%r.
 proof.
 exists Adv.
 split; first apply Adv_init_ll.
@@ -686,7 +748,7 @@ move => Alg Alg_init_ll Alg_make_query_ll Alg_query_result_ll.
 byphoare => //.
 conseq
   (_ : true ==> true)
-  (_ : true ==> res.`1 \/ int_log 2 arity <= res.`2) => //.
+  (_ : true ==> res.`1 \/ int_log_up 2 arity <= res.`2) => //.
 apply (G_Adv_main Alg).
 rewrite (G_ll Alg Adv) 1:Alg_init_ll 1:Alg_make_query_ll
         1:Alg_query_result_ll 1:Adv_init_ll Adv_ans_query_ll.
