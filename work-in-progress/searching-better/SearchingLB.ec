@@ -226,7 +226,7 @@ module Adv : ADV = {
     var j : out;
 
     if (win_empty) {
-      j <- witness;  (* answer doesn't matter? *)
+      j <- witness;  (* answer doesn't matter *)
     }
     elif (i < win_beg) {
       j <- a;
@@ -237,7 +237,7 @@ module Adv : ADV = {
     (* win_beg <= i <= win_end /\ ! win_empty *)
     elif (win_beg = win_end) {  (* so i = win_beg *)
       if (win_end = arity - 1) {
-        j <- witness;  (* answer doesn't matter? *)
+        j <- b;  (* our loop invariant won't imply game over *)
       }
       else {
         j <- b; win_empty <- true;
