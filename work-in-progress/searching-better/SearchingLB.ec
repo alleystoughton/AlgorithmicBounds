@@ -647,9 +647,25 @@ inline Adv.ans_query.
 sp 1.
 if.
 auto; progress [-delta].
+smt(fcardUindep1).
+smt(queries_in_range_add).
+progress [-delta].
+(* I was thinking about doing
+ smt(mem_filter_nth make_list_either_nth). *)
 admit.
-admit.
+rewrite /bound_invar.
+split.
 smt().
+progress.
+(* I noticed here that everything was
+exactly the same as the subgoal before it
+except that now it's divpow2 instead of
+divpow2up and a < sign instead of an =.
+That's why if we are using smt here, I was
+thinking about having the smt include the
+lemma le_divpow2_divpow2up. *)
+rewrite /win_size.
+progress.
 admit.
 
 
@@ -657,9 +673,11 @@ admit.
 
 
 
-
-rcondf 1
+rcondf 1.
 auto; progress [-delta].
+admit.
+
+
 print win_invar.
 
 
