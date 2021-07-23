@@ -55,7 +55,7 @@ qed.
 
 type out = int.
 
-(* arity can be any positive number (otherwise int_logup 2 arity would
+(* arity can be any positive number (otherwise int_log_up 2 arity would
    be meaningless - see our main theorem at end) *)
 
 op arity : {int | 1 <= arity} as ge1_arity.
@@ -499,7 +499,8 @@ qed.
 lemma inpss_win_invar_win_size_ge2_implies_not_inpss_done
       (inpss : inp list list, win_beg win_end : int) :
   inpss_win_invar inpss win_beg win_end =>
-  win_beg < win_end => ! inpss_done b inpss.
+  win_beg < win_end => ! inpss_done b inpss.  (* contrapositive of A => B
+                                                 is ! B => ! A *)
 proof.
 rewrite /inpss_win_invar =>
   [[#] inpss_inv ge0_win_beg _ lt_win_end_arity invar_body
@@ -535,6 +536,9 @@ smt(inpss_win_invar_win_size_ge2_implies_not_inpss_done).
 qed.
 
 (* now we consider the bound *)
+
+(* probably the following aren't useful - instead look at DivPow2 and IntLog
+   and think of new lemmas about bound_invar *)
 
 op stage_metric (stage : int) : int =
   divpow2 arity stage.  (* see IntDiv2 *)
@@ -600,6 +604,26 @@ have <- // : win_size win_beg win_end = 1.
 qed.
 *)
 
+lemma inpss_win_invar_win_empty_filter_any
+      (inpss : inp list list, win_beg win_end : int,
+       i : int, inp : inp) :
+  inpss_win_invar inpss win_beg win_end true => 0 <= i < arity =>
+  inpss_win_invar (filter_nth inpss i inp) win_beg win_end true.
+proof.
+progress.
+admit.
+qed.
+
+lemma bound_invar_next_same_ub
+      (win_empty : bool, win_beg win_end stage : int) :
+  0 <= stage =>
+  bound_invar win_beg win_end win_empty stage =>
+  bound_invar win_beg win_end win_empty (stage + 1).
+proof.
+rewrite /bound_invar.
+admit.
+qed.
+
 (* adversary is lossless *)
 
 lemma Adv_init_ll : islossless Adv.init.
@@ -649,6 +673,39 @@ if.
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
+smt(inpss_win_invar_win_empty_filter_any).
+smt(bound_invar_next_same_ub fcard_ge0).
+(*
+
+admit.
+rewrite /bound_invar in H4.
+print divpow2.
+search divpow2 (+) 1.
+
+
+
+print win_size.
+rewrite /bound_invar in H4.
+move => A.
+print win_invar.
+
+
+rewrite /inpss_win_invar.
+split.
+print filter_nth.
+
+search inpss_invar filter.
+
+
+
+admit.
+move => A.
+trivial.
+
+
+
+
+
 progress [-delta].
 (* I was thinking about doing
  smt(mem_filter_nth make_list_either_nth). *)
@@ -737,6 +794,19 @@ rewrite
    (win_size Adv.win_beg{hr} Adv.win_end{hr})
    (win_size Adv.win_beg{hr} (i{hr} - 1)))
   1:fcard_ge0 // query_gt_mid_new_size_lb /#.
+*)
+admit.
+admit.
+auto; progress [-delta].
+admit.
+admit.
+admit.
+admit.
+admit.
+admit.
+(*
+
+
 auto.
 auto; progress [-delta].
 by rewrite fcards0.
@@ -747,6 +817,7 @@ rewrite negb_and /= in H.
 elim H => [inpss_done_b_inpss0 | -> //].
 right.
 by rewrite (inpss_done_lower_bound inpss0 _ win_beg win_end) 1:fcard_ge0.
+*)
 qed.
 
 (* here is our main theorem: *)
