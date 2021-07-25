@@ -685,12 +685,21 @@ smt(fcardUindep1).
 smt(queries_in_range_add).
 smt(inpss_win_invar_win_empty_filter_any).
 smt(bound_invar_next_same_ub fcard_ge0).
-rcondf 1.
+(* It *is* possible that i0 (which is equal to i, according to the
+   precondition), is < Adv.win_beg. It's true that Alg doesn't need to
+   ask such a query, because it could figure out what the answer would
+   be. But we still have to handle this case, answering so as to keep
+   the game going. So you need to use `if` not `rcondf` *)
+if.
 auto; progress [-delta].
-admit.
-rcondt 1.
-auto; progress [-delta].
-admit.
+admit. (* like above *)
+admit. (* like above *)
+admit. (* lemma on inpss_win_invar - one of the lemmas from the previous
+          proof (now commented out) can be repurposed *)
+admit. (* lemma on bound_invar - think about whether we already have it! *)
+(* handle next if .... *)
+
+
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
