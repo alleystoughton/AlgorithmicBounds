@@ -184,7 +184,7 @@ realize good. smt(). qed.
 realize bad. smt(). qed.
 (* end of realization *)
 
-(* our adversary uses three elements of inp: *)
+(* our adversary uses two elements of inp: *)
 
 op a : inp = min_inp.
 op b : inp = min_inp + 1.
@@ -611,7 +611,8 @@ lemma inpss_win_invar_win_empty_filter_any
   inpss_win_invar (filter_nth inpss i inp) win_beg win_end true.
 proof.
 progress.
-admit.
+rewrite /filter_nth.
+smt(inpss_invar_filter).
 qed.
 
 lemma bound_invar_next_same_ub
@@ -621,7 +622,16 @@ lemma bound_invar_next_same_ub
   bound_invar win_beg win_end win_empty (stage + 1).
 proof.
 rewrite /bound_invar.
-admit.
+progress.
+rewrite divpow2up_next_same_ub.
+smt(ge1_arity).
+trivial.
+smt().
+(* smt(divpow2up_next_same_ub ge1_arity). *)
+rewrite divpow2_next_same_ub.
+smt(ge1_arity).
+trivial.
+smt().
 qed.
 
 (* adversary is lossless *)
@@ -675,6 +685,31 @@ smt(fcardUindep1).
 smt(queries_in_range_add).
 smt(inpss_win_invar_win_empty_filter_any).
 smt(bound_invar_next_same_ub fcard_ge0).
+rcondf 1.
+auto; progress [-delta].
+admit.
+rcondt 1.
+auto; progress [-delta].
+admit.
+auto; progress [-delta].
+smt(fcardUindep1).
+smt(queries_in_range_add).
+admit.
+admit.
+auto.
+auto; progress [-delta].
+smt(fcards0).
+smt(queries_in_range0).
+rewrite /win_invar.
+smt(ge1_arity).
+admit.
+admit.
+search int_log_up.
+admit.
+
+
+
+
 (*
 
 admit.
