@@ -359,19 +359,22 @@ split; first by apply inpss_invar_filter.
 split; first smt().
 smt(mem_filter_nth).
 qed.
+*)
 
 lemma inpss_win_invar_filter_low_a
-      (inpss : inp list list, win_beg win_end k : int) :
-  inpss_win_invar inpss win_beg win_end => 0 <= k < win_beg =>
-  inpss_win_invar (filter_nth inpss k a) win_beg win_end.
+      (inpss : inp list list, win_beg win_end k : int,
+        win_empty : bool) :
+  inpss_win_invar inpss win_beg win_end win_empty => 0 <= k < win_beg =>
+  inpss_win_invar (filter_nth inpss k a) win_beg win_end win_empty.
 proof.
 move => [inpss_invar rest_invar] [ge0_k lt_k_win_beg].
 rewrite /inpss_win_invar.
 split; first by apply inpss_invar_filter.
-split; first smt().
-smt(mem_filter_nth).
+(* smt(mem_filter_nth). *)
+admit.
 qed.
 
+(*
 lemma inpss_win_invar_filter_high_c
       (inpss : inp list list, win_beg win_end k : int) :
   inpss_win_invar inpss win_beg win_end => win_end < k < arity =>
@@ -692,17 +695,51 @@ smt(bound_invar_next_same_ub fcard_ge0).
    the game going. So you need to use `if` not `rcondf` *)
 if.
 auto; progress [-delta].
-admit. (* like above *)
-admit. (* like above *)
+smt(fcardUindep1). (* like above *)
+smt(queries_in_range_add). (* like above *)
+print filter_nth.
+smt(inpss_win_invar_filter_low_a).
 admit. (* lemma on inpss_win_invar - one of the lemmas from the previous
           proof (now commented out) can be repurposed *)
-admit. (* lemma on bound_invar - think about whether we already have it! *)
+smt(bound_invar_next_same_ub fcard_ge0). (* lemma on bound_invar - think about whether we already have it! *)
 (* handle next if .... *)
-
-
+if.
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
+admit.
+smt(bound_invar_next_same_ub fcard_ge0).
+if.
+if.
+auto; progress [-delta].
+smt(fcardUindep1).
+smt(queries_in_range_add).
+admit.
+smt(bound_invar_next_same_ub fcard_ge0).
+auto.
+auto; progress [-delta].
+smt(fcardUindep1).
+smt(queries_in_range_add).
+smt().
+admit.
+search bound_invar.
+rewrite /bound_invar.
+split.
+smt().
+(* smt(bound_invar_next_same_ub fcard_ge0). *)
+admit.
+if.
+auto; progress [-delta].
+smt(fcardUindep1).
+smt(queries_in_range_add).
+smt().
+admit.
+(* smt(bound_invar_next_same_ub fcard_ge0). *)
+admit.
+auto; progress [-delta].
+smt(fcardUindep1).
+smt(queries_in_range_add).
+smt().
 admit.
 admit.
 auto.
