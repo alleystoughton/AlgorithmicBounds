@@ -362,16 +362,28 @@ qed.
 *)
 
 lemma inpss_win_invar_filter_low_a
-      (inpss : inp list list, win_beg win_end k : int,
-        win_empty : bool) :
-  inpss_win_invar inpss win_beg win_end win_empty => 0 <= k < win_beg =>
-  inpss_win_invar (filter_nth inpss k a) win_beg win_end win_empty.
+      (inpss : inp list list, win_beg win_end k : int) :
+  win_invar win_beg win_end false =>
+  inpss_win_invar inpss win_beg win_end false => 0 <= k < win_beg =>
+  inpss_win_invar (filter_nth inpss k a) win_beg win_end false.
 proof.
-move => [inpss_invar rest_invar] [ge0_k lt_k_win_beg].
+move =>
+  win_inv [/= inpss_invar [bs_from_win_mid as_to_win_end]]
+  [ge0_k lt_k_win_beg].
 rewrite /inpss_win_invar.
-split; first by apply inpss_invar_filter.
-(* smt(mem_filter_nth). *)
-admit.
+split; first by apply inpss_invar_filter_nth.
+simplify.
+split =>
+  [i [le_win_beg_i le_i_win_end] inps
+   size_inps inps_lt_i_eq_a inps_ge_i_eq_b |
+   lt_win_end_arity_min1 inps size_inps inps_le_win_end_eq_a
+   inps_gt_win_end_eq_b].
+rewrite mem_filter_nth.
+rewrite inps_lt_i_eq_a 1:/# /=.
+by rewrite (bs_from_win_mid i).
+rewrite mem_filter_nth.
+rewrite inps_le_win_end_eq_a 1:/# /=.
+by rewrite as_to_win_end.
 qed.
 
 (*
@@ -613,9 +625,7 @@ lemma inpss_win_invar_win_empty_filter_any
   inpss_win_invar inpss win_beg win_end true => 0 <= i < arity =>
   inpss_win_invar (filter_nth inpss i inp) win_beg win_end true.
 proof.
-progress.
-rewrite /filter_nth.
-smt(inpss_invar_filter).
+smt(inpss_invar_filter_nth).
 qed.
 
 lemma bound_invar_next_same_ub
@@ -697,12 +707,8 @@ if.
 auto; progress [-delta].
 smt(fcardUindep1). (* like above *)
 smt(queries_in_range_add). (* like above *)
-print filter_nth.
 smt(inpss_win_invar_filter_low_a).
-admit. (* lemma on inpss_win_invar - one of the lemmas from the previous
-          proof (now commented out) can be repurposed *)
-smt(bound_invar_next_same_ub fcard_ge0). (* lemma on bound_invar - think about whether we already have it! *)
-(* handle next if .... *)
+smt(bound_invar_next_same_ub fcard_ge0).
 if.
 auto; progress [-delta].
 smt(fcardUindep1).

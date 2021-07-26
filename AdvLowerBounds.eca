@@ -123,6 +123,15 @@ proof.
 by rewrite mem_filter.
 qed.
 
+lemma inpss_invar_filter_nth
+      (aux: aux, inpss : inp list list, n : int, y : inp) :
+  inpss_invar aux inpss =>
+  inpss_invar aux (filter_nth inpss n y).
+proof.
+move => invar_aux_inpss.
+by rewrite /filter_nth inpss_invar_filter.
+qed.
+
 (* the game is done when (f aux) agrees on all possible input lists
 
    note that this could be true because inpss is empty *)
