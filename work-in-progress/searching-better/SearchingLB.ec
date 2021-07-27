@@ -240,7 +240,8 @@ module Adv : ADV = {
         j <- b;  (* our loop invariant won't imply game over *)
       }
       else {
-        j <- b; win_empty <- true;
+        win_empty <- true;
+        j <- witness;  (* answer doesn't matter *)
       }
     }
     (* win_beg <= i <= win_end /\ win_beg < win_end*)
@@ -387,7 +388,6 @@ rewrite inps_le_win_end_eq_a 1:/# /=.
 by rewrite as_to_win_end.
 qed.
 
-
 lemma inpss_win_invar_filter_high_b
       (inpss : inp list list, win_beg win_end k : int) :
   win_invar win_beg win_end false =>
@@ -413,6 +413,30 @@ rewrite inps_gt_win_end_eq_b 1:/# /=.
 by rewrite as_to_win_end.
 qed.
 
+lemma inpss_win_invar_filter_high_b_blah
+      (inpss : inp list list, win_beg win_end k : int) :
+  win_invar win_beg win_end false =>
+  inpss_win_invar inpss win_beg win_end false  => win_end < k < arity =>
+  inpss_win_invar (filter_nth inpss k b) win_beg win_end false.
+proof.
+move =>
+  win_inv [/= inpss_invar [bs_from_win_mid as_to_win_end]]
+  [lt_win_end_k lt_k_arity].
+rewrite /inpss_win_invar.
+split; first by apply inpss_invar_filter.
+simplify.
+split =>
+  [i [le_win_beg_i le_i_win_end] inps
+   size_inps inps_lt_i_eq_a inps_ge_i_eq_b |
+   lt_win_end_arity_min1].
+rewrite mem_filter_nth.
+rewrite inps_ge_i_eq_b 1:/# /=.
+by rewrite (bs_from_win_mid i).
+(* true because contradiction in assumption *)
+have eq_win_end_arity_min1 : win_end = arity - 1.
+  admit.
+admit.
+qed.
 
 (*
 lemma inpss_win_invar_filter_mid_low_a
@@ -641,8 +665,7 @@ lemma inpss_win_invar_win_empty_filter_any
   inpss_win_invar inpss win_beg win_end true => 0 <= i < arity =>
   inpss_win_invar (filter_nth inpss i inp) win_beg win_end true.
 proof.
-(* smt(inpss_invar_filter_nth). *)
-admit.
+smt(inpss_invar_filter_nth).
 qed.
 
 lemma bound_invar_next_same_ub
@@ -715,22 +738,17 @@ smt(fcardUindep1).
 smt(queries_in_range_add).
 smt(inpss_win_invar_win_empty_filter_any).
 smt(bound_invar_next_same_ub fcard_ge0).
-(* It *is* possible that i0 (which is equal to i, according to the
-   precondition), is < Adv.win_beg. It's true that Alg doesn't need to
-   ask such a query, because it could figure out what the answer would
-   be. But we still have to handle this case, answering so as to keep
-   the game going. So you need to use `if` not `rcondf` *)
 if.
 auto; progress [-delta].
-smt(fcardUindep1). (* like above *)
-smt(queries_in_range_add). (* like above *)
-smt(inpss_win_invar_filter_low_a).
+smt(fcardUindep1).
+smt(queries_in_range_add).
+smt(inpss_win_invar_filter_low_a a_in_univ).
 smt(bound_invar_next_same_ub fcard_ge0).
 if.
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
-smt(inpss_win_invar_filter_high_b).
+smt(inpss_win_invar_filter_high_b b_in_univ).
 smt(bound_invar_next_same_ub fcard_ge0).
 if.
 if.
@@ -739,17 +757,14 @@ smt(fcardUindep1).
 smt(queries_in_range_add).
 admit.
 smt(bound_invar_next_same_ub fcard_ge0).
-auto.
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
 smt().
 admit.
+(* create lemma for next few lines *)
 rewrite /bound_invar.
-split.
-smt().
-rewrite /win_size.
-simplify.
+split => [eq_win_end_arity_min1 // |].
 smt(divpow2_le1_next_eq0 ge1_arity fcard_ge0).
 if.
 auto; progress [-delta].
