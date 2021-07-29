@@ -368,7 +368,7 @@ proof.
 by rewrite /divpow2 expr0 divz1.
 qed.
 
-lemma divpow2_next_new_ub (n k l m : int) :
+lemma divpow2_next_new_ub (m n k l : int) :
   1 <= n => 0 <= k => divpow2 n k <= m => m %/ 2 <= l =>
   divpow2 n (k + 1) <= l.
 proof.
@@ -383,7 +383,7 @@ lemma divpow2_next_same_ub (n k m : int) :
   divpow2 n (k + 1) <= m.
 proof.
 move => ge1_n ge0_k dp2_n_k_le_m.
-rewrite (divpow2_next_new_ub n k m m) // leq_div //.
+rewrite (divpow2_next_new_ub m) // leq_div //.
 by rewrite (ler_trans (divpow2 n k)) // divpow2_ge0 1:(ler_trans 1).
 qed.
 
@@ -504,7 +504,7 @@ proof.
 by rewrite /divpow2up /(%%/) expr0 (dvd1z n).
 qed.
 
-lemma divpow2up_next_new_ub (n k l m : int) :
+lemma divpow2up_next_new_ub (m n k l : int) :
   1 <= n => 0 <= k => divpow2up n k <= m => m %%/ 2 <= l =>
   divpow2up n (k + 1) <= l.
 proof.
@@ -519,11 +519,11 @@ lemma divpow2up_next_same_ub (n k m : int) :
   divpow2up n (k + 1) <= m.
 proof.
 move => ge1_n ge0_k dp2u_n_k_le_m.
-rewrite (divpow2up_next_new_ub n k m m) // int_div2_up_le_self.
+rewrite (divpow2up_next_new_ub m) // int_div2_up_le_self.
 by rewrite (ler_trans 1) // (ler_trans (divpow2up n k)) 1:divpow2up_ge1.
 qed.
 
-lemma divpow2up_next_new_lb (n k l m : int) :
+lemma divpow2up_next_new_lb (m n k l : int) :
   1 <= n => 0 <= k => m <= divpow2up n k => l <= m %%/ 2 =>
   l <= divpow2up n (k + 1).
 proof.

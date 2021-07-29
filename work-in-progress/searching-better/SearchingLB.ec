@@ -736,23 +736,12 @@ qed.
 
 lemma bound_invar_win_empty_true
       (win_empty : bool, win_end stage : int) :
-  0 <= stage =>
-  (* NEW! *) win_end <> arity - 1 =>
+  0 <= stage => win_end <> arity - 1 =>
   bound_invar win_end win_end false stage =>
   bound_invar win_end win_end true (stage + 1).
 proof.
 rewrite /bound_invar.
-move => ge0_stage.
-(* now you can take the next assumption and rewrite it in
-   the rest using "->": *)
-move => ->.
-(* then simplification: *)
-move => /=.
-(* then: *)
-move => lt_arity_min1_impl lt_win_end_arity_min1.
-(* so you can do the above using
-  move => -> /= lt_arity_min1_impl lt_win_end_arity_min1` *)
-(* then we can do what you had for the divpow2 case: *)
+move => ge0_stage -> /= lt_arity_min1_impl lt_win_end_arity_min1.
 smt(divpow2_le1_next_eq0 ge1_arity).
 qed.
 
@@ -777,26 +766,21 @@ lemma bound_invar_mid_to_end (win_beg win_end i stage : int) :
   bound_invar win_beg win_end false stage =>
   bound_invar (i + 1) win_end false (stage + 1).
 proof.
-move =>
-  i_btwn_win_beg_win_end noteq_win_beg_win_end
-  lt_i_win_mid ge0_stage bound_invar_orig.
-rewrite /bound_invar.
+rewrite /bound_invar =>
+  i_btwn_win_beg_win_end neq_win_beg_win_end lt_i_win_mid ge0_stage
+  [bnd_invar_impl_eq bnd_invar_impl_lt].
 split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
-rewrite /bound_invar in bound_invar_orig.
-rewrite divpow2up_next_same_ub.
-smt(ge1_arity).
-smt().
-(* I was looking for a lemma to use here and found
-query_lt_mid_new_size_lb. However, it says that 
-win_size false win_beg win_end %%/2 <= win_size false (i+1) win_end,
-which isn't really what I want here. Which lemma should I use here? *)
-(* smt(query_lt_mid_new_size_lb). *)
+(* You need to use divpow2up_next_new_ub instead, because the bound
+   is changing. I just changed IntDiv2.ec so that the first argument
+   to this and similar lemmas is the original bound, which is the
+   only argument EasyCrypt can't figure out on its own. So you can
+   start this first case with: *)
+rewrite (divpow2up_next_new_ub (win_size false win_beg win_end)) //.
 admit.
-rewrite divpow2_next_same_ub.
-smt(ge1_arity).
-smt().
 admit.
-(* smt(divpow2_next_new_ub ge1_arity). *)
+admit.
+(* now you'll be able to use query_lt_mid_new_size_lb as you wanted *)
+(* hint: for the second case, you'll also need to use ler_trans *)
 admit.
 qed.
 

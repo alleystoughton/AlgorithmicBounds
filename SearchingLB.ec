@@ -535,8 +535,7 @@ lemma stage_win_size_invar_next_poss_smaller_window
 proof.
 rewrite /stage_win_size_invar /stage_metric.
 move => ge0_stage sm_le_ws ws_div2_le_nws.
-by rewrite (divpow2_next_new_ub arity stage new_win_size win_size)
-           1:ge1_arity.
+by rewrite (divpow2_next_new_ub win_size) 1:ge1_arity.
 qed.
 
 lemma stage_win_size_invar_next_same_window (stage win_size : int) :
