@@ -737,55 +737,59 @@ qed.
 lemma bound_invar_win_empty_true
       (win_empty : bool, win_end stage : int) :
   0 <= stage =>
-(* TODO: you will need another assumption here, as this
-   isn't true *)
+  (* NEW! *) win_end <> arity - 1 =>
   bound_invar win_end win_end false stage =>
   bound_invar win_end win_end true (stage + 1).
 proof.
-move => ge0_stage bound_invar_win_empty_false.
 rewrite /bound_invar.
-split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
-rewrite /win_size.
-simplify.
-search divpow2up.
-(* Here I was a little confused as to why the goal says to prove
-that divpow2up _ _ is less than or equal to 0 but divpow2up_ge1
-says that divpow2up is always greater than or equal to 1 as long
-as arity is greater than or equal to 1 and stage + 1 is greater
-than or equal to 0.
-*)
-(* smt(divpow2up_ge1 ge1_arity). *)
-(* smt(divpow2up_next_new_ub ge1_arity). *)
-admit.
+move => ge0_stage.
+(* now you can take the next assumption and rewrite it in
+   the rest using "->": *)
+move => ->.
+(* then simplification: *)
+move => /=.
+(* then: *)
+move => lt_arity_min1_impl lt_win_end_arity_min1.
+(* so you can do the above using
+  move => -> /= lt_arity_min1_impl lt_win_end_arity_min1` *)
+(* then we can do what you had for the divpow2 case: *)
 smt(divpow2_le1_next_eq0 ge1_arity).
 qed.
 
+(*
+NEW: at the point where you need this lemma, here is what we
+know. To be able to prove bound_invar (i + 1) win_end false (stage + 1),
+you'll need more assumption on i. See below for a suggestion
 
-(* The following lemma is for the case after the place
-which uses the lemma bound_invar_win_empty_true. I thought
-to create this lemma so that we could use it in an smt()
-statement.
+H5: 0 <= i{hr}
+H6: i{hr} < arity
+H7: ! (i{hr} \in queries)
+H8: !Adv.win_empty{hr}
+H9: ! i{hr} < Adv.win_beg{hr}
+H10: ! Adv.win_end{hr} < i{hr}
+H11: Adv.win_beg{hr} <> Adv.win_end{hr}
+H12: i{hr} < (Adv.win_beg{hr} + Adv.win_end{hr}) %%/ 2
 *)
-lemma bound_invar_mid_to_end
-      (win_beg win_end i stage : int) :
-  0 <= i =>
-  ! i < win_beg =>
-  ! win_end < i =>
-  0 <= stage =>
+
+lemma bound_invar_mid_to_end (win_beg win_end i stage : int) :
+  win_beg <= i <= win_end => win_beg <> win_end =>
+  i < (win_beg + win_end) %%/ 2 => 0 <= stage =>
   bound_invar win_beg win_end false stage =>
   bound_invar (i + 1) win_end false (stage + 1).
 proof.
+(*
 move =>
   ge0_i not_lt_i_win_beg not_lt_win_end_i ge0_stage
   bound_invar_orig.
-rewrite /bound_invar.
+  rewrite /bound_invar.
 split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
 admit.
 search divpow2.
 (* smt(divpow2_next_new_ub ge1_arity). *)
 admit.
+*)
+admit.
 qed.
-
 
 (* adversary is lossless *)
 
@@ -863,15 +867,14 @@ smt(queries_in_range_add).
 smt().
 smt(inpss_win_invar_filter_win_empty_true).
 smt(bound_invar_win_empty_true fcard_ge0).
-(* TODO: your bound_invar_win_empty_true needs an
-   assumption about bound_invar *)
 if.
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
 smt(win_invar_nonempty_query_lt_mid).
 smt(inpss_win_invar_filter_mid_low_a a_in_univ).
-smt(bound_invar_mid_to_end).
+(* NEW - you need an extra lemma *)
+smt(bound_invar_mid_to_end fcard_ge0).
 rewrite /bound_invar.
 split.
 rewrite /win_size.
