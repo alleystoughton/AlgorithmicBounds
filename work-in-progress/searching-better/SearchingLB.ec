@@ -777,17 +777,26 @@ lemma bound_invar_mid_to_end (win_beg win_end i stage : int) :
   bound_invar win_beg win_end false stage =>
   bound_invar (i + 1) win_end false (stage + 1).
 proof.
-(*
 move =>
-  ge0_i not_lt_i_win_beg not_lt_win_end_i ge0_stage
-  bound_invar_orig.
-  rewrite /bound_invar.
+  i_btwn_win_beg_win_end noteq_win_beg_win_end
+  lt_i_win_mid ge0_stage bound_invar_orig.
+rewrite /bound_invar.
 split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
+rewrite /bound_invar in bound_invar_orig.
+rewrite divpow2up_next_same_ub.
+smt(ge1_arity).
+smt().
+(* I was looking for a lemma to use here and found
+query_lt_mid_new_size_lb. However, it says that 
+win_size false win_beg win_end %%/2 <= win_size false (i+1) win_end,
+which isn't really what I want here. Which lemma should I use here? *)
+(* smt(query_lt_mid_new_size_lb). *)
 admit.
-search divpow2.
+rewrite divpow2_next_same_ub.
+smt(ge1_arity).
+smt().
+admit.
 (* smt(divpow2_next_new_ub ge1_arity). *)
-admit.
-*)
 admit.
 qed.
 
