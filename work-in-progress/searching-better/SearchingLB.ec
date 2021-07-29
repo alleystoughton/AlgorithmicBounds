@@ -462,17 +462,14 @@ rewrite /inpss_win_invar /=.
 by apply inpss_invar_filter_nth.
 qed.
 
-lemma inpss_win_invar_filter_mid_a
+lemma inpss_win_invar_filter_mid_low_a
       (inpss : inp list list, win_beg win_end k : int) :
-  win_invar win_beg win_end false =>
-  win_beg < win_end => win_beg <= k <= win_end =>
-  k < (win_beg + win_end) %%/ 2 =>
+  win_invar win_beg win_end false => win_beg <= k <= win_end =>
   inpss_win_invar inpss win_beg win_end false =>
   inpss_win_invar (filter_nth inpss k a) (k + 1) win_end false.
 proof.
 move =>
-  win_inv lt_win_beg_win_end [le_win_beg_k le_k_win_end]
-  lt_k_mid
+  win_inv [le_win_beg_k le_k_win_end]
   [/= inpss_invar [bs_from_win_mid as_to_win_end]].
 rewrite /inpss_win_invar /=.
 split; first by apply inpss_invar_filter_nth.
@@ -486,20 +483,17 @@ rewrite inps_lt_i_eq_a 1:/# /=.
 by rewrite (bs_from_win_mid i) 1:/#.
 rewrite mem_filter_nth.
 rewrite inps_le_win_end_eq_a 1:/# /=.
-rewrite (as_to_win_end) 1:/# //.
+by rewrite as_to_win_end 1:/#.
 qed.
 
 lemma inpss_win_invar_filter_mid_high_b
       (inpss : inp list list, win_beg win_end k : int) :
-  win_invar win_beg win_end false =>
-  win_beg < win_end => win_beg <= k <= win_end =>
-  (win_beg + win_end) %%/ 2 <= k =>
+  win_invar win_beg win_end false => win_beg <= k <= win_end =>
   inpss_win_invar inpss win_beg win_end false =>
   inpss_win_invar (filter_nth inpss k b) win_beg (k - 1) false.
 proof.
 move =>
-  win_inv lt_win_beg_win_end [le_win_beg_k le_k_win_end]
-  ge_k_mid
+  win_inv [le_win_beg_k le_k_win_end]
   [/= inpss_invar [bs_from_win_mid _]].
 rewrite /inpss_win_invar /=.
 split; first by apply inpss_invar_filter_nth.
@@ -513,7 +507,7 @@ rewrite inps_ge_i_eq_b 1:/# /=.
 by rewrite (bs_from_win_mid i) 1:/#.
 rewrite mem_filter_nth.
 rewrite inps_gt_k_min1_eq_b 1:/# /=.
-rewrite (bs_from_win_mid k) 1:/#; first 3 smt().
+rewrite (bs_from_win_mid k) // /#.
 qed.
 
 (*
@@ -743,6 +737,8 @@ qed.
 lemma bound_invar_win_empty_true
       (win_empty : bool, win_end stage : int) :
   0 <= stage =>
+(* TODO: you will need another assumption here, as this
+   isn't true *)
   bound_invar win_end win_end true (stage + 1).
 proof.
 rewrite /bound_invar.
@@ -832,6 +828,8 @@ smt().
 smt(inpss_win_invar_filter_win_empty_true).
 smt(bound_invar_win_empty_true fcard_ge0).
 (* (* create lemma for next few lines *)
+(* TODO: your bound_invar_win_empty_true needs an
+   assumption about bound_invar *)
 rewrite /bound_invar.
 split => [eq_win_end_arity_min1 // |].
 smt(divpow2_le1_next_eq0 ge1_arity fcard_ge0). *)
@@ -840,7 +838,7 @@ auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
 smt(win_invar_nonempty_query_lt_mid).
-smt(inpss_win_invar_filter_mid_a a_in_univ).
+smt(inpss_win_invar_filter_mid_low_a a_in_univ).
 rewrite /bound_invar.
 split.
 search divpow2up.
@@ -851,7 +849,6 @@ auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
 smt().
-print inpss_win_invar_filter_mid_high_b.
 smt(inpss_win_invar_filter_mid_high_b b_in_univ).
 admit.
 admit.
