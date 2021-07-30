@@ -39,18 +39,21 @@ smt(lt_min_max).
 smt().
 qed.
 
+lemma in_univ (inp : inp) :
+  inp \in univ <=>
+  min_inp <= inp /\ inp <= max_inp.
+proof. smt(mem_range). qed.
+
 lemma min_inp_univ :
   min_inp \in univ.
 proof.
-rewrite mem_range.
-smt(lt_min_max).
+smt(in_univ lt_min_max).
 qed.
 
 lemma max_inp_univ :
   max_inp \in univ.
 proof.
-rewrite mem_range.
-smt(lt_min_max).
+smt(in_univ lt_min_max).
 qed.
 
 type out = int.
@@ -351,39 +354,26 @@ op bound_invar
   (win_end < arity - 1 =>
    divpow2 arity stage <= win_size win_empty win_beg win_end).
 
-(*
-
 lemma inpss_win_invar_init :
-  inpss_win_invar (init_inpss b) 0 (arity - 1).
+  inpss_win_invar (init_inpss b) 0 (arity - 1) false.
 proof.
-rewrite /inpss_win_invar.
+rewrite /inpss_win_invar /=.
 split; first apply inpss_invar_init.
-split; first smt(ge1_arity).
 move =>
- i [ge0_i le_i_arity_min1] inps sz_inps low_eq_a ith_eq_b high_eq_c.
-rewrite /init_inpss.
-rewrite mem_filter.
+  i [ge0_i lt_i_arity_min1] inps size_inps
+  inps_lt_i_eq_a inps_ge_i_eq_b.
+rewrite /init_inpss mem_filter.
 split.
 rewrite /good.
-split.
-rewrite -ith_eq_b mem_nth /#.
-smt().
-rewrite AllLists.all_lists_arity_have 1:/# 1:/#.
-smt(all_nthP mem_nth a_in_univ b_in_univ c_in_univ).
+admit.  (* TODO *)
+rewrite AllLists.all_lists_arity_have //.
+smt(ge1_arity).
+rewrite -(all_nthP _ _ witness) => j [ge0_j lt_size_inps].
+case (j < i) => [lt_i_j | le_i_j].
+rewrite inps_lt_i_eq_a // a_in_univ.
+rewrite -lerNgt in le_i_j.
+rewrite inps_ge_i_eq_b 1:/# b_in_univ.
 qed.
-
-lemma inpss_win_invar_filter_size1_window_b
-      (inpss : inp list list, win_beg win_end : int) :
-  inpss_win_invar inpss win_beg win_end => win_beg = win_end =>
-  inpss_win_invar (filter_nth inpss win_beg b) win_beg win_end.
-proof.
-move => [inpss_invar rest_invar] eq_win_beg_win_end.
-rewrite /inpss_win_invar.
-split; first by apply inpss_invar_filter.
-split; first smt().
-smt(mem_filter_nth).
-qed.
-*)
 
 lemma inpss_win_invar_filter_low_a
       (inpss : inp list list, win_beg win_end k : int) :
@@ -508,20 +498,6 @@ by rewrite (bs_from_win_mid i) 1:/#.
 rewrite mem_filter_nth.
 rewrite inps_gt_k_min1_eq_b 1:/# /=.
 rewrite (bs_from_win_mid k) // /#.
-qed.
-
-lemma inpss_win_invar_filter_high_eq0
-      (inpss : inp list list) :
-  inpss_win_invar (filter (good b) (all_lists univ arity)) 0 (arity - 1) false.
-proof.
-rewrite /inpss_win_invar /=.
-rewrite inpss_invar_filter /=.
-admit.
-progress.
-search filter.
-(* smt(in_filter).
-smt(inpss_invar_filter). *)
-admit.
 qed.
 
 (*
@@ -775,13 +751,15 @@ H12: i{hr} < (Adv.win_beg{hr} + Adv.win_end{hr}) %%/ 2
 *)
 
 lemma bound_invar_mid_to_end (win_beg win_end i stage : int) :
+  win_invar win_beg win_end false =>
   win_beg <= i <= win_end => win_beg <> win_end =>
   i < (win_beg + win_end) %%/ 2 => 0 <= stage =>
   bound_invar win_beg win_end false stage =>
   bound_invar (i + 1) win_end false (stage + 1).
 proof.
 rewrite /bound_invar =>
-  i_btwn_win_beg_win_end neq_win_beg_win_end lt_i_win_mid ge0_stage
+  win_inv i_btwn_win_beg_win_end neq_win_beg_win_end
+  lt_i_win_mid ge0_stage
   [bnd_invar_impl_eq bnd_invar_impl_lt].
 split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
 (* You need to use divpow2up_next_new_ub instead, because the bound
@@ -802,31 +780,22 @@ smt(query_lt_mid_new_size_lb ler_trans).
 qed.
 
 lemma bound_invar_beg_to_mid (win_beg win_end i stage : int) :
+  win_invar win_beg win_end false =>
   win_beg <= i <= win_end => win_beg <> win_end =>
   (win_beg + win_end) %%/ 2 <= i => 0 <= stage =>
   bound_invar win_beg win_end false stage =>
   bound_invar win_beg (i - 1) false (stage + 1).
 proof.
-rewrite /bound_invar =>
-  i_btwn_win_beg_win_end neq_win_beg_win_end le_win_mid_i ge0_stage
+rewrite /bound_invar  =>
+  win_inv i_btwn_win_beg_win_end neq_win_beg_win_end
+  le_win_mid_i ge0_stage
   [bnd_invar_impl_eq bnd_invar_impl_lt].
-split => [eq_i_min1_arity_min1 | lt_i_min1_arity_min1].
-rewrite (divpow2up_next_new_ub (win_size false win_beg win_end)) //.
-smt(ge1_arity).
-search divpow2up.
-(* I'm not sure why the following smt() line doesn't work
-even though it looks super similar to what we had in the
-lemma above.
-*)
-(* smt(divpow2up_next_new_ub). *)
-admit.
-(* smt(query_ge_mid_new_size_lb int_div2_le_int_div2_up). *)
-admit.
+split => [/# | lt_i_min1_arity_min1].
 rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //.
 smt(ge1_arity).
-(* smt(divpow2_next_new_ub). *)
+(* use ler_trans when you need transitivity *)
 admit.
-smt(query_ge_mid_new_size_lb).
+by rewrite query_ge_mid_new_size_lb.
 qed.
 
 lemma bound_invar_whole_range :
@@ -834,7 +803,6 @@ lemma bound_invar_whole_range :
 proof.
 admit.
 qed.
-
 
 (* adversary is lossless *)
 
@@ -918,7 +886,6 @@ smt(fcardUindep1).
 smt(queries_in_range_add).
 smt(win_invar_nonempty_query_lt_mid).
 smt(inpss_win_invar_filter_mid_low_a a_in_univ).
-(* NEW - you need an extra lemma *)
 smt(bound_invar_mid_to_end fcard_ge0).
 auto; progress [-delta].
 smt(fcardUindep1).
@@ -932,162 +899,12 @@ smt(fcards0).
 smt(queries_in_range0).
 rewrite /win_invar.
 smt(ge1_arity).
-smt(inpss_win_invar_filter_high_eq0).
-print bound_invar.
+smt(inpss_win_invar_init).
 smt(bound_invar_whole_range).
-rewrite /bound_invar.
-simplify.
-smt(divpow2up_start).
-rewrite negb_and in H.
-search int_log_up.
-admit.
-
-
-
-
-(*
-
-admit.
-rewrite /bound_invar in H4.
-print divpow2.
-search divpow2 (+) 1.
-
-
-
-print win_size.
-rewrite /bound_invar in H4.
-move => A.
-print win_invar.
-
-
-rewrite /inpss_win_invar.
-split.
-print filter_nth.
-
-search inpss_invar filter.
-
-
-
-admit.
-move => A.
-trivial.
-
-
-
-
-
-progress [-delta].
-(* I was thinking about doing
- smt(mem_filter_nth make_list_either_nth). *)
-admit.
-rewrite /bound_invar.
-split.
-smt().
-progress.
-(* I noticed here that everything was
-exactly the same as the subgoal before it
-except that now it's divpow2 instead of
-divpow2up and a < sign instead of an =.
-That's why if we are using smt here, I was
-thinking about having the smt include the
-lemma le_divpow2_divpow2up. *)
-rewrite /win_size.
-progress.
-admit.
-
-
-
-
-
-
-rcondf 1.
-auto; progress [-delta].
-admit.
-
-
-print win_invar.
-
-
-
-
-
-not done and so still multiple possible answers inpss
-
-
-admit.  (* formulate and use a helper lemma *)
-
-
-
-
-auto; progress [-delta].
-by rewrite fcardUindep1.
-smt(queries_in_range_add).
-rewrite b_in_univ /=.
-by apply inpss_win_invar_filter_size1_window_b.
-by rewrite stage_win_size_invar_next_same_window 1:fcard_ge0.
-if.
-auto; progress [-delta].
-by rewrite fcardUindep1.
-smt(queries_in_range_add).
-rewrite a_in_univ /=.
-by rewrite inpss_win_invar_filter_low_a.
-by rewrite stage_win_size_invar_next_same_window 1:fcard_ge0.
-if.
-auto; progress [-delta].
-by rewrite fcardUindep1.
-smt(queries_in_range_add).
-rewrite c_in_univ /=.
-by rewrite inpss_win_invar_filter_high_c.
-by rewrite stage_win_size_invar_next_same_window 1:fcard_ge0.
-if.
-auto; progress [-delta].
-by rewrite fcardUindep1.
-smt(queries_in_range_add).
-rewrite a_in_univ /=.
-rewrite
-  (inpss_win_invar_filter_mid_low_a _ Adv.win_beg{hr} _ i{hr})
-  // /#.
-rewrite
-  (stage_win_size_invar_next_poss_smaller_window (card queries)
-   (win_size Adv.win_beg{hr} Adv.win_end{hr})
-   (win_size (i{hr} + 1) Adv.win_end{hr}))
-  1:fcard_ge0 // query_le_mid_new_size_lb /#.
-auto; progress [-delta].
-by rewrite fcardUindep1.
-smt(queries_in_range_add).
-rewrite c_in_univ /=.
-rewrite
-  (inpss_win_invar_filter_mid_high_c _ _ Adv.win_end{hr} i{hr})
-  // /#.
-rewrite
-  (stage_win_size_invar_next_poss_smaller_window (card queries)
-   (win_size Adv.win_beg{hr} Adv.win_end{hr})
-   (win_size Adv.win_beg{hr} (i{hr} - 1)))
-  1:fcard_ge0 // query_gt_mid_new_size_lb /#.
-*)
-admit.
-admit.
-auto; progress [-delta].
-admit.
-admit.
-admit.
-admit.
-admit.
-admit.
-(*
-
-
-auto.
-auto; progress [-delta].
-by rewrite fcards0.
-by rewrite queries_in_range0.
-rewrite inpss_win_invar_init.
-rewrite stage_win_size_invar_init.
 rewrite negb_and /= in H.
-elim H => [inpss_done_b_inpss0 | -> //].
+elim H => [inpss_done_inpss0 | -> //].
 right.
-by rewrite (inpss_done_lower_bound inpss0 _ win_beg win_end) 1:fcard_ge0.
-*)
+admit.  (* TODO *)
 qed.
 
 (* here is our main theorem: *)

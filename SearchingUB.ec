@@ -38,18 +38,21 @@ smt(lt_min_max).
 smt().
 qed.
 
+lemma in_univ (inp : inp) :
+  inp \in univ <=>
+  min_inp <= inp /\ inp <= max_inp.
+proof. smt(mem_range). qed.
+
 lemma min_inp_univ :
   min_inp \in univ.
 proof.
-rewrite mem_range.
-smt(lt_min_max).
+smt(in_univ lt_min_max).
 qed.
 
 lemma max_inp_univ :
   max_inp \in univ.
 proof.
-rewrite mem_range.
-smt(lt_min_max).
+smt(in_univ lt_min_max).
 qed.
 
 type out = int.
