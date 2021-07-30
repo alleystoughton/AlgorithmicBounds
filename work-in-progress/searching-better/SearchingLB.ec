@@ -510,6 +510,20 @@ rewrite inps_gt_k_min1_eq_b 1:/# /=.
 rewrite (bs_from_win_mid k) // /#.
 qed.
 
+lemma inpss_win_invar_filter_high_eq0
+      (inpss : inp list list) :
+  inpss_win_invar (filter (good b) (all_lists univ arity)) 0 (arity - 1) false.
+proof.
+rewrite /inpss_win_invar /=.
+rewrite inpss_invar_filter /=.
+admit.
+progress.
+search filter.
+(* smt(in_filter).
+smt(inpss_invar_filter). *)
+admit.
+qed.
+
 (*
 lemma f_uniq (inps : inp list, k : int) :
   size inps = arity => all (mem univ) inps => 0 <= k < arity =>
@@ -776,13 +790,51 @@ split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
    only argument EasyCrypt can't figure out on its own. So you can
    start this first case with: *)
 rewrite (divpow2up_next_new_ub (win_size false win_beg win_end)) //.
-admit.
-admit.
-admit.
+smt(ge1_arity).
+smt(divpow2up_next_new_ub).
+smt(query_lt_mid_new_size_lb).
 (* now you'll be able to use query_lt_mid_new_size_lb as you wanted *)
 (* hint: for the second case, you'll also need to use ler_trans *)
+rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //.
+smt(ge1_arity).
+smt(divpow2_next_new_ub).
+smt(query_lt_mid_new_size_lb ler_trans).
+qed.
+
+lemma bound_invar_beg_to_mid (win_beg win_end i stage : int) :
+  win_beg <= i <= win_end => win_beg <> win_end =>
+  (win_beg + win_end) %%/ 2 <= i => 0 <= stage =>
+  bound_invar win_beg win_end false stage =>
+  bound_invar win_beg (i - 1) false (stage + 1).
+proof.
+rewrite /bound_invar =>
+  i_btwn_win_beg_win_end neq_win_beg_win_end le_win_mid_i ge0_stage
+  [bnd_invar_impl_eq bnd_invar_impl_lt].
+split => [eq_i_min1_arity_min1 | lt_i_min1_arity_min1].
+rewrite (divpow2up_next_new_ub (win_size false win_beg win_end)) //.
+smt(ge1_arity).
+search divpow2up.
+(* I'm not sure why the following smt() line doesn't work
+even though it looks super similar to what we had in the
+lemma above.
+*)
+(* smt(divpow2up_next_new_ub). *)
+admit.
+(* smt(query_ge_mid_new_size_lb int_div2_le_int_div2_up). *)
+admit.
+rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //.
+smt(ge1_arity).
+(* smt(divpow2_next_new_ub). *)
+admit.
+smt(query_ge_mid_new_size_lb).
+qed.
+
+lemma bound_invar_whole_range :
+  bound_invar 0 (arity - 1) false 0.
+proof.
 admit.
 qed.
+
 
 (* adversary is lossless *)
 
@@ -868,30 +920,21 @@ smt(win_invar_nonempty_query_lt_mid).
 smt(inpss_win_invar_filter_mid_low_a a_in_univ).
 (* NEW - you need an extra lemma *)
 smt(bound_invar_mid_to_end fcard_ge0).
-rewrite /bound_invar.
-split.
-rewrite /win_size.
-search divpow2up.
-smt(
-admit.
-admit.
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
 smt().
 smt(inpss_win_invar_filter_mid_high_b b_in_univ).
-admit.
-admit.
+smt(bound_invar_beg_to_mid fcard_ge0).
 auto.
 auto; progress [-delta].
 smt(fcards0).
 smt(queries_in_range0).
 rewrite /win_invar.
 smt(ge1_arity).
-rewrite /inpss_win_invar.
-simplify.
-search inpss_invar.
-admit.
+smt(inpss_win_invar_filter_high_eq0).
+print bound_invar.
+smt(bound_invar_whole_range).
 rewrite /bound_invar.
 simplify.
 smt(divpow2up_start).
