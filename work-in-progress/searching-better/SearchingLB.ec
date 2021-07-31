@@ -367,12 +367,13 @@ rewrite /good.
 split.
 (* TODO: start like this *)
 have -> : b = nth witness inps (arity - 1).
-  (* then inps_ge_i_eq_b will work *)
-  admit.
-(* then you can use mem_nth *)
-admit.
-(* then you have the part showing inps is ordered *)
-admit.
+  rewrite inps_ge_i_eq_b.
+  (* then you can use mem_nth *)
+  smt(mem_nth).
+  smt().
+  (* then you have the part showing inps is ordered *)
+  smt(mem_nth ge1_arity).
+smt().
 rewrite AllLists.all_lists_arity_have //.
 smt(ge1_arity).
 rewrite -(all_nthP _ _ witness) => j [ge0_j lt_size_inps].
@@ -772,8 +773,11 @@ qed.
 lemma bound_invar_whole_range :
   bound_invar 0 (arity - 1) false 0.
 proof.
-(* TODO - expand definitions, simplify and then search for appropriate lemma *)
-admit.
+rewrite /bound_invar.
+split.
+simplify.
+smt(divpow2up_start win_size_full).
+smt().
 qed.
 
 lemma inpss_done_lower_bound
@@ -785,6 +789,11 @@ lemma inpss_done_lower_bound
   inpss_done b inpss =>
   int_log_up 2 arity <= stage.
 proof.
+progress.
+rewrite /bound_invar in H2.
+print inpss_done.
+search int_log_up.
+
 (* TODO - you will need some helper lemmas for this
    think about what they should be *)
 admit.
