@@ -498,7 +498,7 @@ have // : n < n.
   by rewrite -(ge2_exp_le_equiv 2) // int_log_up_ge0.
 qed.
 
-lemma divpow2up_start (n k l m : int) :
+lemma divpow2up_start (n : int) :
   divpow2up n 0 = n.
 proof.
 by rewrite /divpow2up /(%%/) expr0 (dvd1z n).

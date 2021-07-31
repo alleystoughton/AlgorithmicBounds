@@ -40,9 +40,7 @@ smt().
 qed.
 
 lemma in_univ (inp : inp) :
-  inp \in univ <=>
-
-  min_inp <= inp /\ inp <= max_inp.
+  inp \in univ <=> min_inp <= inp /\ inp <= max_inp.
 proof. smt(mem_range). qed.
 
 lemma min_inp_univ :
@@ -366,17 +364,25 @@ move =>
 rewrite /init_inpss mem_filter.
 split.
 rewrite /good.
-(* I'm still a bit confused as to what to do here. I thought that
-our assumption of inps_ge_i_eq_b should solve this, but regular smt()
-doesn't seem to work. Could you give me a hint? Thanks! *)
-admit.  (* TODO *)
+split.
+(* TODO: start like this *)
+have -> : b = nth witness inps (arity - 1).
+  (* then inps_ge_i_eq_b will work *)
+  admit.
+(* then you can use mem_nth *)
+admit.
+(* then you have the part showing inps is ordered *)
+admit.
 rewrite AllLists.all_lists_arity_have //.
 smt(ge1_arity).
 rewrite -(all_nthP _ _ witness) => j [ge0_j lt_size_inps].
+(* this can be simplified to the following - you can delete this comment
 case (j < i) => [lt_i_j | le_i_j].
 rewrite inps_lt_i_eq_a // a_in_univ.
 rewrite -lerNgt in le_i_j.
 rewrite inps_ge_i_eq_b 1:/# b_in_univ.
+*)
+smt(a_in_univ b_in_univ).
 qed.
 
 lemma inpss_win_invar_filter_low_a
@@ -683,22 +689,6 @@ rewrite /stage_win_size_invar /stage_metric.
 move => ge0_stage sm_le_ws.
 by rewrite divpow2_next_same_ub 1:ge1_arity.
 qed.
-
-(* from the invariants and knowing the game is done, we have our
-   bound: *)
-
-lemma inpss_done_lower_bound
-      (inpss : inp list list, stage win_beg win_end : int) :
-  0 <= stage => inpss_done b inpss =>
-  inpss_win_invar inpss win_beg win_end =>
-  stage_win_size_invar stage (win_size win_beg win_end) =>
-  int_log 2 arity <= stage.
-proof.
-move => ge0_stage id iwi swsi.
-rewrite stage_win_size_invar_win_size1 //.
-have <- // : win_size win_beg win_end = 1.
-  by rewrite (inpss_win_invar_done_implies_win_size1 inpss).
-qed.
 *)
 
 lemma inpss_win_invar_win_empty_filter_any
@@ -739,21 +729,6 @@ move => ge0_stage -> /= lt_arity_min1_impl lt_win_end_arity_min1.
 smt(divpow2_le1_next_eq0 ge1_arity).
 qed.
 
-(*
-NEW: at the point where you need this lemma, here is what we
-know. To be able to prove bound_invar (i + 1) win_end false (stage + 1),
-you'll need more assumption on i. See below for a suggestion
-
-H5: 0 <= i{hr}
-H6: i{hr} < arity
-H7: ! (i{hr} \in queries)
-H8: !Adv.win_empty{hr}
-H9: ! i{hr} < Adv.win_beg{hr}
-H10: ! Adv.win_end{hr} < i{hr}
-H11: Adv.win_beg{hr} <> Adv.win_end{hr}
-H12: i{hr} < (Adv.win_beg{hr} + Adv.win_end{hr}) %%/ 2
-*)
-
 lemma bound_invar_mid_to_end (win_beg win_end i stage : int) :
   win_invar win_beg win_end false =>
   win_beg <= i <= win_end => win_beg <> win_end =>
@@ -766,17 +741,10 @@ rewrite /bound_invar =>
   lt_i_win_mid ge0_stage
   [bnd_invar_impl_eq bnd_invar_impl_lt].
 split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
-(* You need to use divpow2up_next_new_ub instead, because the bound
-   is changing. I just changed IntDiv2.ec so that the first argument
-   to this and similar lemmas is the original bound, which is the
-   only argument EasyCrypt can't figure out on its own. So you can
-   start this first case with: *)
 rewrite (divpow2up_next_new_ub (win_size false win_beg win_end)) //.
 smt(ge1_arity).
 smt(divpow2up_next_new_ub).
 smt(query_lt_mid_new_size_lb).
-(* now you'll be able to use query_lt_mid_new_size_lb as you wanted *)
-(* hint: for the second case, you'll also need to use ler_trans *)
 rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //.
 smt(ge1_arity).
 smt(divpow2_next_new_ub).
@@ -797,7 +765,6 @@ rewrite /bound_invar  =>
 split => [/# | lt_i_min1_arity_min1].
 rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //.
 smt(ge1_arity).
-(* use ler_trans when you need transitivity *)
 smt(divpow2up_next_new_ub le_divpow2_divpow2up ler_trans).
 by rewrite query_ge_mid_new_size_lb.
 qed.
@@ -805,6 +772,21 @@ qed.
 lemma bound_invar_whole_range :
   bound_invar 0 (arity - 1) false 0.
 proof.
+(* TODO - expand definitions, simplify and then search for appropriate lemma *)
+admit.
+qed.
+
+lemma inpss_done_lower_bound
+      (inpss : inp list list, stage win_beg win_end : int,
+       win_empty : bool) :
+  0 <= stage => win_invar win_beg win_end win_empty =>
+  inpss_win_invar inpss win_beg win_end win_empty =>
+  bound_invar win_beg win_end win_empty stage =>
+  inpss_done b inpss =>
+  int_log_up 2 arity <= stage.
+proof.
+(* TODO - you will need some helper lemmas for this
+   think about what they should be *)
 admit.
 qed.
 
@@ -908,11 +890,7 @@ smt(bound_invar_whole_range).
 rewrite negb_and /= in H.
 elim H => [inpss_done_inpss0 | -> //].
 right.
-rewrite /bound_invar in H3.
-search int_log_up.
-search card.
-smt(divpow2up_eq1_int_log_up_le divpow2_eq0_int_log_up_le ge1_arity).
-admit.  (* TODO *)
+smt(inpss_done_lower_bound fcard_ge0).
 qed.
 
 (* here is our main theorem: *)
