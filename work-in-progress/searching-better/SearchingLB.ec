@@ -41,6 +41,7 @@ qed.
 
 lemma in_univ (inp : inp) :
   inp \in univ <=>
+
   min_inp <= inp /\ inp <= max_inp.
 proof. smt(mem_range). qed.
 
@@ -365,6 +366,9 @@ move =>
 rewrite /init_inpss mem_filter.
 split.
 rewrite /good.
+(* I'm still a bit confused as to what to do here. I thought that
+our assumption of inps_ge_i_eq_b should solve this, but regular smt()
+doesn't seem to work. Could you give me a hint? Thanks! *)
 admit.  (* TODO *)
 rewrite AllLists.all_lists_arity_have //.
 smt(ge1_arity).
@@ -794,7 +798,7 @@ split => [/# | lt_i_min1_arity_min1].
 rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //.
 smt(ge1_arity).
 (* use ler_trans when you need transitivity *)
-admit.
+smt(divpow2up_next_new_ub le_divpow2_divpow2up ler_trans).
 by rewrite query_ge_mid_new_size_lb.
 qed.
 
@@ -904,6 +908,10 @@ smt(bound_invar_whole_range).
 rewrite negb_and /= in H.
 elim H => [inpss_done_inpss0 | -> //].
 right.
+rewrite /bound_invar in H3.
+search int_log_up.
+search card.
+smt(divpow2up_eq1_int_log_up_le divpow2_eq0_int_log_up_le ge1_arity).
 admit.  (* TODO *)
 qed.
 
