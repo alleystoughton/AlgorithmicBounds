@@ -516,9 +516,16 @@ proof.
 move =>
   size_inps all_in_univ [ge0_k lt_k_arity] lt_eq_a ge_eq_b.
 have good_b_inps : good b inps.
+  search good.
+  rewrite /good.
+  split.
+  (* What should I do for proving "b \in inps"? *)
   admit.
+  smt().
 pose i := oget (f b inps).
 (* hint: use f_good_nth and f_good_best *)
+(* Why does smt(good) here not work? I'm pretty sure we have
+met all of the required assumptions. *)
 admit.
 qed.
 
@@ -730,6 +737,7 @@ apply contraLR.
 move => ne1_win_siz.
 have ge2_win_siz : 2 <= win_size false win_beg win_end by smt().
 clear ne1_win_siz.
+(* Should I use another have here? *)
 admit.
 qed.
 
