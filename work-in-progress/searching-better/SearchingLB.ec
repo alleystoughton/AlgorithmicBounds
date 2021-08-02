@@ -303,6 +303,7 @@ lemma win_invar_nonempty_query_lt_mid (win_beg win_end : int, i : int) :
   win_beg <= i <= win_end => i < (win_beg + win_end) %%/ 2 =>
   win_invar (i + 1) win_end false.
 proof.
+(* smt() will solve this, but nicer to understand why it's true *)
 rewrite /win_invar.
 move =>
   [#] ge0_win_beg _ lt_win_end_arity /= lt_win_beg_win_end
@@ -317,8 +318,14 @@ lemma win_invar_nonempty_query_ge_mid (win_beg win_end : int, i : int) :
   win_beg <= i <= win_end => (win_beg + win_end) %%/ 2 <= i =>
   win_invar win_beg (i - 1) false.
 proof.
-(* use lemma above to make clear why this works *)
-smt().
+(* smt() will solve this, but nicer to understand why it's true *)
+rewrite /win_invar.
+move =>
+  [#] ge0_win_beg _ lt_win_end_arity /= lt_win_beg_win_end
+  [le_win_beg_i le_i_win_end] ge_i_mid.
+split => [ | /#].
+split => [// | _].
+by rewrite (query_ge_mid_new_le _ win_end).
 qed.
 
 (* invariant relating current list of input lists and window *)
@@ -365,24 +372,13 @@ rewrite /init_inpss mem_filter.
 split.
 rewrite /good.
 split.
-(* TODO: start like this *)
-have -> : b = nth witness inps (arity - 1).
-  rewrite inps_ge_i_eq_b.
-  (* then you can use mem_nth *)
-  smt(mem_nth).
-  smt().
-  (* then you have the part showing inps is ordered *)
-  smt(mem_nth ge1_arity).
+rewrite -(inps_ge_i_eq_b (arity - 1)).
+smt(ge1_arity).
+smt(mem_nth ge1_arity).
 smt().
 rewrite AllLists.all_lists_arity_have //.
 smt(ge1_arity).
 rewrite -(all_nthP _ _ witness) => j [ge0_j lt_size_inps].
-(* this can be simplified to the following - you can delete this comment
-case (j < i) => [lt_i_j | le_i_j].
-rewrite inps_lt_i_eq_a // a_in_univ.
-rewrite -lerNgt in le_i_j.
-rewrite inps_ge_i_eq_b 1:/# b_in_univ.
-*)
 smt(a_in_univ b_in_univ).
 qed.
 
@@ -511,27 +507,28 @@ rewrite inps_gt_k_min1_eq_b 1:/# /=.
 rewrite (bs_from_win_mid k) // /#.
 qed.
 
-(*
 lemma f_uniq (inps : inp list, k : int) :
   size inps = arity => all (mem univ) inps => 0 <= k < arity =>
   (forall (j : int), 0 <= j < k => nth witness inps j = a) =>
-  nth witness inps k = b =>
-  (forall (j : int), k < j < arity => nth witness inps j = c) =>
+  (forall (j : int), k <= j < arity => nth witness inps j = b) =>
   f b inps = Some k.
 proof.
 move =>
-  size_inps all_in_univ [ge0_k lt_k_arity] low_eq_a kth_eq_b high_eq_c.
-have good_b_inps : good b inps by smt(mem_nth).
-have := f_goodP b inps _ _ _ => //=.
+  size_inps all_in_univ [ge0_k lt_k_arity] lt_eq_a ge_eq_b.
+have good_b_inps : good b inps.
+  admit.
 pose i := oget (f b inps).
-move => [#] ge0_i lt_i_arity nth_inps_i_eq_b i_min.
-have <- : oget (f b inps) = k by smt().
-by rewrite -some_oget 1:f_good_not_none.
+(* hint: use f_good_nth and f_good_best *)
+admit.
 qed.
 
-op make_uniq_inps (k : int) : inp list =
-  nseq k a ++ [b] ++ nseq (arity - k - 1) c.
+(* if 0 <= k < arity, then make an inps such that f b gives us Some
+   k *)
 
+op make_least_inps (k : int) : inp list =
+  nseq k a ++ nseq (arity - k) b.
+
+(*
 lemma size_make_uniq_inps (k : int) :
   0 <= k < arity => size (make_uniq_inps k) = arity.
 proof.
@@ -631,65 +628,6 @@ have /# : Some win_beg = Some (win_beg + 1).
   smt(f_make_uniq_inps).
 qed.
 
-lemma inpss_win_invar_done_implies_win_size1
-      (inpss : inp list list, win_beg win_end : int) :
-  inpss_win_invar inpss win_beg win_end => inpss_done b inpss =>
-  win_size win_beg win_end = 1.
-proof.
-smt(inpss_win_invar_win_size_ge2_implies_not_inpss_done).
-qed.
-
-(* now we consider the bound *)
-
-(* probably the following aren't useful - instead look at DivPow2 and IntLog
-   and think of new lemmas about bound_invar *)
-
-op stage_metric (stage : int) : int =
-  divpow2 arity stage.  (* see IntDiv2 *)
-
-(* invariant relating current stage and window size: *)
-
-op stage_win_size_invar (stage win_size : int) : bool =
-  stage_metric stage <= win_size.
-
-lemma stage_win_size_invar_win_size1 (stage : int) :
-  0 <= stage => stage_win_size_invar stage 1 =>
-  int_log 2 arity <= stage.
-proof.
-smt(divpow2_le1_int_log_le ge1_arity).
-qed.
-
-(* we start at stage 0 and with the window size being arity *)
-
-lemma stage_win_size_invar_init :
-  stage_win_size_invar 0 arity.
-proof.
-smt(ge1_arity divpow2_start).
-qed.
-
-(* and the next two lemmas are how we move to the next stage,
-   possibly with a smaller window size *)
-
-lemma stage_win_size_invar_next_poss_smaller_window
-      (stage win_size new_win_size : int) :
-  0 <= stage => stage_win_size_invar stage win_size =>
-  win_size %/ 2 <= new_win_size =>
-  stage_win_size_invar (stage + 1) new_win_size.
-proof.
-rewrite /stage_win_size_invar /stage_metric.
-move => ge0_stage sm_le_ws ws_div2_le_nws.
-by rewrite (divpow2_next_new_ub arity stage new_win_size win_size)
-           1:ge1_arity.
-qed.
-
-lemma stage_win_size_invar_next_same_window (stage win_size : int) :
-  0 <= stage => stage_win_size_invar stage win_size =>
-  stage_win_size_invar (stage + 1) win_size.
-proof.
-rewrite /stage_win_size_invar /stage_metric.
-move => ge0_stage sm_le_ws.
-by rewrite divpow2_next_same_ub 1:ge1_arity.
-qed.
 *)
 
 lemma inpss_win_invar_win_empty_filter_any
@@ -780,6 +718,42 @@ smt(divpow2up_start win_size_full).
 smt().
 qed.
 
+lemma done_when_win_at_end_implies_win_size_eq1
+      (inpss : inp list list, win_beg win_end : int) :
+   win_invar win_beg win_end false =>
+   inpss_win_invar inpss win_beg win_end false =>
+   inpss_done b inpss =>
+   win_size false win_beg win_end = 1.
+proof.
+move => win_inv inpss_win_inv.
+apply contraLR.
+move => ne1_win_siz.
+have ge2_win_siz : 2 <= win_size false win_beg win_end by smt().
+clear ne1_win_siz.
+admit.
+qed.
+
+lemma done_when_win_not_at_end_implies_win_size_eq0
+      (inpss : inp list list, win_beg win_end : int, win_empty : bool) :
+   win_invar win_beg win_end win_empty =>
+   inpss_win_invar inpss win_beg win_end win_empty =>
+   win_end < arity - 1 =>
+   inpss_done b inpss =>
+   win_size win_empty win_beg win_end = 0.
+proof.
+move => win_inv inpss_win_inv lt_win_end_arity_min1.
+apply contraLR.
+move => ne0_win_siz.
+have not_win_empty : ! win_empty by smt().
+move : win_inv inpss_win_inv ne0_win_siz.
+rewrite not_win_empty.
+move => win_inv inpss_win_inv ne0_win_siz.
+have ge1_win_siz : 1 <= win_size false win_beg win_end by smt().
+clear ne0_win_siz not_win_empty.
+print inpss_win_invar.
+admit.
+qed.
+
 lemma inpss_done_lower_bound
       (inpss : inp list list, stage win_beg win_end : int,
        win_empty : bool) :
@@ -789,14 +763,29 @@ lemma inpss_done_lower_bound
   inpss_done b inpss =>
   int_log_up 2 arity <= stage.
 proof.
-progress.
-rewrite /bound_invar in H2.
-print inpss_done.
-search int_log_up.
-
-(* TODO - you will need some helper lemmas for this
-   think about what they should be *)
-admit.
+rewrite /bound_invar =>
+  ge0_stage win_inv inpss_win_inv
+  [bound_inv_when_win_end_eq_arity_min1
+   bound_inv_when_win_end_lt_arity_min1]
+  done_inpss.
+case (win_end = arity - 1) =>
+  [eq_win_end_arity_min1 | ne_win_end_arity_min1].
+have le_dp2u_win_sz :
+  divpow2up arity stage <= win_size win_empty win_beg win_end.
+  by rewrite bound_inv_when_win_end_eq_arity_min1.
+have not_win_empty : ! win_empty by smt().
+have eq1_win_sz : win_size win_empty win_beg win_end = 1.
+  smt(done_when_win_at_end_implies_win_size_eq1).
+rewrite divpow2up_eq1_int_log_up_le 1:ge1_arity //.
+smt(divpow2up_ge1).
+have lt_win_end_arity_min1 : win_end < arity - 1 by smt().
+have le_dp2_win_sz :
+  divpow2 arity stage <= win_size win_empty win_beg win_end.
+  by rewrite bound_inv_when_win_end_lt_arity_min1.
+have eq1_win_sz : win_size win_empty win_beg win_end = 0.
+  smt(done_when_win_not_at_end_implies_win_size_eq0).
+rewrite divpow2_eq0_int_log_up_le 1:ge1_arity //.
+smt(divpow2_ge0).
 qed.
 
 (* adversary is lossless *)
