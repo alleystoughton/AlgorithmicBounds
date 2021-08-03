@@ -11,6 +11,7 @@ To build the executable, you should first install
 [`opam`](https://opam.ocaml.org), and [OCaml
 Batteries](https://ocaml-batteries-team.github.io/batteries-included/hdoc2/).
 (You can install OCaml Batteries by running `opam install batteries`.)
+The source for the program is in the subdirectory [`src`](src).
 The `build` bash script can be used to build the executable,
 `strategy`.
 
@@ -29,7 +30,6 @@ For example, we can search for an optimal strategy where the universe
 of list elements has size 2 (elements `a` and `b`), lists to be
 searched in have arity (size/length) 3, and where the element to be
 searched for is `b`:
-
 ```
 $ strategy 2 3 b
 0 a
