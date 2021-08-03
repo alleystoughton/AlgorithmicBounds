@@ -60,7 +60,8 @@ The strategy's response immediately follows. E.g., if the algorithm
 queries index `1`, then the adversary responds with the answer `b`.
 Continuing from that point, the algorithm can then query index `0` or
 `2`, and so on. The game ends when the lower bounds game knows the
-answer of the searching function.
+answer of the searching function, i.e., the minimum list index where
+`b` occurs.
 
 If you only want to know the maximum path length of the strategy, instead
 of the details of the strategy, you can run
