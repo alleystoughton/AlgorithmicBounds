@@ -1,12 +1,15 @@
 Adversarial Method for Showing Lower Bounds in EasyCrypt
 ========================================================
 
-This repository contains mechanizations in EasyCrypt of the
-adversarial method for showing lower bounds.
+This repository contains a general
+[EasyCrypt](https://www.easycrypt.info/trac/) framework for expressing
+lower bounds problems using the adversarial method, a general
+EasyCrypt framework for expressing upper bounds of algorithms, and
+applications of these frameworks.
 
 This is joint work between Boston University faculty
 
-* [Mark Bun](https://cs-people.bu.edu/mbun/) (mbun [at] bu [dot] edu)
+* [Mark Bun](https://cs-people.bu.edu/mbun/) (mbun@bu.edu)
 * [Marco Gaboardi](https://cs-people.bu.edu/gaboardi/) (gaboardi@bu.edu)
 * [Alley Stoughton](http://alleystoughton.us) (stough@bu.edu)
 
