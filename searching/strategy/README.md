@@ -54,7 +54,7 @@ $ strategy 2 3 b
 
 minimum path length: 2
 ```
-The list indices `0`, `1` and `2` in the first column, are the possible first
+The list indices `0`, `1` and `2` in the first column are the possible first
 moves of the algorithm, querying the value of the specified list element.
 The strategy's response immediately follows. E.g., if the algorithm
 queries index `1`, then the adversary responds with the answer `b`.
