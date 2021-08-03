@@ -507,7 +507,7 @@ rewrite inps_gt_k_min1_eq_b 1:/# /=.
 rewrite (bs_from_win_mid k) // /#.
 qed.
 
-lemma f_uniq (inps : inp list, k : int) :
+lemma f_poss_as_then_def_bs (inps : inp list, k : int) :
   size inps = arity => all (mem univ) inps => 0 <= k < arity =>
   (forall (j : int), 0 <= j < k => nth witness inps j = a) =>
   (forall (j : int), k <= j < arity => nth witness inps j = b) =>
@@ -516,16 +516,31 @@ proof.
 move =>
   size_inps all_in_univ [ge0_k lt_k_arity] lt_eq_a ge_eq_b.
 have good_b_inps : good b inps.
-  search good.
   rewrite /good.
   split.
-  (* What should I do for proving "b \in inps"? *)
+  (* hint: start with: *)
+  rewrite -(ge_eq_b k).
+  admit.
   admit.
   smt().
-pose i := oget (f b inps).
-(* hint: use f_good_nth and f_good_best *)
 (* Why does smt(good) here not work? I'm pretty sure we have
 met all of the required assumptions. *)
+(* good tells us that f b inps = Some y for some y - but maybe not k
+   but we can start with good, using the := form of have. we supply
+   the arguments b and inps, and then use _ for each of the three
+   assumptions *)
+have := good b inps _ _ _.
+  trivial.
+  trivial.
+  trivial.
+(* now, we eliminate the existential *)
+move => [i f_b_inps_eq].
+(* now, we can do the same thing with f_goodP: *)
+have := f_goodP b inps _ _ _ => //=.
+rewrite f_b_inps_eq /= => [#].
+move => ge0_i lt_i_arity nth_inps_i_eq_b i_least_nth_eq_b.
+(* now, how can you use the assumptions to prove that
+   i = k? *)
 admit.
 qed.
 
@@ -603,38 +618,6 @@ smt(nth_cat nth_nseq size_nseq size_cat).
 rewrite /make_uniq_inps.
 smt(nth_cat nth_nseq size_nseq size_cat).
 qed.
-
-lemma inpss_win_invar_win_size_ge2_implies_not_inpss_done
-      (inpss : inp list list, win_beg win_end : int) :
-  inpss_win_invar inpss win_beg win_end =>
-  win_beg < win_end => ! inpss_done b inpss.  (* contrapositive of A => B
-                                                 is ! B => ! A *)
-proof.
-rewrite /inpss_win_invar =>
-  [[#] inpss_inv ge0_win_beg _ lt_win_end_arity invar_body
-   lt_win_beg_win_end].
-case (inpss_done b inpss) => [contrad | //].
-rewrite /inpss_done in contrad.
-have /# : Some win_beg = Some (win_beg + 1).
-  apply contrad.
-  rewrite mapP.
-  exists (make_uniq_inps win_beg).
-  split.
-  rewrite (invar_body win_beg) 1:/# 1:size_make_uniq_inps 1:/# //.
-  smt(nth_make_uniq_inps_lt).
-  smt(nth_make_uniq_inps_eq).
-  smt(nth_make_uniq_inps_gt).
-  smt(f_make_uniq_inps).
-  rewrite mapP.
-  exists (make_uniq_inps (win_beg + 1)).
-  split.
-  rewrite (invar_body (win_beg + 1)) 1:/# 1:size_make_uniq_inps 1:/# //.
-  smt(nth_make_uniq_inps_lt).
-  smt(nth_make_uniq_inps_eq).
-  smt(nth_make_uniq_inps_gt).
-  smt(f_make_uniq_inps).
-qed.
-
 *)
 
 lemma inpss_win_invar_win_empty_filter_any
@@ -732,13 +715,29 @@ lemma done_when_win_at_end_implies_win_size_eq1
    inpss_done b inpss =>
    win_size false win_beg win_end = 1.
 proof.
-move => win_inv inpss_win_inv.
+(* HINT - here is the top-level structure *)
+rewrite /inpss_win_invar /=.
+move => win_inv [#] _ inpss_win_invar_middle _.
 apply contraLR.
 move => ne1_win_siz.
 have ge2_win_siz : 2 <= win_size false win_beg win_end by smt().
 clear ne1_win_siz.
-(* Should I use another have here? *)
-admit.
+case (inpss_done b inpss) => [done_inpss | //].
+rewrite /inpss_done in done_inpss.
+have lt_win_beg_win_end : win_beg < win_end by smt().
+have f_b_mli_win_beg_eq : f b (make_least_inps win_beg) = Some win_beg.
+  admit.
+have mli_win_beg_in_inpss : make_least_inps win_beg \in inpss.
+  admit.
+have f_b_mli_win_beg_plus1_eq :
+  f b (make_least_inps (win_beg + 1)) = Some (win_beg + 1).
+  admit.
+have mli_win_beg_plus1_in_inpss :
+  make_least_inps (win_beg + 1) \in inpss.
+  admit.
+have /# : Some win_beg = Some (win_beg + 1).
+  (* hint use done_inpss *)
+  admit.
 qed.
 
 lemma done_when_win_not_at_end_implies_win_size_eq0
