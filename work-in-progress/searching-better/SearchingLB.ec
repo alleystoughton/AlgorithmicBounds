@@ -517,33 +517,18 @@ move =>
   size_inps all_in_univ [ge0_k lt_k_arity] lt_eq_a ge_eq_b.
 have good_b_inps : good b inps.
   rewrite /good.
-  split.
-  (* hint: start with: *)
-  rewrite -(ge_eq_b k).
-  trivial.
-  rewrite mem_nth.
-  smt().
-  smt().
-(* Why does smt(good) here not work? I'm pretty sure we have
-met all of the required assumptions. *)
-(* good tells us that f b inps = Some y for some y - but maybe not k
-   but we can start with good, using the := form of have. we supply
-   the arguments b and inps, and then use _ for each of the three
-   assumptions *)
-have := good b inps _ _ _.
-  trivial.
-  trivial.
-  trivial.
-(* now, we eliminate the existential *)
+  split => [| /#].
+  rewrite -(ge_eq_b k) // 1:mem_nth /#.
+have := good b inps _ _ _ => //.
 move => [i f_b_inps_eq].
-(* now, we can do the same thing with f_goodP: *)
 have := f_goodP b inps _ _ _ => //=.
 rewrite f_b_inps_eq /= => [#].
 move => ge0_i lt_i_arity nth_inps_i_eq_b i_least_nth_eq_b.
-(* now, how can you use the assumptions to prove that
-   i = k? *)
-(* rewrite /ge_eq_b in i_least_nth_eq_b. *)
-admit.
+have le_i_k : i <= k.
+  by rewrite (i_least_nth_eq_b k) 1:/# ge_eq_b.
+rewrite ler_eqVlt in le_i_k.
+elim le_i_k => [// | lt_i_k].
+have /# : nth witness inps i = a by rewrite lt_eq_a.
 qed.
 
 (* if 0 <= k < arity, then make an inps such that f b gives us Some
@@ -552,75 +537,62 @@ qed.
 op make_least_inps (k : int) : inp list =
   nseq k a ++ nseq (arity - k) b.
 
-(*
-lemma size_make_uniq_inps (k : int) :
-  0 <= k < arity => size (make_uniq_inps k) = arity.
+lemma size_make_least_inps (k : int) :
+  0 <= k < arity => size (make_least_inps k) = arity.
 proof.
 move => [ge0_k lt_k_arity].
-rewrite /make_uniq_inps !size_cat /= !size_nseq /#.
+rewrite /make_least_inps size_cat !size_nseq /#.
 qed.
 
-lemma nth_make_uniq_inps_lt (j k : int) :
-  0 <= k => 0 <= j < k =>
-  nth witness (make_uniq_inps k) j = a.
+lemma nth_make_least_inps_lt (j k : int) :
+  0 <= j < k < arity =>
+  nth witness (make_least_inps k) j = a.
 proof.
-move => ge0_k j_rng.
-rewrite /make_uniq_inps.
-smt(size_cat size_nseq nth_cat nth_nseq).
+move => rng_j_k.
+rewrite /make_least_inps.
+rewrite nth_cat.
+smt(nth_cat nth_nseq size_nseq).
 qed.
 
-lemma nth_make_uniq_inps_eq (j k : int) :
-  0 <= k => nth witness (make_uniq_inps k) k = b.
+lemma nth_make_least_inps_ge (j k : int) :
+  0 <= k <= j < arity =>
+  nth witness (make_least_inps k) j = b.
 proof.
-move => ge0_k.
-rewrite /make_uniq_inps.
-smt(size_cat size_nseq nth_cat nth_nseq).
+move => rng_k_j.
+rewrite /make_least_inps.
+smt(nth_cat nth_nseq size_nseq).
 qed.
 
-lemma nth_make_uniq_inps_gt (j k : int) :
-  0 <= k => k < j < arity =>
-  nth witness (make_uniq_inps k) j = c.
-proof.
-move => ge0_k j_rng.
-rewrite /make_uniq_inps.
-smt(size_cat size_nseq nth_cat nth_nseq).
-qed.
-
-lemma all_in_univ_make_uniq_inps (k : int) :
-  0 <= k < arity => all (mem univ) (make_uniq_inps k).
+lemma all_in_univ_make_least_inps (k : int) :
+  0 <= k < arity => all (mem univ) (make_least_inps k).
 proof.
 move => [ge0_k lt_k_arity].
-rewrite /make_uniq_inps !all_cat /= !all_nseq.
-smt(a_in_univ b_in_univ c_in_univ).
+rewrite /make_least_inps all_cat !all_nseq.
+smt(a_in_univ b_in_univ).
 qed.
 
-lemma good_make_uniq_inps (k : int) :
-  0 <= k < arity => good b (make_uniq_inps k).
+lemma good_make_least_inps (k : int) :
+  0 <= k < arity => good b (make_least_inps k).
 proof.
 move => [ge0_k lt_k_arity].
-rewrite /good /make_uniq_inps.
+rewrite /good /make_least_inps.
 split.
-rewrite mem_cat mem_nseq.
-left.
 rewrite mem_cat.
-by right.
-smt(size_make_uniq_inps nth_cat nth_nseq size_nseq size_cat).
+right.
+rewrite mem_nseq /#.
+smt(nth_cat nth_nseq size_nseq).
 qed.
 
-lemma f_make_uniq_inps (k : int) :
-  0 <= k < arity => f b (make_uniq_inps k) = Some k.
+lemma f_make_least_inps (k : int) :
+  0 <= k < arity => f b (make_least_inps k) = Some k.
 proof.
 move => [ge0_k lt_k_arity].
-rewrite (f_uniq _ k) 1:size_make_uniq_inps //
-        1:all_in_univ_make_uniq_inps //.
-rewrite /make_uniq_inps.
-smt(nth_cat nth_nseq size_nseq size_cat).
-rewrite /make_uniq_inps.
-smt(nth_cat nth_nseq size_nseq size_cat).
-rewrite /make_uniq_inps.
-smt(nth_cat nth_nseq size_nseq size_cat).
+rewrite (f_poss_as_then_def_bs _ k) //.
+by rewrite size_make_least_inps.
+by rewrite all_in_univ_make_least_inps.
+move => j [ge0_j lt_j_k]; by rewrite nth_make_least_inps_lt.
+move => j [le_k_j lt_j_arity]; by rewrite nth_make_least_inps_ge.
 qed.
-*)
 
 lemma inpss_win_invar_win_empty_filter_any
       (inpss : inp list list, win_beg win_end : int,
@@ -717,7 +689,6 @@ lemma done_when_win_at_end_implies_win_size_eq1
    inpss_done b inpss =>
    win_size false win_beg win_end = 1.
 proof.
-(* HINT - here is the top-level structure *)
 rewrite /inpss_win_invar /=.
 move => win_inv [#] _ inpss_win_invar_middle _.
 apply contraLR.
@@ -728,24 +699,35 @@ case (inpss_done b inpss) => [done_inpss | //].
 rewrite /inpss_done in done_inpss.
 have lt_win_beg_win_end : win_beg < win_end by smt().
 have f_b_mli_win_beg_eq : f b (make_least_inps win_beg) = Some win_beg.
-  search f Some.
-  admit.
+  rewrite f_make_least_inps /#.
 have mli_win_beg_in_inpss : make_least_inps win_beg \in inpss.
-  rewrite /make_least_inps.
-
-  admit.
+  rewrite (inpss_win_invar_middle win_beg).
+  smt().
+  rewrite size_make_least_inps // /#.
+  move => j [ge0_j lt_j_win_beg].
+  rewrite nth_make_least_inps_lt /#.
+  move => j [le_win_beg_j lt_j_arity].
+  rewrite nth_make_least_inps_ge /#.
 have f_b_mli_win_beg_plus1_eq :
   f b (make_least_inps (win_beg + 1)) = Some (win_beg + 1).
-  admit.
+  rewrite f_make_least_inps /#.
 have mli_win_beg_plus1_in_inpss :
   make_least_inps (win_beg + 1) \in inpss.
-  admit.
+  rewrite (inpss_win_invar_middle (win_beg + 1)).
+  smt().
+  rewrite size_make_least_inps // /#.
+  move => j [ge0_j lt_j_win_beg_plus1].
+  rewrite nth_make_least_inps_lt /#.
+  move => j [le_win_beg_plus1_j lt_j_arity].
+  rewrite nth_make_least_inps_ge /#.
 have /# : Some win_beg = Some (win_beg + 1).
-  (* hint use done_inpss *)
   apply done_inpss.
-  search Some map.
-  admit.
-  admit.
+  rewrite mapP.
+  exists (make_least_inps win_beg).
+  smt().
+  rewrite mapP.
+  exists (make_least_inps (win_beg + 1)).
+  smt().
 qed.
 
 lemma done_when_win_not_at_end_implies_win_size_eq0
@@ -765,8 +747,52 @@ rewrite not_win_empty.
 move => win_inv inpss_win_inv ne0_win_siz.
 have ge1_win_siz : 1 <= win_size false win_beg win_end by smt().
 clear ne0_win_siz not_win_empty.
-print inpss_win_invar.
-admit.
+rewrite /inpss_win_invar /= in inpss_win_inv.
+elim inpss_win_inv =>
+   _
+   [inpss_win_invar_middle
+    inpss_win_invar_as_to_win_end'].
+have inpss_win_invar_as_to_win_end :
+  forall (inps : inp list),
+  size inps = arity =>
+  (forall (j : int),
+   0 <= j && j <= win_end => nth witness inps j = a) =>
+  (forall (j : int),
+   win_end < j && j < arity => nth witness inps j = b) =>
+  inps \in inpss.
+  smt().
+clear inpss_win_invar_as_to_win_end'.
+case (inpss_done b inpss) => [done_inpss | //].
+rewrite /inpss_done in done_inpss.
+have f_b_mli_win_beg_eq : f b (make_least_inps win_beg) = Some win_beg.
+  rewrite f_make_least_inps /#.
+have mli_win_beg_in_inpss : make_least_inps win_beg \in inpss.
+  rewrite (inpss_win_invar_middle win_beg).
+  smt().
+  rewrite size_make_least_inps // /#.
+  move => j [ge0_j lt_j_win_beg].
+  rewrite nth_make_least_inps_lt /#.
+  move => j [le_win_beg_j lt_j_arity].
+  rewrite nth_make_least_inps_ge /#.
+have f_b_mli_win_beg_plus1_eq :
+  f b (make_least_inps (win_end + 1)) = Some (win_end + 1).
+  rewrite f_make_least_inps /#.
+have mli_win_beg_plus1_in_inpss :
+  make_least_inps (win_end + 1) \in inpss.
+  rewrite inpss_win_invar_as_to_win_end.
+  rewrite size_make_least_inps // /#.
+  move => j [ge0_j le_j_win_end].
+  rewrite nth_make_least_inps_lt /#.
+  move => j [lt_win_end_j lt_j_arity].
+  rewrite nth_make_least_inps_ge /#.
+have /# : Some win_beg = Some (win_end + 1).
+  apply done_inpss.
+  rewrite mapP.
+  exists (make_least_inps win_beg).
+  smt().
+  rewrite mapP.
+  exists (make_least_inps (win_end + 1)).
+  smt().
 qed.
 
 lemma inpss_done_lower_bound
