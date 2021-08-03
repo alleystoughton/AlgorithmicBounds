@@ -520,8 +520,9 @@ have good_b_inps : good b inps.
   split.
   (* hint: start with: *)
   rewrite -(ge_eq_b k).
-  admit.
-  admit.
+  trivial.
+  rewrite mem_nth.
+  smt().
   smt().
 (* Why does smt(good) here not work? I'm pretty sure we have
 met all of the required assumptions. *)
@@ -541,6 +542,7 @@ rewrite f_b_inps_eq /= => [#].
 move => ge0_i lt_i_arity nth_inps_i_eq_b i_least_nth_eq_b.
 (* now, how can you use the assumptions to prove that
    i = k? *)
+(* rewrite /ge_eq_b in i_least_nth_eq_b. *)
 admit.
 qed.
 
@@ -726,8 +728,11 @@ case (inpss_done b inpss) => [done_inpss | //].
 rewrite /inpss_done in done_inpss.
 have lt_win_beg_win_end : win_beg < win_end by smt().
 have f_b_mli_win_beg_eq : f b (make_least_inps win_beg) = Some win_beg.
+  search f Some.
   admit.
 have mli_win_beg_in_inpss : make_least_inps win_beg \in inpss.
+  rewrite /make_least_inps.
+
   admit.
 have f_b_mli_win_beg_plus1_eq :
   f b (make_least_inps (win_beg + 1)) = Some (win_beg + 1).
@@ -737,6 +742,9 @@ have mli_win_beg_plus1_in_inpss :
   admit.
 have /# : Some win_beg = Some (win_beg + 1).
   (* hint use done_inpss *)
+  apply done_inpss.
+  search Some map.
+  admit.
   admit.
 qed.
 
