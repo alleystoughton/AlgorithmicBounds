@@ -10,4 +10,4 @@ located.
 * [`SearchingLB.ec` - lower bound proof](SearchingLB.ec)
 * [`SearchingUB.ec` - upper bound proof for binary search algorithm](SearchingUB.ec)
 * [OCaml program for searching for optimal adversarial strategies for the
-   searching problem](strategy/README.md)
+   searching problem](strategy)
