@@ -6,6 +6,7 @@ adversarial method for showing lower bounds.
 
 This is joint work between Boston University faculty
 
+* [Mark Bun](https://cs-people.bu.edu/mbun/) (mbun [at] bu [dot] edu)
 * [Marco Gaboardi](https://cs-people.bu.edu/gaboardi/) (gaboardi@bu.edu)
 * [Alley Stoughton](http://alleystoughton.us) (stough@bu.edu)
 
@@ -17,23 +18,22 @@ and Stuyvesant High School student and BU RISE program intern
 
 * Carol Chen
 
-We have a general EasyCrypt framework for expressing lower bounds problems:
+We have a general EasyCrypt framework for expressing lower bounds problems
 
  * [`AdvLowerBounds.eca` - general adversarial lower bounds framework](../main/AdvLowerBounds.eca)
 
-We have completed these lower bounds proofs using the general
-framework:
-
- * [`OrFunctionLB.ec` - application to or function](../main/OrFunctionLB.ec)
- * [`SearchingLB.ec` - application to searching in ordered list](../main/SearchingLB.ec)
-
-We also have a general EasyCrypt framework for expressing upper bounds problems:
+as well as a general EasyCrypt framework for expressing upper bounds problems
 
  * [`UpperBounds.eca` - general upper bounds framework](../main/UpperBounds.eca)
 
-We have completed this upper bounds proof using the general
-framework:
+We have applied these frameworks to
 
- * [`SearchingUB.ec` - application to searching in ordered list](../main/SearchingUB.ec)
+ * [proving a lower bound for computing the or (disjunction)
+   function of a list of booleans](../main/OrFunctionLB.ec)
+
+ * [proving a lower bound for searching for the least index into an
+   ordered list (in which duplicate elements are allowed) where a
+   given element is located, as well as proving an upper bound for
+   the binary search algorithm for this problem](../main/searching)
 
 We also have some [work-in-progress](../main/work-in-progress).
