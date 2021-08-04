@@ -19,7 +19,7 @@ in collaboration with Boston University doctoral student
 
 and Stuyvesant High School student and BU RISE program intern
 
-* Carol Chen
+* Carol Chen (cchen20@stuy.edu)
 
 We have a general EasyCrypt framework for expressing lower bounds problems
 
