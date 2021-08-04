@@ -88,6 +88,31 @@ op f (aux : aux, xs : inp list) : out option =
   then Some (index aux xs)
   else None.
 
+(* lemmas about f *)
+
+lemma f_ans (aux : aux, xs : inp list, i : int) :
+  size xs = arity => all (mem univ) xs => good aux xs =>
+  0 <= i < arity =>
+  (forall (j : int), 0 <= j < i => nth witness xs j <> aux) =>
+  nth witness xs i = aux => f aux xs = Some i.
+proof.
+move =>
+  size_xs all_in_univ_xs good_aux_xs [ge0_i lt_i_arity]
+  no_aux_lt_i_in_xs nth_xs_i_eq_aux.
+rewrite /f size_xs all_in_univ_xs good_aux_xs /=.
+have aux_in_xs : aux \in xs.
+  by rewrite -nth_xs_i_eq_aux mem_nth size_xs.
+have ge0_index_aux_xs : 0 <= index aux xs by rewrite index_ge0.
+have nth_xs_index_eq_aux : nth witness xs (index aux xs) = aux.
+  by rewrite nth_index 1:aux_in_xs.
+case (index aux xs = i) => [// |].
+rewrite neq_ltz => [[lt_index_i | lt_i_index]].
+have // : nth witness xs (index aux xs) <> aux.
+  by rewrite no_aux_lt_i_in_xs.
+have // : nth witness xs i <> aux.
+  by rewrite before_index.
+qed.
+
 lemma f_good_not_none (aux : aux, xs : inp list) :
   size xs = arity => all (mem univ) xs => good aux xs =>
   f aux xs <> None.
