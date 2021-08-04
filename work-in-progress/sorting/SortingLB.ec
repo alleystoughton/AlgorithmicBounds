@@ -1,6 +1,12 @@
 (* Application of Adversarial Lower Bounds Framework to
    Comparison-based Sorting *)
 
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2020-2021 - Boston University
+ *
+ * Distributed under the terms of the CeCILL-B-V1 license
+ * -------------------------------------------------------------------- *)
+
 prover quorum=2 ["Alt-Ergo" "Z3"].
 
 timeout 2.  (* can increase *)
