@@ -1,3 +1,11 @@
+(* Searching for Optimal Adversarial Strategies for Searching Problem *)
+
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2021 - Boston University
+ *
+ * Distributed under the terms of the CeCILL-C-V1 license
+ * -------------------------------------------------------------------- *)
+
 (* find optimal adversarial strategies for searching for the first
    occurrence of a given element in a sorted list of a given arity,
    where the list is guaranteed to have at least one occurrence of the

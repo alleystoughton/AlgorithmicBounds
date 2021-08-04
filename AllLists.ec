@@ -1,5 +1,11 @@
 (* Generating All Lists of Length Over Universe *)
 
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2020-2021 - Boston University
+ *
+ * Distributed under the terms of the CeCILL-B-V1 license
+ * -------------------------------------------------------------------- *)
+
 prover [""].  (* no use of SMT provers *)
 
 require import AllCore List FSetAux.

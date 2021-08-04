@@ -1,6 +1,12 @@
 (* integer logarithms - both rounding down (default) and rounding
    up *)
 
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2021 - Boston University
+ *
+ * Distributed under the terms of the CeCILL-B-V1 license
+ * -------------------------------------------------------------------- *)
+
 prover [""].  (* no use of SMT provers *)
 
 require import AllCore StdOrder IntDiv.

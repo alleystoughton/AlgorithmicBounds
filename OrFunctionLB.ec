@@ -1,5 +1,11 @@
 (* Application of Adversarial Lower Bounds Framework to Or Function *)
 
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2020-2021 - Boston University
+ *
+ * Distributed under the terms of the CeCILL-B-V1 license
+ * -------------------------------------------------------------------- *)
+
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)

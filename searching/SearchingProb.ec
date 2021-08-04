@@ -1,5 +1,12 @@
 (* Problem Specification for Searching in Ordered Lists *)
 
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2021 - Boston University
+ * Copyright (c) - 2021 - Carol Chen
+ *
+ * Distributed under the terms of the CeCILL-B-V1 license
+ * -------------------------------------------------------------------- *)
+
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)

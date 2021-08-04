@@ -1,5 +1,11 @@
 (* Upper Bounds Framework *)
 
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2021 - Boston University
+ *
+ * Distributed under the terms of the CeCILL-B-V1 license
+ * -------------------------------------------------------------------- *)
+
 (* general framework for proving upper bounds results *)
 
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)

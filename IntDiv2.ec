@@ -2,6 +2,12 @@
    rounding down and up, plus connection to integer logarithms,
    rounding down and up *)
 
+(* --------------------------------------------------------------------
+ * Copyright (c) - 2021 - Boston University
+ *
+ * Distributed under the terms of the CeCILL-B-V1 license
+ * -------------------------------------------------------------------- *)
+
 prover [""].  (* no use of SMT provers *)
 
 require import AllCore StdOrder IntDiv IntLog.
