@@ -25,10 +25,19 @@ check FRange.ec
 check AllLists.ec
 
 check AdvLowerBounds.eca
+check UpperBounds.eca
 check OrFunctionLB.ec
+
+cd searching
+echo cd to searching
+echo ""
+
+check SearchingProb.ec
+check SearchingUB.ec
 check SearchingLB.ec
 
-check UpperBounds.eca
+echo cd to ..
+cd ..
 
 # success!
 
