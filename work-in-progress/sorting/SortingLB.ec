@@ -181,6 +181,15 @@ op elems_in_range (ms : int list, n : int) : bool =
   forall (i : int),
   0 <= i < size ms => 0 <= nth witness ms i < n.
 
+lemma nth_cons0 (x : 'a, ys : 'a list) :
+  nth witness (x :: ys) 0 = x.
+proof. trivial. qed.
+
+lemma nth_cons_pos (x : 'a, ys : 'a list, i : int) :
+  0 <= i < size ys =>
+  nth witness (x :: ys) (i + 1) = nth witness ys i.
+proof. smt(). qed.
+
 lemma elems_in_range0 (n : int) :
   elems_in_range [] n.
 proof. smt(). qed.
@@ -194,7 +203,11 @@ lemma elems_in_range_cons (m : int, ms : int list, n : int) :
   0 <= m < n /\ elems_in_range ms n.
 proof.
 rewrite /elems_in_range.
-smt(size_ge0).
+split => [H | /#].
+split.
+rewrite -(nth_cons0 m ms) H; smt(size_ge0).
+move => i [ge0_i lt_i_size_ms].
+rewrite -(nth_cons_pos m ms) // H /#.
 qed.
 
 lemma elems_in_range_incr (ms : int list, n : int) :
@@ -213,11 +226,13 @@ lemma nodups_cons_def (x : 'a, ys : 'a list) :
   nodups (x :: ys) <=>
   nodups ys /\
   (forall (i : int), 0 <= i < size ys => nth witness ys i <> x).
-  proof.
-  split. rewrite /nodups. progress. have H4: (if i+1 = 0 then x else nth witness ys (i+1-1 )) <>
-    if j+1 = 0 then x else nth witness ys (j+1 - 1).  auto. smt(). smt(). smt().
-  rewrite /nodups. progress. smt(). 
-(* rewrite /nodups /#. *)
+proof.
+rewrite /nodups.
+split => [H | /#].
+split => [i j [#] ge0_i lt_i_j lt_j_size_ys |].
+rewrite -(nth_cons_pos x) 1:/# -(nth_cons_pos x ys) 1:/# 1:H /= /#.
+move => i [ge0_i lt_i_size_ys].
+rewrite eq_sym -(nth_cons0 _ ys) -(nth_cons_pos x ys) 1:/# H /#.
 qed.
 
 (* tests whether xs is a permutation of the elements 0 ... n - 1: *)
