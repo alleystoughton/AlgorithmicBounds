@@ -18,24 +18,9 @@ check() {
   fi;
 }
 
-check IntLog.ec
-check IntDiv2.ec
-check FSetAux.ec
-check FRange.ec
-check AllLists.ec
-
-check AdvLowerBounds.eca
-check UpperBounds.eca
-check OrFunctionLB.ec
-
-cd searching
-echo cd to searching
-echo ""
-
-check-all-scripts
-
-echo cd to ..
-cd ..
+check SearchingProb.ec
+check SearchingUB.ec
+check SearchingLB.ec
 
 # success!
 
