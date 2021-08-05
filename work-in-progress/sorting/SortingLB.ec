@@ -213,8 +213,11 @@ lemma nodups_cons_def (x : 'a, ys : 'a list) :
   nodups (x :: ys) <=>
   nodups ys /\
   (forall (i : int), 0 <= i < size ys => nth witness ys i <> x).
-proof.
-rewrite /nodups /#.
+  proof.
+  split. rewrite /nodups. progress. have H4: (if i+1 = 0 then x else nth witness ys (i+1-1 )) <>
+    if j+1 = 0 then x else nth witness ys (j+1 - 1).  auto. smt(). smt(). smt().
+  rewrite /nodups. progress. smt(). 
+(* rewrite /nodups /#. *)
 qed.
 
 (* tests whether xs is a permutation of the elements 0 ... n - 1: *)
