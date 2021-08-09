@@ -70,16 +70,18 @@ axiom bad (aux : aux, xs : inp list) :
 op init_inpss (aux : aux) : inp list list =
   List.filter (good aux) (AllLists.all_lists univ arity).
 
-(* inpss invariant: all lists of possible inputs must cause (f aux) to
-   return non-None answers: *)
+(* inpss invariant: all lists of possible inputs must be distinct, and
+   they must cause (f aux) to return non-None answers: *)
 
 op inpss_invar (aux : aux, inpss : inp list list) : bool =
-  all is_some (map (f aux) inpss).
+  uniq inpss /\ all is_some (map (f aux) inpss).
 
 lemma inpss_invar_init (aux : aux) : 
   inpss_invar aux (init_inpss aux).
 proof.
 rewrite /inpss_invar /init_inpss.
+split.
+rewrite filter_uniq AllLists.all_list_uniq 1:univ_uniq ge0_arity.
 have H := AllLists.all_lists_arity_wanted univ arity _.
   apply ge0_arity.
 smt(allP mapP mem_filter good).
@@ -89,7 +91,9 @@ lemma inpss_invar_filter
       (aux: aux, inpss : inp list list, g : inp list -> bool) :
   inpss_invar aux inpss => inpss_invar aux (filter g inpss).
 proof.
-rewrite /inpss_invar.
+rewrite /inpss_invar => [[uniq_inpss all_is_some_map_f_aux_inpss]].
+split.
+by rewrite filter_uniq.
 smt(mapP mem_filter allP map_f).
 qed.
 
@@ -97,7 +101,7 @@ lemma inpss_invar_size (aux : aux, inpss : inp list list) :
   inpss_invar aux inpss =>
   all (fun inps => size inps = arity) inpss.
 proof.
-rewrite /inpss_invar => all_is_some_map_f_inpss.
+rewrite /inpss_invar => [[_ all_is_some_map_f_inpss]].
 rewrite allP => inps inps_in_inpss /=.
 rewrite allP in all_is_some_map_f_inpss.
 have H := all_is_some_map_f_inpss (f aux inps) _.

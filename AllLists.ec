@@ -18,7 +18,7 @@ by rewrite flatten_nil.
 by rewrite flatten_cons all_cat IH.
 qed.
 
-op next (xs : 'a list, yss : 'a list list) : 'a list list =
+op nosmt next (xs : 'a list, yss : 'a list list) : 'a list list =
   flatten  
   (map
    (fun x =>
@@ -36,6 +36,18 @@ proof.
 by rewrite /next.
 qed.
 
+lemma next_uniq (xs : 'a list, yss : 'a list list) :
+  uniq xs => uniq yss => uniq (next xs yss).
+proof.
+move => uniq_xs uniq_yss.
+rewrite next uniq_flatten_map //=.
+move => x; by rewrite map_inj_in_uniq.
+move => u v u_in_xs v_in_xs.
+rewrite hasP => [[zs []]].
+rewrite mapP => [[us [_ ->]]].
+rewrite mapP => [[vs [_ //]]].
+qed.
+
 op all_lists (xs : 'a list, n : int) = fold (next xs) [[]] n.
 
 lemma all_lists0 (xs : 'a list) :
@@ -50,6 +62,15 @@ lemma all_listsS (xs : 'a list, n : int) :
 proof.
 move => ge0_n.
 by rewrite /all_lists foldS.
+qed.
+
+lemma all_list_uniq (xs : 'a list, n : int) :
+  uniq xs => 0 <= n => uniq (all_lists xs n).
+proof.
+move => uniq_xs; move : n.
+elim => [| i ge0_i uniq_al_xs_i].
+by rewrite all_lists0.
+by rewrite all_listsS // next_uniq.
 qed.
 
 lemma all_listsS_iff (xs ys : 'a list, n : int) :
