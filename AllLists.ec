@@ -48,6 +48,28 @@ rewrite mapP => [[us [_ ->]]].
 rewrite mapP => [[vs [_ //]]].
 qed.
 
+lemma sumz_nseq (n m : int) :
+  0 <= n => sumz (nseq n m) = n * m.
+proof.
+rewrite /sumz.
+elim n => [| i ge0_i IH].
+by rewrite nseq0.
+by rewrite nseqS //= IH mulrDl /= addrC.
+qed.
+
+lemma next_size (xs : 'a list, yss : 'a list list) :
+  size (next xs yss) = size xs * size yss.
+proof.
+rewrite next size_flatten /=.
+have -> :
+  map size (map (fun (x : 'a) => map ((::) x) yss) xs) =
+  nseq (size xs) (size yss). 
+elim xs => [/= | x xs IH /=].
+by rewrite nseq0.
+by rewrite addrC nseqS 1:size_ge0 IH /= size_map.
+by rewrite sumz_nseq 1:size_ge0.
+qed.
+
 op all_lists (xs : 'a list, n : int) = fold (next xs) [[]] n.
 
 lemma all_lists0 (xs : 'a list) :
@@ -71,6 +93,14 @@ move => uniq_xs; move : n.
 elim => [| i ge0_i uniq_al_xs_i].
 by rewrite all_lists0.
 by rewrite all_listsS // next_uniq.
+qed.
+
+lemma all_lists_size (xs : 'a list, n : int) :
+  0 <= n => size (all_lists xs n) = size xs ^ n.
+proof.
+elim n => [| i ge0_i IH].
+by rewrite all_lists0 /= expr0.
+by rewrite all_listsS // next_size IH exprS.
 qed.
 
 lemma all_listsS_iff (xs ys : 'a list, n : int) :

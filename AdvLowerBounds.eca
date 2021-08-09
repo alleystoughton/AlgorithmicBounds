@@ -73,8 +73,20 @@ op init_inpss (aux : aux) : inp list list =
 (* inpss invariant: all lists of possible inputs must be distinct, and
    they must cause (f aux) to return non-None answers: *)
 
-op inpss_invar (aux : aux, inpss : inp list list) : bool =
+op nosmt inpss_invar (aux : aux, inpss : inp list list) : bool =
   uniq inpss /\ all is_some (map (f aux) inpss).
+
+lemma inpss_invar_uniq (aux : aux, inpss : inp list list) :
+  inpss_invar aux inpss => uniq inpss.
+proof.
+by rewrite /inpss_invar.
+qed.
+
+lemma inpss_invar_all_is_some_f (aux : aux, inpss : inp list list) :
+  inpss_invar aux inpss => all is_some (map (f aux) inpss).
+proof.
+by rewrite /inpss_invar.
+qed.
 
 lemma inpss_invar_init (aux : aux) : 
   inpss_invar aux (init_inpss aux).
