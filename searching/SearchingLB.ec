@@ -108,7 +108,7 @@ module Adv : ADV = {
     (* win_beg <= i <= win_end /\ ! win_empty *)
     elif (win_beg = win_end) {  (* so i = win_beg *)
       if (win_end = arity - 1) {
-        j <- b;  (* our loop invariant won't imply game over *)
+        j <- b;  (* we could prove game over, but more convenient *)
       }
       else {
         win_empty <- true;
