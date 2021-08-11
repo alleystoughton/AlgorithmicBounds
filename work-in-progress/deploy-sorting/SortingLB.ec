@@ -190,11 +190,11 @@ op nosmt cmp_total_ordering (xs: inp list) : bool =
   size xs = arity /\
   (forall (i : int), cmp_of_rel xs i i) /\
   (forall (i j k : int),
-    cmp_of_rel xs i j => cmp_of_rel xs j k => cmp_of_rel xs i k) /\
+  cmp_of_rel xs i j => cmp_of_rel xs j k => cmp_of_rel xs i k) /\
   (forall (i j : int),
-    cmp_of_rel xs i j => cmp_of_rel xs j i => i = j) /\
+  cmp_of_rel xs i j => cmp_of_rel xs j i => i = j) /\
   forall (i j : int),
-    i <> j => cmp_of_rel xs i j \/ cmp_of_rel xs j i.
+  i <> j => cmp_of_rel xs i j \/ cmp_of_rel xs j i.
 
 lemma cmp_total_ordering_size (xs : inp list) :
   cmp_total_ordering xs => size xs = arity.
@@ -220,17 +220,16 @@ lemma cmp_total_ordering_total (xs : inp list, i j : int) :
 proof. rewrite /cmp_total_ordering /#. qed.
 
 lemma cmp_total_ordering_ne_not_sym (xs : inp list, i j : int) :
-  cmp_total_ordering xs =>
-   i <> j =>
+  cmp_total_ordering xs =>i <> j =>
   cmp_of_rel xs i j => ! cmp_of_rel xs j i.
 proof. rewrite /cmp_total_ordering /#. qed.
   
 
 lemma tot_cmp_tot (xs:inp list):
-    total_ordering xs => cmp_total_ordering (xs).
+  total_ordering xs => cmp_total_ordering (xs).
 proof.
-  rewrite /cmp_total_ordering /total_ordering => //.
-  smt().
+rewrite /cmp_total_ordering /total_ordering => //.
+smt().
 qed.    
 
 op tsort (xs: inp list) (s: int list) =
@@ -246,21 +245,12 @@ lemma sorted_perm_exists (xs : inp list) :
   perm_eq (range 0 len) perm /\ tsorted xs perm.
 proof.
 move => tot_ord_xs.
-have H :
-  forall (n : int),
-  0 <= n => n <= len =>
-  exists (perm : int list),
-  perm_eq (range 0 n) perm  /\ tsorted xs perm.
-  move => n ge0_n le_n_len.
-  exists (sort (cmp_of_rel xs) (range 0 (n))).
-  split.
-  smt(perm_eq_sym perm_sort).
-  rewrite /tsorted.
-  rewrite (sort_sorted).
-  smt(tot_cmp_tot cmp_total_ordering_total).
-have /# := H len _ _.
-  rewrite (ler_trans 1) // ge1_len.
-  trivial.
+exists (sort (cmp_of_rel xs) (range 0 len )).
+split.
+smt(perm_eq_sym perm_sort).
+rewrite /tsorted.
+rewrite (sort_sorted).
+smt(tot_cmp_tot cmp_total_ordering_total).
 qed.
 
 lemma diff_equal_size_least_index_diff (xs ys : 'a list) :
@@ -299,14 +289,11 @@ lemma sorted_perm_len_rel_uniq (xs : inp list, perm1 perm2 : int list) :
   sorted_perm_len_rel xs perm1 => sorted_perm_len_rel xs perm2 =>
   perm1 = perm2.
 proof.
-move => tot_ord_xs [ispl1 srted1] [ispl2 srted2]. print eq_sorted.
-  rewrite (eq_sorted (cmp_of_rel xs) _ _ perm1 perm2).
-  smt(cmp_total_ordering_trans tot_cmp_tot).
-  smt(cmp_total_ordering_antisym tot_cmp_tot).
-  smt().
-  smt().
-  smt(perm_eq_trans perm_eq_sym).
-  trivial.
+move => tot_ord_xs [ispl1 srted1] [ispl2 srted2]. 
+rewrite (eq_sorted (cmp_of_rel xs) _ _ perm1 perm2) //.
+smt(cmp_total_ordering_trans tot_cmp_tot).
+smt(cmp_total_ordering_antisym tot_cmp_tot).
+smt(perm_eq_trans perm_eq_sym).
 qed.
 
 (* now we can define our f and show it has the correct property *)
@@ -324,13 +311,12 @@ lemma f_prop (xs : inp list) :
   tsorted xs (oget (f () xs)).
 proof.
 move => tot_ord_xs.
-  split.
-  smt(sorted_perm_exists).
-  split.
-  rewrite /f /sorted_perm_len_rel tot_ord_xs => /=.
-  smt(perm_eq_sym perm_sort).
-  rewrite /tsort /f tot_ord_xs /tsorted /tsort => /=. 
-  smt(sort_sorted cmp_total_ordering_total tot_cmp_tot).
+split => [ /# | //  ].
+split.
+rewrite /f /sorted_perm_len_rel tot_ord_xs => /=.
+smt(perm_eq_sym perm_sort).
+rewrite /tsort /f tot_ord_xs /tsorted /tsort => /=. 
+smt(sort_sorted cmp_total_ordering_total tot_cmp_tot).
 qed.
 
 lemma f_is_some (xs : inp list) :
@@ -437,13 +423,29 @@ proof.
 proc; auto.
 qed.
 
-
-
-(* here is our main theorem: *)
+lemma init_inpss_fact_len : 
+     size (init_inpss ()) =  fact len. 
+proof.
+  rewrite /init_inpss /good.
+  admit.
+qed.
+  (* here is our main theorem: *)
 
 lemma G_Adv_main (Alg <: ALG{Adv}) : 
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log_up 2 (fact len) <= res.`2].
 proof.
-  admit.
+  proc.
+  seq 7 :
+  (inpss = init_inpss aux /\ error = false /\ don = inpss_done aux inpss /\
+    stage = 0 /\ queries = fset0 /\ Adv.inpss = init_inpss aux /\ aux = ()).
+  wp.
+  call (_ : true).
+  inline Adv.init; auto. print queries_in_range. print inpss_done.
+  while
+  (stage = card queries /\ queries_in_range queries /\
+   don = inpss_done aux inpss /\ divpow2up (fact len) stage <= size inpss
+   ).
+  admit. 
+  admit.  
 qed.
     
