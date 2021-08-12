@@ -23,6 +23,7 @@ require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial.
 import IntOrder.
 
 require AdvLowerBounds.   (* adversarial lower bounds framework *)
+require import ListSizesInjectionSurjection.
 require import AllLists.  (* generating all lists of length over universe *)
 require import IntLog.    (* integer logarithms *)
 require import IntDiv2.   (* division by powers of two *)
@@ -409,9 +410,86 @@ module Adv : ADV = {
     }
     return ret;   
   }
-}.    
+}.
 
-(* adversary is lossless *)
+
+
+op tot2perm (xs: inp list) : int list =
+  if(total_ordering xs) then sort (cmp_of_rel xs) (range 0 len) else (range 0 len).
+
+op perms (n : int) : int list list = allperms (range 0 n).
+
+
+lemma tot2perm_injective:
+    lists_fun_injective ( init_inpss () ) (perms len) tot2perm.
+proof.
+rewrite /lists_fun_injective /init_inpss /good /tot2perm => x x' x_in_tot x'_in_tot. 
+rewrite mem_filter in x_in_tot.
+rewrite mem_filter in x'_in_tot.
+elim x_in_tot.
+elim x'_in_tot.
+simplify.
+move => tot_x' x'_in_all tot_x x_in_all. 
+  have -> : (if total_ordering x then sort (cmp_of_rel x) (range 0 len)
+     else range 0 len) =  sort (cmp_of_rel x) (range 0 len) by smt().
+  have -> : (if total_ordering x' then sort (cmp_of_rel x') (range 0 len)
+  else range 0 len) =  sort (cmp_of_rel x') (range 0 len) by smt().
+  have H: uniq (all_lists univ arity)by smt(all_list_uniq univ_uniq ge0_arity).
+ 
+  have H1: forall (y, y'),  total_ordering y =>y \in all_lists univ arity => total_ordering y' => y' \in all_lists univ arity =>
+           y <> y' => sort (cmp_of_rel y) (range 0 len) <> sort (cmp_of_rel y') (range 0 len)  .
+  admit.
+  smt().
+  (* clear tot_x' tot_x x'_in_all x_in_all x x'. *)
+(*   progress. *)
+  
+
+(* rewrite in_filter. *)
+(*  Case (x = x') => [// | ne_xs]. *)
+(*   have [i [#] ge0_i lt_i_size nth_ne_at_i min_prop] *)
+(*        := diff_equal_size_least_index_diff x x' _ _. *)
+(*   smt().  print total_ordering_size.  apply total_ordering_size in tot_x. apply total_ordering_size in tot_x'. *)
+(*   rewrite tot_x tot_x' => //.  *)
+
+(*   have [k1 [#] lt_i_k1 lt_k1_size perm1_at_k1_eq_perm2_at_i] : *)
+(*   exists (k1 : int), *)
+(*   i < k1 < size perm1 /\ nth witness x k1 = nth witness x' i. *)
+(*   have [j [#] ge0_j lt_j_len perm1_at_j_eq_perm2_at_i] *)
+(*          := perm_len_has_all x (nth witness x' i) _ _. *)
+(*     trivial. smt(). *)
+(*   have i_lt_j_lt_len : i < j by smt(). *)
+  (*   exists j; smt(). *)
+qed.
+
+lemma tot2perm_surjective:
+     lists_fun_surjective ( init_inpss () ) (perms len) tot2perm.
+proof.
+  rewrite /lists_fun_surjective /init_inpss /good /tot2perm => y  y_in_perm_len.
+  progress. 
+  case (exists x,x \in all_lists univ arity /\ total_ordering x /\ sort (cmp_of_rel x) (range 0 len) = y ) => [ // | not_x_map_y  ].
+  elim.
+  progress.
+  exists x.
+  split. rewrite mem_filter. split; smt().
+  rewrite H0 //.
+  
+  rewrite negb_exists /= in not_x_map_y.
+  admit.
+
+ qed.
+   
+  
+
+(*   x'_in_tot.  *)
+(* rewrite mem_filter in x_in_tot. *)
+(* rewrite mem_filter in x'_in_tot. *)
+(* elim x_in_tot. *)
+(* elim x'_in_tot. *)
+(* simplify. *)
+(* move => tot_x' x'_in_all tot_x x_in_all.  *)
+
+
+  (* adversary is lossless *)
 
 lemma Adv_init_ll : islossless Adv.init.
 proof.
