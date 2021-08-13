@@ -435,58 +435,65 @@ move => tot_x' x'_in_all tot_x x_in_all.
   have -> : (if total_ordering x' then sort (cmp_of_rel x') (range 0 len)
   else range 0 len) =  sort (cmp_of_rel x') (range 0 len) by smt().
   have H: uniq (all_lists univ arity)by smt(all_list_uniq univ_uniq ge0_arity).
- 
-  have H1: forall (y, y'),  total_ordering y =>y \in all_lists univ arity => total_ordering y' => y' \in all_lists univ arity =>
+case (x = x') => [ /# | x_neq_x' sorted_eq].
+  have H1: forall (i, j),  0 <= i<j < len /\   cmp_of_rel x i  j =  cmp_of_rel x' i j. 
+  admit.
+  have H2: forall (y, y'),  total_ordering y =>y \in all_lists univ arity => total_ordering y' => y' \in all_lists univ arity =>
            y <> y' => sort (cmp_of_rel y) (range 0 len) <> sort (cmp_of_rel y') (range 0 len)  .
   admit.
-  smt().
-  (* clear tot_x' tot_x x'_in_all x_in_all x x'. *)
-(*   progress. *)
-  
-
-(* rewrite in_filter. *)
-(*  Case (x = x') => [// | ne_xs]. *)
-(*   have [i [#] ge0_i lt_i_size nth_ne_at_i min_prop] *)
-(*        := diff_equal_size_least_index_diff x x' _ _. *)
-(*   smt().  print total_ordering_size.  apply total_ordering_size in tot_x. apply total_ordering_size in tot_x'. *)
-(*   rewrite tot_x tot_x' => //.  *)
-
-(*   have [k1 [#] lt_i_k1 lt_k1_size perm1_at_k1_eq_perm2_at_i] : *)
-(*   exists (k1 : int), *)
-(*   i < k1 < size perm1 /\ nth witness x k1 = nth witness x' i. *)
-(*   have [j [#] ge0_j lt_j_len perm1_at_j_eq_perm2_at_i] *)
-(*          := perm_len_has_all x (nth witness x' i) _ _. *)
-(*     trivial. smt(). *)
-(*   have i_lt_j_lt_len : i < j by smt(). *)
-  (*   exists j; smt(). *)
+smt().      
 qed.
 
 lemma tot2perm_surjective:
      lists_fun_surjective ( init_inpss () ) (perms len) tot2perm.
 proof.
-  rewrite /lists_fun_surjective /init_inpss /good /tot2perm => y  y_in_perm_len.
-  progress. 
-  case (exists x,x \in all_lists univ arity /\ total_ordering x /\ sort (cmp_of_rel x) (range 0 len) = y ) => [ // | not_x_map_y  ].
-  elim.
-  progress.
-  exists x.
-  split. rewrite mem_filter. split; smt().
-  rewrite H0 //.
-  
-  rewrite negb_exists /= in not_x_map_y.
-  admit.
-
+rewrite /lists_fun_surjective /init_inpss /good /tot2perm => y  y_in_perm_len.
+progress. 
+case (exists x,x \in all_lists univ arity /\ total_ordering x /\ sort (cmp_of_rel x) (range 0 len) = y ) => [ // | not_x_map_y  ].
+smt(mem_filter).  
+rewrite negb_exists /= in not_x_map_y . print eq_from_nth.
+  have H: forall x, x \in filter total_ordering (all_lists univ arity) <=> total_ordering x /\ x \in (all_lists univ arity) by smt(mem_filter).  
+   have H1: forall x, x \in filter total_ordering (all_lists univ arity)/\ (if total_ordering x then sort (cmp_of_rel x) (range 0 len) else range 0 len) =
+  y  <=> total_ordering x /\ x \in (all_lists univ arity) /\  sort (cmp_of_rel x) (range 0 len) = y by smt(mem_filter).
+admit.
  qed.
    
   
 
-(*   x'_in_tot.  *)
-(* rewrite mem_filter in x_in_tot. *)
-(* rewrite mem_filter in x'_in_tot. *)
-(* elim x_in_tot. *)
-(* elim x'_in_tot. *)
-(* simplify. *)
-(* move => tot_x' x'_in_all tot_x x_in_all.  *)
+lemma uniq_init_inpss (aux:aux):
+  uniq (init_inpss aux).
+proof.    
+have H : inpss_invar aux (init_inpss aux) by smt(inpss_invar_init).
+rewrite /inpss_invar in H.
+smt().     
+qed.
+
+lemma tot2perm_init_inpss_perm_n (aux: aux):
+  lists_fun (init_inpss aux) (perms len) tot2perm. 
+proof.   
+rewrite /lists_fun /init_inpss /good /perms /tot2perm => [x x_in_init ].
+  have H1 : (if total_ordering x then sort (cmp_of_rel x) (range 0 len) else range 0 len) = sort (cmp_of_rel x) (range 0 len) by smt(mem_filter).  
+smt(perm_sort perm_eq_sym allpermsP). 
+qed.
+
+lemma init_inpss_same_size_perms_len  : 
+   size (init_inpss ()) =  size (perms len). 
+proof.
+rewrite (uniq_sets_eq_size_if_injective_surjective (init_inpss ()) (perms len)   tot2perm ) //.
+smt(uniq_init_inpss).
+rewrite /perms; smt(uniq_allperms).
+smt(tot2perm_init_inpss_perm_n).
+smt(tot2perm_injective).
+smt(tot2perm_surjective).
+qed.
+
+lemma init_inpss_fact_len :
+  size (init_inpss () ) = fact len.
+proof.    
+rewrite init_inpss_same_size_perms_len /perms size_allperms_uniq.
+smt(range_uniq).
+smt(size_range gt0_len).
+qed.  
 
 
   (* adversary is lossless *)
@@ -501,12 +508,6 @@ proof.
 proc; auto.
 qed.
 
-lemma init_inpss_fact_len : 
-     size (init_inpss ()) =  fact len. 
-proof.
-  rewrite /init_inpss /good.
-  admit.
-qed.
   (* here is our main theorem: *)
 
 lemma G_Adv_main (Alg <: ALG{Adv}) : 
