@@ -447,15 +447,18 @@ qed.
 lemma tot2perm_surjective:
      lists_fun_surjective ( init_inpss () ) (perms len) tot2perm.
 proof.
-rewrite /lists_fun_surjective /init_inpss /good /tot2perm => y  y_in_perm_len.
-progress. 
+rewrite /lists_fun_surjective /init_inpss /good /tot2perm => y y_in_perms_len /=.
+(* elim. *)
+(*   rewrite /perms. progress. search allperms. have H1 : perm_eq (range 0 len) [] by smt(allpermsP). *)
+(*   apply perm_eq_size in H1.  *)
+(* smt(gt0_len range_geq  size_range). *)
 case (exists x,x \in all_lists univ arity /\ total_ordering x /\ sort (cmp_of_rel x) (range 0 len) = y ) => [ // | not_x_map_y  ].
 smt(mem_filter).  
-rewrite negb_exists /= in not_x_map_y . print eq_from_nth.
-  have H: forall x, x \in filter total_ordering (all_lists univ arity) <=> total_ordering x /\ x \in (all_lists univ arity) by smt(mem_filter).  
+rewrite negb_exists /= in not_x_map_y.
+    have H: forall x, x \in filter total_ordering (all_lists univ arity) <=> total_ordering x /\ x \in (all_lists univ arity) by smt(mem_filter).  
    have H1: forall x, x \in filter total_ordering (all_lists univ arity)/\ (if total_ordering x then sort (cmp_of_rel x) (range 0 len) else range 0 len) =
   y  <=> total_ordering x /\ x \in (all_lists univ arity) /\  sort (cmp_of_rel x) (range 0 len) = y by smt(mem_filter).
-admit.
+  admit.
  qed.
    
   
