@@ -511,23 +511,96 @@ proof.
 proc; auto.
 qed.
 
-  (* here is our main theorem: *)
+    (* here is our main theorem: *)
 
+lemma filter_p_not_p'_size:
+    forall (l: 'a list) (p p' : 'a -> bool),
+    (forall x, x \in l => p x = ! p' x) =>  size (filter p l) + size ( filter (p') l) = size  l.    
+proof.
+progress.
+move: l H.
+elim =>  [//= | //= ].
+progress.
+case (p x) => [ p_x_true | p_x_false].
+have ->//= : ! (p' x) by smt(). 
+rewrite -H.
+smt().     
+smt().
+have ->//= : (p' x) by smt().   
+rewrite -H.
+smt().     
+smt().
+qed.     
+    
+lemma ge1_fact: forall n, 0<=n => 1<=fact n.
+proof.
+  elim => [// |//]. 
+  smt(fact0).
+  smt(factS fact1).
+qed.    
+  
 lemma G_Adv_main (Alg <: ALG{Adv}) : 
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log_up 2 (fact len) <= res.`2].
 proof.
   proc.
-  seq 7 :
+seq 7 :
   (inpss = init_inpss aux /\ error = false /\ don = inpss_done aux inpss /\
-    stage = 0 /\ queries = fset0 /\ Adv.inpss = init_inpss aux /\ aux = ()).
-  wp.
-  call (_ : true).
-  inline Adv.init; auto. print queries_in_range. print inpss_done.
-  while
+   stage = 0 /\ queries = fset0 /\ Adv.inpss = init_inpss aux /\ aux = ()).
+wp.
+call (_ : true).
+inline Adv.init; auto. 
+while
   (stage = card queries /\ queries_in_range queries /\
-   don = inpss_done aux inpss /\ divpow2up (fact len) stage <= size inpss
-   ).
-  admit. 
-  admit.  
+   don = inpss_done aux inpss /\ divpow2up (fact len) stage <= size inpss /\ Adv.inpss = inpss).
+seq 1:
+  (stage = card queries /\ queries_in_range queries /\
+   don = inpss_done aux inpss /\ divpow2up (fact len) stage <= size inpss /\ Adv.inpss = inpss 
+   /\ !don /\ !error).
+call (_ : true); first auto.
+if.
+wp.
+call (_: true); first auto.
+sp. elim* => stage queries. 
+inline Adv.ans_query.
+sp 3.
+if.
+auto; progress [-delta]. 
+smt(fcardUindep1).
+smt(queries_in_range_add).
+rewrite /univ=> /=. 
+rewrite (divpow2up_next_new_ub (size inpss{hr})   (fact len) (card queries)  (size (filter_nth inpss{hr} i{hr} false)) ). 
+smt(ge1_fact ge1_len).
+smt(fcard_ge0).
+auto.
+  have filter_list_size :  size (filter_nth inpss{hr} i{hr} true) + size (filter_nth inpss{hr} i{hr} false) = size inpss{hr}.
+  rewrite /filter_nth => //=.
+  apply filter_p_not_p'_size.
+  smt().
+  smt().
+auto; progress [-delta]. 
+smt(fcardUindep1).
+smt(queries_in_range_add).
+rewrite /univ=> /=. 
+rewrite (divpow2up_next_new_ub (size inpss{hr})   (fact len) (card queries)  (size (filter_nth inpss{hr} i{hr} true)) ). 
+smt(ge1_fact ge1_len).
+smt(fcard_ge0).
+auto.
+have filter_list_size :  size (filter_nth inpss{hr} i{hr} true) + size (filter_nth inpss{hr} i{hr} false) = size inpss{hr}.
+rewrite /filter_nth => //=. apply filter_p_not_p'_size.
+smt().
+smt().
+auto.
+auto; progress.
+smt(fcards0).
+smt(queries_in_range0).
+by rewrite divpow2up_start init_inpss_fact_len .
+rewrite negb_and in H.
+elim H => [ //= inpss_done | error ].
+right.
+apply divpow2up_eq1_int_log_up_le.
+smt(ge1_fact ge1_len).
+smt(fcard_ge0).
+admit.  
+by left. 
 qed.
     
