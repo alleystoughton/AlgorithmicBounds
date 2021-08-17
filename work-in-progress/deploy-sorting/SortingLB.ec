@@ -37,6 +37,11 @@ proof.
 rewrite (ltr_le_trans 1) // ge1_len.
 qed.
 
+lemma ge0_len : 0 <= len.
+proof.
+rewrite (ler_trans 1) // ge1_len.
+qed.
+
 (* to represent this problem using our framework, we encode queries
    (i, j), for 0 <= i, j < len, as integers between 0 and arity - 1,
    for arity = len * len: *)
@@ -46,6 +51,11 @@ op arity : int = len * len.
 lemma ge1_arity : 1 <= arity.
 proof.
 rewrite /arity mulr_ege1 ge1_len.
+qed.
+
+lemma ge0_arity : 0 <= arity.
+proof.
+rewrite (ler_trans 1) // ge1_arity.
 qed.
 
 (* enc and dec take us back and forth between pairs (i, j) : int *
@@ -178,24 +188,26 @@ type aux = unit.  (* no auxiliary information *)
 op good (aux : aux, xs : inp list) : bool =
   total_ordering xs.
 
-  (* sort with total ordering*)
+(* sort with total ordering *)
 
-op cmp_of_rel (xs: inp list) (x , y : int) : bool =
-  if (0 <= x < len /\ 0 <= y < len)
-  then rel xs x y
-  else  if (0 <= x < len) then true
-  else  if (0 <= y < len) then false
-  else  x <= y.
+op cmp_of_rel (xs : inp list) (x y : int) : bool =
+  if 0 <= x < len /\ 0 <= y < len
+    then rel xs x y
+  else if 0 <= x < len
+    then true
+  else if 0 <= y < len
+    then false
+  else x <= y.
 
 op nosmt cmp_total_ordering (xs: inp list) : bool =
   size xs = arity /\
   (forall (i : int), cmp_of_rel xs i i) /\
   (forall (i j k : int),
-  cmp_of_rel xs i j => cmp_of_rel xs j k => cmp_of_rel xs i k) /\
+   cmp_of_rel xs i j => cmp_of_rel xs j k => cmp_of_rel xs i k) /\
   (forall (i j : int),
-  cmp_of_rel xs i j => cmp_of_rel xs j i => i = j) /\
-  forall (i j : int),
-  i <> j => cmp_of_rel xs i j \/ cmp_of_rel xs j i.
+   cmp_of_rel xs i j => cmp_of_rel xs j i => i = j) /\
+  (forall (i j : int),
+   i <> j => cmp_of_rel xs i j \/ cmp_of_rel xs j i).
 
 lemma cmp_total_ordering_size (xs : inp list) :
   cmp_total_ordering xs => size xs = arity.
@@ -221,10 +233,9 @@ lemma cmp_total_ordering_total (xs : inp list, i j : int) :
 proof. rewrite /cmp_total_ordering /#. qed.
 
 lemma cmp_total_ordering_ne_not_sym (xs : inp list, i j : int) :
-  cmp_total_ordering xs =>i <> j =>
+  cmp_total_ordering xs => i <> j =>
   cmp_of_rel xs i j => ! cmp_of_rel xs j i.
 proof. rewrite /cmp_total_ordering /#. qed.
-  
 
 lemma tot_cmp_tot (xs:inp list):
   total_ordering xs => cmp_total_ordering (xs).
@@ -233,91 +244,266 @@ rewrite /cmp_total_ordering /total_ordering => //.
 smt().
 qed.    
 
-op tsort (xs: inp list) (s: int list) =
-   sort ( cmp_of_rel xs  ) s.
+(* sort using the comparision function of a total ordering *)
 
-op tsorted (xs: inp list) (s: int list) =
-   sorted ( cmp_of_rel xs ) s.
+op tsort (xs : inp list) (bs : int list) : int list =
+   sort (cmp_of_rel xs) bs.
 
+(* test whether sorted using the comparision function of a total ordering *)
 
-lemma sorted_perm_exists (xs : inp list) :
-  total_ordering xs =>
-  exists (perm : int list),
-  perm_eq (range 0 len) perm /\ tsorted xs perm.
+op tsorted (xs: inp list) (bs : int list) : bool =
+   sorted (cmp_of_rel xs) bs.
+
+(* the list 0 .. len - 1 *)
+
+op range_len : int list = range 0 len.
+
+(* all permutations of 0 .. len - 1 *)
+
+op perms_len : int list list = allperms range_len.
+
+lemma size_perms_len : size perms_len = fact len.
 proof.
-move => tot_ord_xs.
-exists (sort (cmp_of_rel xs) (range 0 len )).
-split.
-smt(perm_eq_sym perm_sort).
-rewrite /tsorted.
-rewrite (sort_sorted).
-smt(tot_cmp_tot cmp_total_ordering_total).
+by rewrite /perms_len size_allperms_uniq /range_len 1:range_uniq
+          size_range /= ler_maxr 1:ge0_len.
 qed.
 
-lemma diff_equal_size_least_index_diff (xs ys : 'a list) :
+(* convert a total ordering into a permutation on 0 .. len - 1 *)
+
+op total_ordering_to_perm_len (xs : inp list) : int list =
+  tsort xs range_len.
+
+lemma sorted_nth (ms : 'a list, e : 'a -> 'a -> bool, k l : int) :
+  (forall (x y : 'a), e x y \/ e y x) =>
+  (forall (y x z : 'a), e x y => e y z => e x z) =>
+  (forall (x y : 'a), e x y => e y x => x = y) =>
+  sorted e ms => 0 <= k <= l < size ms =>
+  e (nth witness ms k) (nth witness ms l).
+proof.
+move => tot_e trans_e antisym_e.
+elim ms.
+rewrite /= /#.
+move => x xs IH /=.
+admit.
+qed.
+
+lemma sorted_exists_nth (ms : 'a list, e : 'a -> 'a -> bool, x y : 'a) :
+  (forall (x y : 'a), e x y \/ e y x) =>
+  (forall (y x z : 'a), e x y => e y z => e x z) =>
+  (forall (x y : 'a), e x y => e y x => x = y) =>
+  sorted e ms => x \in ms => y \in ms => e x y =>
+  exists (k l : int),
+  0 <= k < size ms /\ 0 <= l < size ms /\ k <= l /\
+  nth witness ms k = x /\ nth witness ms l = y.
+proof.
+admit.
+qed.
+
+lemma diff_equal_size_index_diff (xs ys : bool list) :
   xs <> ys => size xs = size ys => 
   (exists (i : int),
-   0 <= i < size xs /\ nth witness xs i <> nth witness ys i /\
-   (forall (j : int),
-    0 <= j < i => nth witness xs j = nth witness ys j)).
+   0 <= i < size xs /\ nth false xs i <> nth false ys i).
 proof.
 move => eq_size ne_xs_ys.
-pose P :=
-  fun (i : int) =>
-  i < size xs /\ nth witness xs i <> nth witness ys i.
-have /# := pmin_spec P _.
-  rewrite /sempty /pcap /P negb_forall /=.
-  case
-    (exists i,
-     0 <= i < size xs /\
-     nth witness xs i <> nth witness ys i) => [/# |].
-  rewrite negb_exists /= => H.
-  have // := eq_from_nth witness xs ys _ _.
-    trivial. smt().
+case
+  (exists i,
+   (0 <= i && i < size xs) /\ nth false xs i <> nth false ys i) =>
+  [// |].
+have -> H :
+  (! (exists (i : int),
+      (0 <= i && i < size xs) /\ nth false xs i <> nth false ys i)) =
+  (forall (i : int), 0 <= i < size xs => nth false xs i = nth false ys i).
+  smt().
+have // : xs = ys.
+by rewrite (eq_from_nth false xs ys).
 qed.
 
-
-op sorted_perm_len_rel (xs : inp list, perm : int list) : bool =
-  perm_eq (range 0 len) perm /\ tsorted xs perm.
-
-lemma sorted_perm_rel_exists (xs : inp list) :
+lemma total_ordering_to_perm_len_good (xs : inp list) :
   total_ordering xs =>
-  exists (perm : int list), sorted_perm_len_rel xs perm.
-proof. apply sorted_perm_exists. qed.
-
-lemma sorted_perm_len_rel_uniq (xs : inp list, perm1 perm2 : int list) :
-  total_ordering xs =>
-  sorted_perm_len_rel xs perm1 => sorted_perm_len_rel xs perm2 =>
-  perm1 = perm2.
+  total_ordering_to_perm_len xs \in perms_len.
 proof.
-move => tot_ord_xs [ispl1 srted1] [ispl2 srted2]. 
-rewrite (eq_sorted (cmp_of_rel xs) _ _ perm1 perm2) //.
-smt(cmp_total_ordering_trans tot_cmp_tot).
-smt(cmp_total_ordering_antisym tot_cmp_tot).
-smt(perm_eq_trans perm_eq_sym).
+move => tot_ord_xs.
+rewrite /total_ordering_to_perm_len /tsort /range_len /perms_len.
+rewrite allpermsP perm_eq_sym perm_sort.
 qed.
 
-(* now we can define our f and show it has the correct property *)
+lemma total_ordering_to_perm_len_injective (xs ys : inp list) :
+  total_ordering xs => total_ordering ys =>
+  total_ordering_to_perm_len xs = total_ordering_to_perm_len ys =>
+  xs = ys.
+proof.
+move => tot_ord_xs tot_ord_ys.
+rewrite /total_ordering_to_perm_len /range_len /tsort =>
+  eq_sort_xs_len_sort_ys_len.
+case (xs = ys) => [// | ne_xs_ys].
+have [i [ge0_i lt_i_size_xs]]
+     := diff_equal_size_index_diff xs ys _ _ => //.
+  rewrite total_ordering_size //.
+  rewrite total_ordering_size //.
+case (nth false xs i) => [xs_i_true | xs_i_false].
+(* nth false xs i *)
+pose j := (dec i).`1.
+pose k := (dec i).`2.
+have j_rng : 0 <= j < len.
+  rewrite /j dec_bounds_left.
+  smt(total_ordering_size).
+have k_rng : 0 <= k < len.
+  rewrite /k dec_bounds_right.
+  smt(total_ordering_size).
+have le_xs_j_k : rel xs j k.
+  rewrite /rel /j /k.
+  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
+  rewrite decK //.
+  smt(total_ordering_size).
+have lt_ys_k_j : ! rel ys j k.
+  rewrite /rel /j /k.
+  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
+  rewrite decK //.
+  smt(total_ordering_size).
+  smt().
+have sorted_sort_by_xs :
+      sorted (cmp_of_rel xs) (sort (cmp_of_rel xs) (range 0 len)).
+  rewrite sort_sorted.
+  move => x y; rewrite cmp_total_ordering_total tot_cmp_tot //.
+have sorted_sort_by_ys :
+      sorted (cmp_of_rel ys) (sort (cmp_of_rel ys) (range 0 len)).
+  rewrite sort_sorted.
+  move => x y; rewrite cmp_total_ordering_total tot_cmp_tot //.
+have := sorted_exists_nth (sort (cmp_of_rel xs) (range 0 len))
+        (cmp_of_rel xs) j k _ _ _ _ _ _ _ => //.
+  move => x y.
+  by rewrite cmp_total_ordering_total tot_cmp_tot.
+  move => y x z cmp_xs_x_y cmp_xs_y_z.
+  by rewrite (cmp_total_ordering_trans xs y) 1:tot_cmp_tot.
+  move => x y cmp_xs_x_y cmp_xs_y_z.
+  by rewrite (cmp_total_ordering_antisym xs x y) 1:tot_cmp_tot.
+  rewrite mem_sort; smt(mem_range).
+  rewrite mem_sort; smt(mem_range).
+move =>
+  [l m] [#] ge0_l lt_l_len ge0_m lt_m_len le_l_m
+  nth_sort_xs_l_eq_j nth_sort_xs_m_eq_k.
+have nth_sort_ys_l_eq_j :
+  nth witness (sort (cmp_of_rel ys) (range 0 len)) l = j.
+  by rewrite -eq_sort_xs_len_sort_ys_len nth_sort_xs_l_eq_j.
+have nth_sort_ys_m_eq_k :
+  nth witness (sort (cmp_of_rel ys) (range 0 len)) m = k.
+  by rewrite -eq_sort_xs_len_sort_ys_len nth_sort_xs_m_eq_k.
+have cmp_of_rel_ys_j_k : cmp_of_rel ys j k.
+  rewrite -nth_sort_ys_l_eq_j -nth_sort_ys_m_eq_k.
+  rewrite (sorted_nth _ (cmp_of_rel ys)) //.
+  move => x y.
+  by rewrite cmp_total_ordering_total tot_cmp_tot.
+  move => y x z cmp_ys_x_y cmp_ys_y_z.
+  by rewrite (cmp_total_ordering_trans ys y) 1:tot_cmp_tot.
+  move => x y cmp_ys_x_y cmp_ys_y_z.
+  by rewrite (cmp_total_ordering_antisym ys x y) 1:tot_cmp_tot.
+  smt().
+have // : rel ys j k by smt().
+(* ! nth false xs i *)
+have ys_i_true : nth false ys i by smt().
+pose j := (dec i).`1.
+pose k := (dec i).`2.
+have j_rng : 0 <= j < len.
+  rewrite /j dec_bounds_left.
+  smt(total_ordering_size).
+have k_rng : 0 <= k < len.
+  rewrite /k dec_bounds_right.
+  smt(total_ordering_size).
+have lt_xs_k_j : ! rel xs j k.
+  rewrite /rel /j /k.
+  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
+  rewrite decK //.
+  smt(total_ordering_size).
+have le_ys_j_k : rel ys j k.
+  rewrite /rel /j /k.
+  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
+  rewrite decK //.
+  smt(total_ordering_size).
+have sorted_sort_by_xs :
+      sorted (cmp_of_rel xs) (sort (cmp_of_rel xs) (range 0 len)).
+  rewrite sort_sorted.
+  move => x y.
+  rewrite cmp_total_ordering_total tot_cmp_tot //.
+have sorted_sort_by_ys :
+      sorted (cmp_of_rel ys) (sort (cmp_of_rel ys) (range 0 len)).
+  rewrite sort_sorted.
+  move => x y.
+  rewrite cmp_total_ordering_total tot_cmp_tot //.
+have := sorted_exists_nth (sort (cmp_of_rel ys) (range 0 len))
+        (cmp_of_rel ys) j k _ _ _ _ _ _ _ => //.
+  move => x y.
+  by rewrite cmp_total_ordering_total tot_cmp_tot.
+  move => y x z cmp_ys_x_y cmp_ys_y_z.
+  by rewrite (cmp_total_ordering_trans ys y) 1:tot_cmp_tot.
+  move => x y cmp_ys_x_y cmp_ys_y_z.
+  by rewrite (cmp_total_ordering_antisym ys x y) 1:tot_cmp_tot.
+  rewrite mem_sort; smt(mem_range).
+  rewrite mem_sort; smt(mem_range).
+move =>
+  [l m] [#] ge0_l lt_l_len ge0_m lt_m_len le_l_m
+  nth_sort_ys_l_eq_j nth_sort_ys_m_eq_k.
+have nth_sort_xs_l_eq_j :
+  nth witness (sort (cmp_of_rel xs) (range 0 len)) l = j.
+  by rewrite eq_sort_xs_len_sort_ys_len nth_sort_ys_l_eq_j.
+have nth_sort_xs_m_eq_k :
+  nth witness (sort (cmp_of_rel xs) (range 0 len)) m = k.
+  by rewrite eq_sort_xs_len_sort_ys_len nth_sort_ys_m_eq_k.
+have cmp_of_rel_xs_j_k : cmp_of_rel xs j k.
+  rewrite -nth_sort_xs_l_eq_j -nth_sort_xs_m_eq_k.
+  rewrite (sorted_nth _ (cmp_of_rel xs)) //.
+  move => x y.
+  by rewrite cmp_total_ordering_total tot_cmp_tot.
+  move => y x z cmp_xs_x_y cmp_xs_y_z.
+  by rewrite (cmp_total_ordering_trans xs y) 1:tot_cmp_tot.
+  move => x y cmp_xs_x_y cmp_xs_y_z.
+  by rewrite (cmp_total_ordering_antisym xs x y) 1:tot_cmp_tot.
+  smt().
+have // : rel xs j k by smt().
+qed.
+
+(* convert a permutation on 0 .. len - 1 to a total ordering *)
+
+op perm_len_to_total_ordering (ms : int list) : inp list =
+  mkseq
+  (fun (i : int) =>
+     index ((dec i).`1) ms <= index ((dec i).`2) ms)
+  arity.  
+
+lemma perm_len_to_total_ordering_good (ms : int list) :
+  ms \in perms_len =>
+  total_ordering (perm_len_to_total_ordering ms).
+proof.
+admit.
+qed.
+
+lemma perm_len_to_total_orderingK (ms : int list) :
+  total_ordering_to_perm_len (perm_len_to_total_ordering ms) = ms.
+proof.
+admit.
+qed.
+
+(* now we can define our f and show it has the correct property: *)
 
 type out = int list.
 
 op f (aux : aux, xs : inp list) : out option =
   if total_ordering xs
-  then Some (tsort xs (range 0 len) )
+  then Some (total_ordering_to_perm_len xs)
   else None.
 
 lemma f_prop (xs : inp list) :
   total_ordering xs =>
-  is_some (f () xs) /\ perm_eq (range 0 len) (oget (f () xs)) /\
+  is_some (f () xs) /\ perm_eq range_len (oget (f () xs)) /\
   tsorted xs (oget (f () xs)).
 proof.
 move => tot_ord_xs.
-split => [ /# | //  ].
+split => [/# |].
 split.
-rewrite /f /sorted_perm_len_rel tot_ord_xs => /=.
-smt(perm_eq_sym perm_sort).
-rewrite /tsort /f tot_ord_xs /tsorted /tsort => /=. 
-smt(sort_sorted cmp_total_ordering_total tot_cmp_tot).
+rewrite /f tot_ord_xs /=.
+rewrite perm_eq_sym /tsort perm_sort.
+rewrite /tsorted /f tot_ord_xs /= sort_sorted.
+move => i j.
+by rewrite cmp_total_ordering_total tot_cmp_tot.
 qed.
 
 lemma f_is_some (xs : inp list) :
@@ -378,10 +564,9 @@ have not_tot_ord_xs : ! total_ordering xs.
   qed.
 (* end of realization *)
 
-(* The adversary *)
+(* the adversary *)
 
 module Adv : ADV = {
-
   var inpss : inp list list  (* current possible lists of inputs *)
   
   proc init() : unit = {
@@ -390,21 +575,22 @@ module Adv : ADV = {
   }
 
   proc ans_query(i: int) : inp = {
-    (* var fst, snd : int ; *) (* stores the dec indices *)
-    var inpss_t, inpss_f : inp list list; (* two possible inpss sizes when the adversary answers true or false *) 
-    var ret : inp; 
+    (* two possible inpss elements when the adversary answers true or false *) 
+    var inpss_t, inpss_f : inp list list; 
+    var ret : inp;  (* return value *)
   
     inpss_t <- (filter_nth inpss i true);
-    inpss_f <- (filter_nth inpss i false);      
+    inpss_f <- (filter_nth inpss i false);
 
-    if (size(inpss_t) <= size(inpss_f)){
-      inpss <- filter_nth inpss i false;  (*answering false remains more possible inpust*)
+    if (size inpss_t <= size inpss_f) {   (* answering false keeps as least as *)
+      inpss <- filter_nth inpss i false;  (* many inputs lists as answering true *)
       ret <- false;     
-      }
+    }
     else {
-       (* this also covers:  1. the algorithm asks the rel of (i, i);
-                             2. (i, j) is asked before and this time (j, i);
-                             3. (i, j) = true, (j, k) = true,  this time asks (i,k), etc *)
+       (* this also covers:
+            1. the algorithm asks the rel of (i, i);
+            2. (i, j) is asked before and this time (j, i);
+            3. (i, j) = true, (j, k) = true, this time asks (i,k), etc. *)
       inpss <- filter_nth inpss i true;  
       ret <- true ;  
     }
@@ -412,94 +598,57 @@ module Adv : ADV = {
   }
 }.
 
-
-
-op tot2perm (xs: inp list) : int list =
-  if(total_ordering xs) then sort (cmp_of_rel xs) (range 0 len) else (range 0 len).
-
-op perms (n : int) : int list list = allperms (range 0 n).
-
-
-lemma tot2perm_injective:
-    lists_fun_injective ( init_inpss () ) (perms len) tot2perm.
-proof.
-rewrite /lists_fun_injective /init_inpss /good /tot2perm => x x' x_in_tot x'_in_tot. 
-rewrite mem_filter in x_in_tot.
-rewrite mem_filter in x'_in_tot.
-elim x_in_tot.
-elim x'_in_tot.
-simplify.
-move => tot_x' x'_in_all tot_x x_in_all. 
-  have -> : (if total_ordering x then sort (cmp_of_rel x) (range 0 len)
-     else range 0 len) =  sort (cmp_of_rel x) (range 0 len) by smt().
-  have -> : (if total_ordering x' then sort (cmp_of_rel x') (range 0 len)
-  else range 0 len) =  sort (cmp_of_rel x') (range 0 len) by smt().
-  have H: uniq (all_lists univ arity)by smt(all_list_uniq univ_uniq ge0_arity).
-case (x = x') => [ /# | x_neq_x' sorted_eq].
-  have H1: forall (i, j),  0 <= i<j < len /\   cmp_of_rel x i  j =  cmp_of_rel x' i j. 
-  admit.
-  have H2: forall (y, y'),  total_ordering y =>y \in all_lists univ arity => total_ordering y' => y' \in all_lists univ arity =>
-           y <> y' => sort (cmp_of_rel y) (range 0 len) <> sort (cmp_of_rel y') (range 0 len)  .
-  admit.
-smt().      
-qed.
-
-lemma tot2perm_surjective:
-     lists_fun_surjective ( init_inpss () ) (perms len) tot2perm.
-proof.
-rewrite /lists_fun_surjective /init_inpss /good /tot2perm => y y_in_perms_len /=.
-(* elim. *)
-(*   rewrite /perms. progress. search allperms. have H1 : perm_eq (range 0 len) [] by smt(allpermsP). *)
-(*   apply perm_eq_size in H1.  *)
-(* smt(gt0_len range_geq  size_range). *)
-case (exists x,x \in all_lists univ arity /\ total_ordering x /\ sort (cmp_of_rel x) (range 0 len) = y ) => [ // | not_x_map_y  ].
-smt(mem_filter).  
-rewrite negb_exists /= in not_x_map_y.
-    have H: forall x, x \in filter total_ordering (all_lists univ arity) <=> total_ordering x /\ x \in (all_lists univ arity) by smt(mem_filter).  
-   have H1: forall x, x \in filter total_ordering (all_lists univ arity)/\ (if total_ordering x then sort (cmp_of_rel x) (range 0 len) else range 0 len) =
-  y  <=> total_ordering x /\ x \in (all_lists univ arity) /\  sort (cmp_of_rel x) (range 0 len) = y by smt(mem_filter).
-  admit.
- qed.
-   
-  
-
-lemma uniq_init_inpss (aux:aux):
-  uniq (init_inpss aux).
+lemma uniq_init_inpss :
+  uniq (init_inpss ()).
 proof.    
-have H : inpss_invar aux (init_inpss aux) by smt(inpss_invar_init).
-rewrite /inpss_invar in H.
-smt().     
+smt(inpss_invar_init inpss_invar_uniq).
 qed.
 
-lemma tot2perm_init_inpss_perm_n (aux: aux):
-  lists_fun (init_inpss aux) (perms len) tot2perm. 
+lemma total_ordering_to_perm_len_lists_fun :
+  lists_fun (init_inpss ()) perms_len total_ordering_to_perm_len.
 proof.   
-rewrite /lists_fun /init_inpss /good /perms /tot2perm => [x x_in_init ].
-  have H1 : (if total_ordering x then sort (cmp_of_rel x) (range 0 len) else range 0 len) = sort (cmp_of_rel x) (range 0 len) by smt(mem_filter).  
-smt(perm_sort perm_eq_sym allpermsP). 
+rewrite /lists_fun /init_inpss /good => xs /=.
+rewrite mem_filter => [[tot_ord_xs _]].
+by rewrite total_ordering_to_perm_len_good.
 qed.
 
-lemma init_inpss_same_size_perms_len  : 
-   size (init_inpss ()) =  size (perms len). 
+lemma total_ordering_to_perm_len_lists_fun_injective :
+  lists_fun_injective (init_inpss ()) perms_len total_ordering_to_perm_len.
 proof.
-rewrite (uniq_sets_eq_size_if_injective_surjective (init_inpss ()) (perms len)   tot2perm ) //.
+rewrite /lists_fun_injective /init_inpss /good => xs ys.
+rewrite 2!mem_filter => [/= [tot_xs _] [tot_ys _]].
+by apply total_ordering_to_perm_len_injective.
+qed.
+
+lemma total_ordering_to_perm_len_lists_fun_surjective :
+  lists_fun_surjective (init_inpss ()) perms_len total_ordering_to_perm_len.
+proof.
+rewrite /lists_fun_surjective /init_inpss /good => ms ms_in_perms_len /=.
+exists (perm_len_to_total_ordering ms).
+split.
+rewrite mem_filter.
+split.
+by rewrite perm_len_to_total_ordering_good.
+rewrite all_lists_arity_have 1:ge0_arity.
+smt(perm_len_to_total_ordering_good total_ordering_size).
+rewrite allP => x _; rewrite /univ /#.
+by rewrite perm_len_to_total_orderingK.
+qed.
+
+lemma init_inpss_fact_len  : 
+  size (init_inpss ()) = fact len.
+proof.
+rewrite (uniq_sets_eq_size_if_injective_surjective (init_inpss ()) perms_len
+         total_ordering_to_perm_len) //.
 smt(uniq_init_inpss).
 rewrite /perms; smt(uniq_allperms).
-smt(tot2perm_init_inpss_perm_n).
-smt(tot2perm_injective).
-smt(tot2perm_surjective).
+by rewrite total_ordering_to_perm_len_lists_fun.
+by rewrite total_ordering_to_perm_len_lists_fun_injective.
+by rewrite total_ordering_to_perm_len_lists_fun_surjective.
+by rewrite size_perms_len.
 qed.
 
-lemma init_inpss_fact_len :
-  size (init_inpss () ) = fact len.
-proof.    
-rewrite init_inpss_same_size_perms_len /perms size_allperms_uniq.
-smt(range_uniq).
-smt(size_range gt0_len).
-qed.  
-
-
-  (* adversary is lossless *)
+(* adversary is lossless *)
 
 lemma Adv_init_ll : islossless Adv.init.
 proof.
@@ -511,96 +660,159 @@ proof.
 proc; auto.
 qed.
 
-    (* here is our main theorem: *)
+lemma filter_nth_size_b_not_b (inpss : inp list list, i : int, b : bool) :
+  0 <= i < arity =>
+  size inpss = size (filter_nth inpss i b) + size(filter_nth inpss i (!b)).
+proof.
+move => [ge0_i lt_i_arity].
+rewrite /filter_nth.
+elim inpss => [// | x xs IH /#].
+qed.
 
-lemma filter_p_not_p'_size:
-    forall (l: 'a list) (p p' : 'a -> bool),
-    (forall x, x \in l => p x = ! p' x) =>  size (filter p l) + size ( filter (p') l) = size  l.    
+lemma ge1_fact (n : int) :
+  0 <= n => 1 <= fact n.
 proof.
-progress.
-move: l H.
-elim =>  [//= | //= ].
-progress.
-case (p x) => [ p_x_true | p_x_false].
-have ->//= : ! (p' x) by smt(). 
-rewrite -H.
-smt().     
-smt().
-have ->//= : (p' x) by smt().   
-rewrite -H.
-smt().     
-smt().
-qed.     
-    
-lemma ge1_fact: forall n, 0<=n => 1<=fact n.
+elim n.
+by rewrite fact0.
+smt(factS fact1).
+qed.
+
+lemma ge1_fact_len :
+  1 <= fact len.
 proof.
-  elim => [// |//]. 
-  smt(fact0).
-  smt(factS fact1).
-qed.    
-  
+rewrite ge1_fact ge0_len.
+qed.
+
+lemma mem_implies_size_ge1 (x : 'a, ys : 'a list) :
+  x \in ys => 1 <= size ys.
+proof.
+case ys => [| /=].
+smt(in_nil).
+smt(size_ge0).
+qed.
+
+lemma inpss_not_done_iff (inpss : inp list list) :
+  inpss_invar () inpss =>
+  ! (inpss_done () inpss) <=> 2 <= size inpss.
+proof.
+move => [uniq_inpss all_f_is_some].
+rewrite /inpss_done.
+split.
+rewrite negb_forall /= => [[bs_opt /=]].
+rewrite negb_forall /= => [[cs_opt /=]].
+rewrite (implybE (bs_opt \in map (f tt) inpss)) negb_or /=.
+rewrite (implybE (cs_opt \in map (f tt) inpss)) negb_or /=.
+rewrite 2!mapP =>
+  [[[xs [xs_in_inpss bs_opt_eq_f_xs]]]
+   [[ys [ys_in_inpss cs_opt_eq_f_ys]]]
+   ne_bs_opt_cs_opt].
+have ne_xs_ys : xs <> ys by smt().
+have := splitPr inpss xs _ => // [[s1 s2] inpss_eq].
+rewrite inpss_eq size_cat /= addrC -addrA.
+have /# : 1 <= size s2 + size s1.
+have [] : ys \in s1 \/ ys \in xs :: s2 by rewrite -mem_cat /#.
+smt(mem_implies_size_ge1 size_ge0).
+smt(mem_implies_size_ge1 size_ge0).
+move : uniq_inpss all_f_is_some.
+case inpss => [// | xs inpss' /=].
+case inpss' => [// | ys inpss'' /=].
+rewrite negb_or.
+move =>
+  [#] ne_xs_ys xs_not_in_zs ys_not_in_inpss'' uniq_inpss''
+  [#] is_some_f_xs is_some_f_ys all_is_some_f_inpss'' _.
+have [bs f_xs_eq_Some_bs] : exists bs, f tt xs = Some bs.
+  exists (oget (f tt xs)); rewrite -some_oget /#.
+have [cs f_ys_eq_Some_cs] : exists cs, f tt ys = Some cs.
+  exists (oget (f tt ys)); rewrite -some_oget /#.
+rewrite negb_forall /=; exists (Some bs).
+rewrite negb_forall /=; exists (Some cs).
+rewrite implybE /= negb_or /=.
+split.
+left => /#.
+rewrite implybE /= negb_or /=.
+split.
+right; left => /#.
+have tot_ord_xs : total_ordering xs by smt().
+have tot_ord_ys : total_ordering ys by smt().
+move : ne_xs_ys.
+apply contra => eq_bs_cs.
+rewrite (total_ordering_to_perm_len_injective xs ys) //#.
+qed.
+
+lemma inpss_done_iff (inpss : inp list list) :
+  inpss_invar () inpss => 1 <= size inpss =>
+  inpss_done () inpss <=> size inpss = 1.
+proof.
+smt(inpss_not_done_iff).
+qed.
+
+lemma divpow2up_next_size_ge2 (inpss : inp list list, stage i : int, b : bool) :
+  0 <= stage => 0 <= i < arity => 2 <= size inpss =>
+  size (filter_nth inpss i (!b)) <= size (filter_nth inpss i b) =>
+  divpow2up (fact len) stage <= size inpss =>
+  divpow2up (fact len) (stage + 1) <= size (filter_nth inpss i b).
+proof.
+move =>
+  ge0_stage [ge0_i lt_i_arity] ge2_size_inpss le_size_filter_nth_not_b_b
+  le_dp2u_stage_size_inpss.
+rewrite (divpow2up_next_new_ub (size inpss)) 1:ge1_fact_len //.
+smt(filter_nth_size_b_not_b).
+qed.
+
+(* here is our main lemma: *)
+
 lemma G_Adv_main (Alg <: ALG{Adv}) : 
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log_up 2 (fact len) <= res.`2].
 proof.
-  proc.
+proc.
 seq 7 :
-  (inpss = init_inpss aux /\ error = false /\ don = inpss_done aux inpss /\
+  (inpss = init_inpss aux /\ !error /\ don = inpss_done aux inpss /\
    stage = 0 /\ queries = fset0 /\ Adv.inpss = init_inpss aux /\ aux = ()).
 wp.
 call (_ : true).
 inline Adv.init; auto. 
 while
-  (stage = card queries /\ queries_in_range queries /\
-   don = inpss_done aux inpss /\ divpow2up (fact len) stage <= size inpss /\ Adv.inpss = inpss).
-seq 1:
-  (stage = card queries /\ queries_in_range queries /\
-   don = inpss_done aux inpss /\ divpow2up (fact len) stage <= size inpss /\ Adv.inpss = inpss 
-   /\ !don /\ !error).
+  (stage = card queries /\ queries_in_range queries /\ Adv.inpss = inpss /\
+   inpss_invar () inpss /\  don = inpss_done aux inpss /\
+   divpow2up (fact len) stage <= size inpss).
+seq 1 :
+  (stage = card queries /\ queries_in_range queries /\ Adv.inpss = inpss /\
+   inpss_invar () inpss /\ don = inpss_done aux inpss /\
+   divpow2up (fact len) stage <= size inpss /\ !don /\ !error).
 call (_ : true); first auto.
 if.
 wp.
 call (_: true); first auto.
-sp. elim* => stage queries. 
+sp; elim* => stage' queries'.
 inline Adv.ans_query.
 sp 3.
 if.
 auto; progress [-delta]. 
 smt(fcardUindep1).
 smt(queries_in_range_add).
-rewrite /univ=> /=. 
-rewrite (divpow2up_next_new_ub (size inpss{hr})   (fact len) (card queries)  (size (filter_nth inpss{hr} i{hr} false)) ). 
-smt(ge1_fact ge1_len).
-smt(fcard_ge0).
-auto.
-  have filter_list_size :  size (filter_nth inpss{hr} i{hr} true) + size (filter_nth inpss{hr} i{hr} false) = size inpss{hr}.
-  rewrite /filter_nth => //=.
-  apply filter_p_not_p'_size.
-  smt().
-  smt().
+by rewrite inpss_invar_filter_nth.
+by rewrite divpow2up_next_size_ge2 1:fcard_ge0 // 1:-inpss_not_done_iff.
 auto; progress [-delta]. 
 smt(fcardUindep1).
 smt(queries_in_range_add).
-rewrite /univ=> /=. 
-rewrite (divpow2up_next_new_ub (size inpss{hr})   (fact len) (card queries)  (size (filter_nth inpss{hr} i{hr} true)) ). 
-smt(ge1_fact ge1_len).
-smt(fcard_ge0).
+by rewrite inpss_invar_filter_nth.
+rewrite divpow2up_next_size_ge2 1:fcard_ge0 // 1:-inpss_not_done_iff //#.
 auto.
-have filter_list_size :  size (filter_nth inpss{hr} i{hr} true) + size (filter_nth inpss{hr} i{hr} false) = size inpss{hr}.
-rewrite /filter_nth => //=. apply filter_p_not_p'_size.
-smt().
-smt().
-auto.
-auto; progress.
+auto; progress [-delta].
 smt(fcards0).
 smt(queries_in_range0).
-by rewrite divpow2up_start init_inpss_fact_len .
-rewrite negb_and in H.
-elim H => [ //= inpss_done | error ].
+rewrite inpss_invar_init.
+by rewrite divpow2up_start init_inpss_fact_len.
+rewrite negb_and /= in H0.
+elim H0 => [inpss_done | error].
 right.
 apply divpow2up_eq1_int_log_up_le.
 smt(ge1_fact ge1_len).
 smt(fcard_ge0).
-admit.  
+have ge1_dp2u : 1 <= divpow2up (fact len) (card queries0).
+  smt(divpow2up_ge1 ge1_fact_len fcard_ge0).
+apply ler_anti.
+rewrite ge1_dp2u /=.
+have /# : size inpss1 = 1 by rewrite -inpss_done_iff //#.
 by left. 
 qed.
-    
