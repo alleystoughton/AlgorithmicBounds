@@ -332,133 +332,74 @@ lemma total_ordering_to_perm_len_injective (xs ys : inp list) :
   total_ordering_to_perm_len xs = total_ordering_to_perm_len ys =>
   xs = ys.
 proof.
-move => tot_ord_xs tot_ord_ys.
-rewrite /total_ordering_to_perm_len /range_len /tsort =>
-  eq_sort_xs_len_sort_ys_len.
+move : xs ys.
+have H :
+  forall (xs ys : inp list, i : int),
+  total_ordering xs => total_ordering ys =>
+  total_ordering_to_perm_len xs = total_ordering_to_perm_len ys =>
+  0 <= i < arity => nth false xs i => ! nth false ys i => false.
+  move => xs ys i tot_ord_xs tot_ord_ys.
+  have -> : arity = size xs by smt(total_ordering_size).
+  rewrite /total_ordering_to_perm_len /tsort =>
+    eq_sort_xs_sort_ys [ge0_i lt_i_size_xs] xs_i_true ys_i_false.
+  pose j := (dec i).`1.
+  pose k := (dec i).`2.
+  have j_rng : 0 <= j < len.
+    rewrite /j dec_bounds_left; smt(total_ordering_size).
+  have k_rng : 0 <= k < len.
+    rewrite /k dec_bounds_right; smt(total_ordering_size).
+  have le_xs_j_k : rel xs j k.
+    rewrite /rel /j /k.
+    have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
+    rewrite decK //; smt(total_ordering_size).
+  have lt_ys_k_j : ! rel ys j k.
+    rewrite /rel /j /k.
+    have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
+    rewrite decK //; smt(total_ordering_size).
+  have sorted_sort_by_xs :
+    sorted (cmp_of_rel xs) (sort (cmp_of_rel xs) (range 0 len)).
+    rewrite sort_sorted.
+    move => x y; by rewrite cmp_total_ordering_total tot_cmp_tot.
+  have sorted_sort_by_ys :
+    sorted (cmp_of_rel ys) (sort (cmp_of_rel ys) (range 0 len)).
+    rewrite sort_sorted.
+    move => x y; by rewrite cmp_total_ordering_total tot_cmp_tot.
+  have := sorted_exists_nth (sort (cmp_of_rel xs) (range 0 len))
+          (cmp_of_rel xs) j k _ _ _ _ _ _ _ => //.
+    move => x y; by rewrite cmp_total_ordering_total tot_cmp_tot.
+    move => y x z cmp_xs_x_y cmp_xs_y_z.
+    by rewrite (cmp_total_ordering_trans xs y) 1:tot_cmp_tot.
+    move => x y cmp_xs_x_y cmp_xs_y_z.
+    by rewrite (cmp_total_ordering_antisym xs x y) 1:tot_cmp_tot.
+    rewrite mem_sort; smt(mem_range).
+    rewrite mem_sort; smt(mem_range).
+  move =>
+    [l m] [#] ge0_l lt_l_len ge0_m lt_m_len le_l_m
+    nth_sort_xs_l_eq_j nth_sort_xs_m_eq_k.
+  have nth_sort_ys_l_eq_j :
+    nth witness (sort (cmp_of_rel ys) (range 0 len)) l = j.
+    by rewrite -eq_sort_xs_sort_ys nth_sort_xs_l_eq_j.
+  have nth_sort_ys_m_eq_k :
+    nth witness (sort (cmp_of_rel ys) (range 0 len)) m = k.
+    by rewrite -eq_sort_xs_sort_ys nth_sort_xs_m_eq_k.
+  have cmp_of_rel_ys_j_k : cmp_of_rel ys j k.
+    rewrite -nth_sort_ys_l_eq_j -nth_sort_ys_m_eq_k.
+    rewrite (sorted_nth _ (cmp_of_rel ys)) //.
+    move => x y; by rewrite cmp_total_ordering_total tot_cmp_tot.
+    move => y x z cmp_ys_x_y cmp_ys_y_z.
+    by rewrite (cmp_total_ordering_trans ys y) 1:tot_cmp_tot.
+    move => x y cmp_ys_x_y cmp_ys_y_z.
+    by rewrite (cmp_total_ordering_antisym ys x y) 1:tot_cmp_tot.
+    smt().
+  have // : rel ys j k by smt().
+move => xs ys tot_ord_xs tot_ord_ys eq_tot_ord_to_perm_len_xs_ys.
 case (xs = ys) => [// | ne_xs_ys].
-have [i [ge0_i lt_i_size_xs]]
-     := diff_equal_size_index_diff xs ys _ _ => //.
+have [i [ge0_i lt_i_size_xs]] := diff_equal_size_index_diff xs ys _ _ => //.
   rewrite total_ordering_size //.
   rewrite total_ordering_size //.
 case (nth false xs i) => [xs_i_true | xs_i_false].
-(* nth false xs i *)
-pose j := (dec i).`1.
-pose k := (dec i).`2.
-have j_rng : 0 <= j < len.
-  rewrite /j dec_bounds_left.
-  smt(total_ordering_size).
-have k_rng : 0 <= k < len.
-  rewrite /k dec_bounds_right.
-  smt(total_ordering_size).
-have le_xs_j_k : rel xs j k.
-  rewrite /rel /j /k.
-  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
-  rewrite decK //.
-  smt(total_ordering_size).
-have lt_ys_k_j : ! rel ys j k.
-  rewrite /rel /j /k.
-  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
-  rewrite decK //.
-  smt(total_ordering_size).
-  smt().
-have sorted_sort_by_xs :
-      sorted (cmp_of_rel xs) (sort (cmp_of_rel xs) (range 0 len)).
-  rewrite sort_sorted.
-  move => x y; rewrite cmp_total_ordering_total tot_cmp_tot //.
-have sorted_sort_by_ys :
-      sorted (cmp_of_rel ys) (sort (cmp_of_rel ys) (range 0 len)).
-  rewrite sort_sorted.
-  move => x y; rewrite cmp_total_ordering_total tot_cmp_tot //.
-have := sorted_exists_nth (sort (cmp_of_rel xs) (range 0 len))
-        (cmp_of_rel xs) j k _ _ _ _ _ _ _ => //.
-  move => x y.
-  by rewrite cmp_total_ordering_total tot_cmp_tot.
-  move => y x z cmp_xs_x_y cmp_xs_y_z.
-  by rewrite (cmp_total_ordering_trans xs y) 1:tot_cmp_tot.
-  move => x y cmp_xs_x_y cmp_xs_y_z.
-  by rewrite (cmp_total_ordering_antisym xs x y) 1:tot_cmp_tot.
-  rewrite mem_sort; smt(mem_range).
-  rewrite mem_sort; smt(mem_range).
-move =>
-  [l m] [#] ge0_l lt_l_len ge0_m lt_m_len le_l_m
-  nth_sort_xs_l_eq_j nth_sort_xs_m_eq_k.
-have nth_sort_ys_l_eq_j :
-  nth witness (sort (cmp_of_rel ys) (range 0 len)) l = j.
-  by rewrite -eq_sort_xs_len_sort_ys_len nth_sort_xs_l_eq_j.
-have nth_sort_ys_m_eq_k :
-  nth witness (sort (cmp_of_rel ys) (range 0 len)) m = k.
-  by rewrite -eq_sort_xs_len_sort_ys_len nth_sort_xs_m_eq_k.
-have cmp_of_rel_ys_j_k : cmp_of_rel ys j k.
-  rewrite -nth_sort_ys_l_eq_j -nth_sort_ys_m_eq_k.
-  rewrite (sorted_nth _ (cmp_of_rel ys)) //.
-  move => x y.
-  by rewrite cmp_total_ordering_total tot_cmp_tot.
-  move => y x z cmp_ys_x_y cmp_ys_y_z.
-  by rewrite (cmp_total_ordering_trans ys y) 1:tot_cmp_tot.
-  move => x y cmp_ys_x_y cmp_ys_y_z.
-  by rewrite (cmp_total_ordering_antisym ys x y) 1:tot_cmp_tot.
-  smt().
-have // : rel ys j k by smt().
-(* ! nth false xs i *)
-have ys_i_true : nth false ys i by smt().
-pose j := (dec i).`1.
-pose k := (dec i).`2.
-have j_rng : 0 <= j < len.
-  rewrite /j dec_bounds_left.
-  smt(total_ordering_size).
-have k_rng : 0 <= k < len.
-  rewrite /k dec_bounds_right.
-  smt(total_ordering_size).
-have lt_xs_k_j : ! rel xs j k.
-  rewrite /rel /j /k.
-  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
-  rewrite decK //.
-  smt(total_ordering_size).
-have le_ys_j_k : rel ys j k.
-  rewrite /rel /j /k.
-  have -> : ((dec i).`1, (dec i).`2) = dec i by smt().
-  rewrite decK //.
-  smt(total_ordering_size).
-have sorted_sort_by_xs :
-      sorted (cmp_of_rel xs) (sort (cmp_of_rel xs) (range 0 len)).
-  rewrite sort_sorted.
-  move => x y.
-  rewrite cmp_total_ordering_total tot_cmp_tot //.
-have sorted_sort_by_ys :
-      sorted (cmp_of_rel ys) (sort (cmp_of_rel ys) (range 0 len)).
-  rewrite sort_sorted.
-  move => x y.
-  rewrite cmp_total_ordering_total tot_cmp_tot //.
-have := sorted_exists_nth (sort (cmp_of_rel ys) (range 0 len))
-        (cmp_of_rel ys) j k _ _ _ _ _ _ _ => //.
-  move => x y.
-  by rewrite cmp_total_ordering_total tot_cmp_tot.
-  move => y x z cmp_ys_x_y cmp_ys_y_z.
-  by rewrite (cmp_total_ordering_trans ys y) 1:tot_cmp_tot.
-  move => x y cmp_ys_x_y cmp_ys_y_z.
-  by rewrite (cmp_total_ordering_antisym ys x y) 1:tot_cmp_tot.
-  rewrite mem_sort; smt(mem_range).
-  rewrite mem_sort; smt(mem_range).
-move =>
-  [l m] [#] ge0_l lt_l_len ge0_m lt_m_len le_l_m
-  nth_sort_ys_l_eq_j nth_sort_ys_m_eq_k.
-have nth_sort_xs_l_eq_j :
-  nth witness (sort (cmp_of_rel xs) (range 0 len)) l = j.
-  by rewrite eq_sort_xs_len_sort_ys_len nth_sort_ys_l_eq_j.
-have nth_sort_xs_m_eq_k :
-  nth witness (sort (cmp_of_rel xs) (range 0 len)) m = k.
-  by rewrite eq_sort_xs_len_sort_ys_len nth_sort_ys_m_eq_k.
-have cmp_of_rel_xs_j_k : cmp_of_rel xs j k.
-  rewrite -nth_sort_xs_l_eq_j -nth_sort_xs_m_eq_k.
-  rewrite (sorted_nth _ (cmp_of_rel xs)) //.
-  move => x y.
-  by rewrite cmp_total_ordering_total tot_cmp_tot.
-  move => y x z cmp_xs_x_y cmp_xs_y_z.
-  by rewrite (cmp_total_ordering_trans xs y) 1:tot_cmp_tot.
-  move => x y cmp_xs_x_y cmp_xs_y_z.
-  by rewrite (cmp_total_ordering_antisym xs x y) 1:tot_cmp_tot.
-  smt().
-have // : rel xs j k by smt().
+rewrite (H xs ys i) // 2:/#; smt(total_ordering_size).
+rewrite (H ys xs i) // 1:eq_sym // 2:/#; smt(total_ordering_size).
 qed.
 
 (* convert a permutation on 0 .. len - 1 to a total ordering *)
