@@ -816,3 +816,39 @@ rewrite ge1_dp2u /=.
 have /# : size inpss1 = 1 by rewrite -inpss_done_iff //#.
 by left. 
 qed.
+
+axiom log_2_0_eq_0 : int_log 2 0 = 0.
+    
+lemma log2_fact (n: int) :
+   0<=n =>  n * (int_log 2 n ) %/ 2 <= int_log 2 (fact n). 
+proof.
+   have helper :0 <= n => n * (int_log 2 n +2) <= ( int_log 2 (fact n)  + 2 ^(int_log 2 n) ) *2 +1. 
+   elim n => [| n ge0_n ih ]. smt(log_2_0_eq_0 fact0 int_log_ge0  expr0).
+   have firstlaw : int_log 2 (fact (n+1)) = int_log 2 (fact n) + int_log 2 (n+1). 
+   admit.     
+   admit.   
+ smt(lez_eqVlt fact0 int_log_ge0  int_logP).
+  (* rewrite lez_eqVlt in ge0_n.   *)
+  (* elim ge0_n => [//= | pos].    *)
+  (*  smt(fact0 int_log_ge0). *)
+
+  
+  (* have half:  (n *( int_log 2 n + 2)) %/ 2 <= ( (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1)%/2 by smt(). *)
+ 
+  (*  have half_smp : ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1) %/ 2 <= (int_log 2 (fact n) + 2 ^ int_log 2 n)   by smt(). *)
+
+  (*  have half2 :   (n *( int_log 2 n + 2)) %/ 2 = (n * (int_log 2 n) ) %/2 + n by smt(). *)
+ 
+  (*  have half3 : (n * (int_log 2 n) ) %/2 + n -  2 ^ int_log 2 n <= int_log 2 (fact n) by smt(). *)
+    
+  (*     have H : 2 ^ int_log 2 n <= n by smt(int_logP). *)
+
+  (*  smt(). *)
+qed.
+
+    
+lemma log2up_fact (n: int) :
+     n * (int_log_up 2 n ) %/ 2 <= int_log_up 2 (fact n). 
+ proof.
+   admit.
+ qed.
