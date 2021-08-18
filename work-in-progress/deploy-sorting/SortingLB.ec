@@ -331,7 +331,15 @@ qed.
 lemma nth_exist (xs:'a list):
     forall x, x \in xs => exists i, 0<=i < size xs /\ nth witness xs i = x.
 proof.
-  admit.
+elim xs.
+rewrite /= /#.
+move => m ms ih  x [#] x_in_cons.
+elim x_in_cons => [eq_x_m //= | x_in_ms].
+exists 0. split. smt(size_ge0). smt().
+apply ih in x_in_ms.
+elim x_in_ms => [i [#]  ge0_i lt_i_size  nth_ms_x_eq_x].
+exists (i+1).
+smt(size_ge0 nth_cons_pos ).
 qed.
 
 lemma sorted_exists_nth (ms : 'a list, e : 'a -> 'a -> bool, x y : 'a) :
