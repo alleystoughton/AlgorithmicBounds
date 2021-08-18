@@ -327,7 +327,12 @@ have -> //= : ! (l = 0) by smt().
 have sorted_xs : sorted e xs by smt(path_sorted).
 apply sorted_nth_gen => //= /#.
 qed.
- 
+
+lemma nth_exist (xs:'a list):
+    forall x, x \in xs => exists i, 0<=i < size xs /\ nth witness xs i = x.
+proof.
+  admit.
+qed.
 
 lemma sorted_exists_nth (ms : 'a list, e : 'a -> 'a -> bool, x y : 'a) :
   (forall (x y : 'a), e x y \/ e y x) =>
@@ -338,7 +343,35 @@ lemma sorted_exists_nth (ms : 'a list, e : 'a -> 'a -> bool, x y : 'a) :
   0 <= k < size ms /\ 0 <= l < size ms /\ k <= l /\
   nth witness ms k = x /\ nth witness ms l = y.
 proof.
-admit.
+move => tot_e trans_e antisym_e.
+elim ms.
+rewrite /= /#.
+move => m xs ih sorted_cons  x_in_cons  y_in_cons e_x_y.
+elim x_in_cons => [eq_x_m //= | b ].
+elim y_in_cons => [eq_y_m //= | y_in_xs].
+exists 0 0 => //= ; smt(size_ge0).
+exists 0 => //=. 
+case (y=m) => [eq_y_m| neq_y_m].
+exists 0 => //= ; smt(size_ge0).
+apply (nth_exist xs y) in y_in_xs.
+elim y_in_xs => /= [i [#] ge0_i lt_i_size nth_x_i_eq_y].
+exists (i+1); progress => //=; smt(size_ge0). 
+elim y_in_cons => [eq_y_m //= | y_in_xs //=].
+exists 0 0 => //=. 
+progress => //=.
+smt(size_ge0). smt(size_ge0). 
+  have path_e_m_xs: path e m xs by smt().
+  have all_exs : all (e m) xs by smt (order_path_min).
+rewrite allP in all_exs.
+smt(). smt().
+  have path_e_m_xs: path e m xs by   smt().
+  have sorted_xs : sorted e xs by smt(path_sorted).
+  have ihs : exists (k l : int),
+      (0 <= k && k < size xs) /\
+      (0 <= l && l < size xs) /\
+      k <= l /\ nth witness xs k = x /\ nth witness xs l = y by smt().
+elim ihs => //= [k l [#]  ge0_k lt_k_size ge0_l lt_k_size_xs le_lk_l  nth_xs_k_eq_x nth_x_l_eq_y].      
+exists (k+1) (l+1). progress; smt(). 
 qed.
 
 lemma diff_equal_size_index_diff (xs ys : bool list) :
