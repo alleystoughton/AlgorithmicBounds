@@ -158,6 +158,62 @@ have := int_logP b n _ _ => // [#] ge0_il b2il_le_n n_lt_b2ilp1.
 by apply (int_log_uniq b n).
 qed.
 
+lemma int_log_distr_mul (b n m : int) :
+  2 <= b => 1 <= n => 1 <= m =>
+  int_log b n + int_log b m <=
+  int_log b (n * m) <=
+  int_log b n + int_log b m + 1.
+proof.
+move => ge2_b ge1_n ge1_m.
+have ge0_b : 0 <= b by rewrite (ler_trans 2).
+have ge0_n : 0 <= n by rewrite (ler_trans 1).
+have ge0_m : 0 <= m by rewrite (ler_trans 1).
+have [ge0_il_b_n [b2il_b_n_le_n n_lt_b2_il_b_n_plus1]]
+     := int_logP b n _ _ => //.
+have [ge0_il_b_m [b2il_b_m_le_m m_lt_b2_il_b_m_plus1]]
+     := int_logP b m _ _ => //.
+have nm_b2_lb_le : b ^ (int_log b n + int_log b m) <= n * m.
+  rewrite exprD_nneg // ler_pmul // expr_ge0 ge0_b.
+have nm_b2_ub_lt : n * m < b ^ (int_log b n + int_log b m + 2).
+  have -> :
+    (int_log b n + int_log b m + 2) =
+    (int_log b n + 1) + (int_log b m + 1) by algebra.
+  rewrite exprD_nneg 1:addr_ge0 // 1:addr_ge0 // ltr_pmul //.
+case (n * m < b ^ (int_log b n + int_log b m + 1)) =>
+  [nm_lt_b2_il_b_n_plus_il_b_m_plus1 | b2_il_b_n_plus_il_b_m_plus1_le_nm].
+have il_b_nm_eq_il_b_n_plus_il_b_m :
+  int_log b (n * m) = int_log b n + int_log b m.
+  by rewrite (int_logPuniq b (n * m) (int_log b n + int_log b m)) //
+             1:addr_ge0.
+split => [| _].
+by rewrite il_b_nm_eq_il_b_n_plus_il_b_m.
+by rewrite -il_b_nm_eq_il_b_n_plus_il_b_m ler_addl.
+rewrite -lerNgt in b2_il_b_n_plus_il_b_m_plus1_le_nm.
+have il_b_nm_eq_il_b_n_plus_il_b_m_plus1 :
+  int_log b (n * m) = int_log b n + int_log b m + 1.
+  by rewrite (int_logPuniq b (n * m) (int_log b n + int_log b m + 1)) //
+             addr_ge0 1:addr_ge0.
+split => [| _].
+by rewrite il_b_nm_eq_il_b_n_plus_il_b_m_plus1 ler_addl.
+by rewrite -il_b_nm_eq_il_b_n_plus_il_b_m_plus1.
+qed.
+
+lemma int_log_distr_mul_lb (b n m : int) :
+  2 <= b => 1 <= n => 1 <= m =>
+  int_log b n + int_log b m <= int_log b (n * m).
+proof.
+move => ge2_b ge1_n ge1_m.
+have := int_log_distr_mul b n m _ _ _ => //.
+qed.
+
+lemma int_log_distr_mul_ub (b n m : int) :
+  2 <= b => 1 <= n => 1 <= m =>
+  int_log b (n * m) <= int_log b n + int_log b m + 1.
+proof.
+move => ge2_b ge1_n ge1_m.
+have := int_log_distr_mul b n m _ _ _ => //.
+qed.
+
 (* integer logarithm rounding up (should not be applied when b <= 1 or
    n <= 0) *)
 
@@ -318,4 +374,92 @@ have // : 2 <= 1 by rewrite -eq1_n.
 pose l' := int_log_up b n.
 move => [#] ge1_l' lt_b2l'min1_n le_n_b2l'.
 by apply (int_log_up_ge2_uniq b n).
+qed.
+
+lemma int_log_up_distr_mul (b n m : int) :
+  2 <= b => 1 <= n => 1 <= m =>
+  int_log_up b n + int_log_up b m - 1 <=
+  int_log_up b (n * m) <=
+  int_log_up b n + int_log_up b m.
+proof.
+move => ge2_b ge1_n ge1_m.
+have ge0_b : 0 <= b by rewrite (ler_trans 2).
+have ge1_b : 1 <= b by rewrite (ler_trans 2).
+have ge0_n : 0 <= n by rewrite (ler_trans 1).
+have ge0_m : 0 <= m by rewrite (ler_trans 1).
+have [[eq0_ilu_b_n eq1_n] |
+      [ge1_ilu_b_n [b2ilu_b_n_min1_lt_n n_le_b2_ilu_b_n]]]
+     := int_log_upP b n _ _ => //.
+have [[eq0_ilu_b_m eq1_m] |
+      [ge1_ilu_b_m [b2ilu_b_m_min1_lt_m m_le_b2_ilu_b_m]]]
+     := int_log_upP b m _ _ => //.
+rewrite eq0_ilu_b_n eq0_ilu_b_m eq1_n eq1_m /=.
+have -> // : int_log_up b 1 = 0 by rewrite int_log_up_zero_iff.
+rewrite eq0_ilu_b_n eq1_n /= ler_subl_addl ler_addr //.
+have [[eq0_ilu_b_m eq1_m] |
+      [ge1_ilu_b_m [b2ilu_b_m_min1_lt_m m_le_b2_ilu_b_m]]]
+     := int_log_upP b m _ _ => //.
+rewrite eq0_ilu_b_m eq1_m /= ler_subl_addl ler_addr //.
+have nm_b2_lb_lt : b ^ (int_log_up b n + int_log_up b m - 2) < n * m.
+  have -> :
+    int_log_up b n + int_log_up b m - 2 =
+    (int_log_up b n - 1) + (int_log_up b m - 1) by algebra.
+  rewrite exprD_nneg 1:ler_subr_addr // 1:ler_subr_addr //.
+  by rewrite ltr_pmul 1:expr_ge0 // 1:expr_ge0.
+have nm_b2_ub_le : n * m <= b ^ (int_log_up b n + int_log_up b m).
+  by rewrite exprD_nneg // 1:(ler_trans 1) // 1:(ler_trans 1) // ler_pmul.
+case (b ^ (int_log_up b n + int_log_up b m - 1) < n * m) =>
+  [b2_ilu_b_n_plus_ilu_b_m_min1_lt_nm | nm_le_b2_ilu_b_n_plus_ilu_b_m_min1].
+have ilu_b_nm_eq_ilu_b_n_plus_ilu_b_m :
+  int_log_up b (n * m) = int_log_up b n + int_log_up b m.
+  rewrite (int_log_up_ge2_Puniq b (n * m)
+          (int_log_up b n + int_log_up b m)) //.
+  have -> : 2 = 1 + 1 by trivial.
+  rewrite lez_add1r
+          (ler_lt_trans (b ^ (int_log_up b n + int_log_up b m - 2)))
+          1:exprn_ege1 //.
+  have -> :
+    int_log_up b n + int_log_up b m - 2 =
+    (int_log_up b n - 1) + (int_log_up b m - 1) by algebra.
+  rewrite addr_ge0 ler_subr_addl //.
+  by rewrite (ler_trans (1 + 1)) // ler_add.
+rewrite ilu_b_nm_eq_ilu_b_n_plus_ilu_b_m.
+split => [| //].
+by rewrite ler_subl_addr ler_addl.
+rewrite -lerNgt in nm_le_b2_ilu_b_n_plus_ilu_b_m_min1.
+have ilu_b_nm_eq_ilu_b_n_plus_ilu_b_m_min1 :
+  int_log_up b (n * m) = int_log_up b n + int_log_up b m - 1.
+  rewrite (int_log_up_ge2_Puniq b (n * m)
+           (int_log_up b n + int_log_up b m - 1)) //.
+  have -> : 2 = 1 + 1 by trivial.
+  rewrite lez_add1r
+          (ler_lt_trans (b ^ (int_log_up b n + int_log_up b m - 2))) //
+          exprn_ege1 //.
+  have -> :
+    int_log_up b n + int_log_up b m - 2 =
+    (int_log_up b n - 1) + (int_log_up b m - 1) by algebra.
+  rewrite addr_ge0 ler_subr_addl //.
+  rewrite ler_subr_addl /=.
+  have -> : 2 = 1 + 1 by trivial.
+  by rewrite ler_add.
+split => [| _].
+by rewrite ilu_b_nm_eq_ilu_b_n_plus_ilu_b_m_min1.
+rewrite ilu_b_nm_eq_ilu_b_n_plus_ilu_b_m_min1.
+by rewrite ler_subl_addr ler_addl.
+qed.
+
+lemma int_log_up_distr_mul_lb (b n m : int) :
+  2 <= b => 1 <= n => 1 <= m =>
+  int_log_up b n + int_log_up b m - 1 <= int_log_up b (n * m).
+proof.
+move => ge2_b ge1_n ge1_m.
+have := int_log_up_distr_mul b n m _ _ _ => //.
+qed.
+
+lemma int_log_up_distr_mul_ub (b n m : int) :
+  2 <= b => 1 <= n => 1 <= m =>
+  int_log_up b (n * m) <= int_log_up b n + int_log_up b m.
+proof.
+move => ge2_b ge1_n ge1_m.
+have := int_log_up_distr_mul b n m _ _ _ => //.
 qed.
