@@ -282,31 +282,6 @@ lemma nth_cons_pos (x : 'a, ys : 'a list, i : int) :
   nth witness (x :: ys) (i + 1) = nth witness ys i.
     proof. smt(). qed.
   
-lemma sorted_nth_gen (ms : 'a list, e : 'a -> 'a -> bool) :
-  (forall (x y : 'a), e x y \/ e y x) =>
-  (forall (y x z : 'a), e x y => e y z => e x z) =>
-  (forall (x y : 'a), e x y => e y x => x = y) =>
-  sorted e ms => (forall (k l: int), 0 <= k <= l < size ms =>
-  e (nth witness ms k) (nth witness ms l)).
-proof.
-move =>  tot_e trans_e antisym_e.
-elim ms.
-rewrite /= /#.
-move => x xs IH sorted_cons /=.
-  have path_x_xs : path e x xs by smt().
-move => k0 l0.
-case (k0=0) => [ //= eq0_k0 | //= neq0_k0 [#] ge0_k0 le_k0_l0 lt_size_l0 ] .
-case (l0=0)=> [/# | //= neq0_l0 [#] ge0_k0 le_k0_l0 lt_size_l0 ].
-have all_exs : all (e x) xs by smt( order_path_min). 
-rewrite allP in all_exs.
-smt(mem_nth).
-have -> //= : ! (l0 = 0) by smt(). 
-have sorted_xs : sorted e xs by smt(path_sorted).
-apply IH ; auto.
-smt().
-qed.
-
-  
 lemma sorted_nth (ms : 'a list, e : 'a -> 'a -> bool, k l : int) :
   (forall (x y : 'a), e x y \/ e y x) =>
   (forall (y x z : 'a), e x y => e y z => e x z) =>
@@ -315,8 +290,20 @@ lemma sorted_nth (ms : 'a list, e : 'a -> 'a -> bool, k l : int) :
   e (nth witness ms k) (nth witness ms l).
 proof.
 move => tot_e trans_e antisym_e sorted_e_ms.
-move : k l.
-by apply sorted_nth_gen.
+move : sorted_e_ms k l.
+elim ms.
+rewrite /= /#.
+move => x xs IH sorted_cons /=.
+  have path_x_xs : path e x xs by smt().
+move => k0 l0.
+case (k0 = 0) => [//= eq0_k0 | //= neq0_k0 [#] ge0_k0 le_k0_l0 lt_size_l0] .
+case (l0 = 0)=> [/# | //= neq0_l0 [#] ge0_k0 le_k0_l0 lt_size_l0].
+have all_exs : all (e x) xs by smt(order_path_min). 
+rewrite allP in all_exs.
+smt(mem_nth).
+have -> //= : ! (l0 = 0) by smt(). 
+have sorted_xs : sorted e xs by smt(path_sorted).
+rewrite IH // /#.
 qed.
 
 lemma nth_exists (xs:'a list):
@@ -325,16 +312,6 @@ proof.
 move => x x_in_xs.  
 have [i onth_xs_i_eq ] :=  onth_mem x xs _ => //=.
 exists i; by apply onth_some.
-(* elim xs. *)
-(* rewrite /= /#. *)
-(* move => m ms ih  x [#] x_in_cons. *)
-(* elim x_in_cons => [eq_x_m //= | x_in_ms]. *)
-(* exists 0. split. smt(size_ge0). smt(). *)
-(* apply ih in x_in_ms. *)
-(* elim x_in_ms => [i [#]  ge0_i lt_i_size  nth_ms_x_eq_x]. *)
-(* exists (i+1). *)
-(* smt(size_ge0 nth_cons_pos ). *)
-(* qed. *)
 qed.
 
 lemma sorted_exists_nth (ms : 'a list, e : 'a -> 'a -> bool, x y : 'a) :
@@ -867,7 +844,7 @@ qed.
 
     
 lemma log2up_fact (n: int) :
-     n * (int_log_up 2 n ) %/ 2 <= int_log_up 2 (fact n). 
- proof.
-   admit.
- qed.
+     n * (int_log_up 2 n) %/ 2 <= int_log_up 2 (fact n). 
+proof.
+admit.
+qed.
