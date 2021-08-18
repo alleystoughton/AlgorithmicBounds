@@ -297,7 +297,7 @@ move => x xs IH sorted_cons /=.
   have path_x_xs : path e x xs by smt().
 move => k0 l0.
 case (k0 = 0) => [//= eq0_k0 | //= neq0_k0 [#] ge0_k0 le_k0_l0 lt_size_l0] .
-case (l0 = 0)=> [/# | //= neq0_l0 [#] ge0_k0 le_k0_l0 lt_size_l0].
+case (l0 = 0) => [/# | //= neq0_l0 [#] ge0_k0 le_k0_l0 lt_size_l0].
 have all_exs : all (e x) xs by smt(order_path_min). 
 rewrite allP in all_exs.
 smt(mem_nth).
