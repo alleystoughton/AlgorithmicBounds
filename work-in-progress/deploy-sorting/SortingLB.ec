@@ -282,6 +282,65 @@ lemma nth_cons_pos (x : 'a, ys : 'a list, i : int) :
   nth witness (x :: ys) (i + 1) = nth witness ys i.
     proof. smt(). qed.
   
+lemma pathP (def: 'a, e : 'a -> 'a -> bool, x : 'a, xs : 'a list) :
+  path e x xs <=>
+  xs = [] \/ e x (head def xs) /\ sorted e xs.
+proof. by case xs. qed.
+
+lemma path_when_ne_head (def: 'a, e : 'a -> 'a -> bool, x : 'a, xs : 'a list) :
+  path e x xs => xs <> [] => e x (head def xs).
+proof.
+rewrite (pathP def e) => [[// | //]].
+qed.
+
+lemma sorted_nthP (e : 'a -> 'a -> bool, def : 'a, xs : 'a list) :
+  sorted e xs <=>
+  (forall (i : int),
+   0 <= i < size xs - 1 =>
+   e (nth def xs i) (nth def xs (i + 1))).
+proof.
+split.
+elim xs =>
+  [/= i [ge0_i lt_i_min1] |
+   x xs IH /= path_e_x_xs i [ge0_i lt_i_size_xs]].
+have // : 0 < -1 by rewrite (ler_lt_trans i).
+case (i = 0) => [eq0_i | ne0_i].
+case (i + 1 = 0) => [| ne0_i_plus1].
+by rewrite eq0_i.
+have ne_nil_xs : xs <> [] by rewrite -size_eq0 1:ltr0_neq0 1:-eq0_i.
+by rewrite eq0_i nth0_head path_when_ne_head.
+case (i + 1 = 0) => [eq0_i_plus1 | ne0_i_plus1].
+have // : i + 1 <> 0 by rewrite ltr0_neq0 1:ltr_spaddr.
+rewrite IH 1:(path_sorted _ x) //.
+split => [| _].
+by rewrite ler_subr_addr -ltzE ltr_def.
+by rewrite ltr_add2r.
+elim xs => [// | x xs IH srtd_x_cons_xsP /=].
+rewrite (pathP def e).
+case (xs = []) => [// | ne_xs_nil].
+right.
+split.
+rewrite -nth0_head.
+have -> : x = nth def (x :: xs) 0 by trivial.
+have -> : nth def xs 0 = nth def (x :: xs) 1 by trivial.
+rewrite srtd_x_cons_xsP /=.
+rewrite -size_eq0 in ne_xs_nil.
+rewrite ltr_def ne_xs_nil /= size_ge0.
+rewrite IH => i [ge0_i lt_i_size_xs_min1].
+have -> : nth def xs i = nth def (x :: xs) (i + 1).
+  rewrite /=.
+  have -> // : i + 1 <> 0.
+  by rewrite gtr_eqF 1:ltr_spaddr.
+have -> : nth def xs (i + 1) = nth def (x :: xs) ((i + 1) + 1).
+  rewrite /=.
+  have -> // : i + 2 <> 0.
+  by rewrite gtr_eqF 1:ltr_spaddr.
+rewrite srtd_x_cons_xsP /=.
+split => [| _].
+by rewrite addr_ge0.
+by rewrite ltr_subr_addr in lt_i_size_xs_min1.
+qed.
+
 lemma sorted_nth (ms : 'a list, e : 'a -> 'a -> bool, k l : int) :
   (forall (x y : 'a), e x y \/ e y x) =>
   (forall (y x z : 'a), e x y => e y z => e x z) =>
