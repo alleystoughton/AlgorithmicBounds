@@ -497,8 +497,31 @@ qed.
 
 
 lemma perm_len_to_total_orderingK (ms : int list) :
+     ms \in perms_len =>
   total_ordering_to_perm_len (perm_len_to_total_ordering ms) = ms.
 proof.
+rewrite /perms_len  /total_ordering /total_ordering_to_perm_len /tsort .
+move => ms_in_perm_len.
+pose tot := perm_len_to_total_ordering ms. 
+  have tot_ord: total_ordering (tot) by smt(perm_len_to_total_ordering_good). search sort perm_eq. search allperms.
+  have perm_eq_ms_range_len: perm_eq ms range_len by smt(allpermsP perm_eq_sym ).
+  have eq_ms_sorted_range_len : sort (cmp_of_rel tot) ms = sort (cmp_of_rel tot) range_len. apply perm_sortP. 
+smt(tot_cmp_tot cmp_total_ordering_total).
+smt( cmp_total_ordering_trans tot_cmp_tot).
+smt( cmp_total_ordering_antisym tot_cmp_tot).
+rewrite //=.
+  rewrite -eq_ms_sorted_range_len. 
+rewrite sort_id.
+smt(tot_cmp_tot cmp_total_ordering_total).
+smt( cmp_total_ordering_trans tot_cmp_tot).
+smt( cmp_total_ordering_antisym tot_cmp_tot).
+rewrite /tot /perm_len_to_total_ordering.
+rewrite /sorted.
+search sorted.
+print path_sorted. print head.
+apply (path_sorted (cmp_of_rel (mkseq (fun (i : int) => index (dec i).`1 ms <= index (dec i).`2 ms)
+        arity) ) (head 0 ms) ms ) .
+  admit.
 admit.
 qed.
 
