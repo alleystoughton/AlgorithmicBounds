@@ -469,8 +469,32 @@ lemma perm_len_to_total_ordering_good (ms : int list) :
   ms \in perms_len =>
   total_ordering (perm_len_to_total_ordering ms).
 proof.
-admit.
+rewrite /perms_len /perm_len_to_total_ordering /total_ordering.    
+move => ms_perm_len; progress.
+(*size*)
+rewrite size_mkseq. smt(ge0_arity).
+(*reflexivity*) 
+rewrite /rel nth_mkseq //= 1:enc_bounds //= encK //=.
+(*transitivity *)
+rewrite /rel nth_mkseq //= 1:enc_bounds //= in H5. 
+rewrite /rel nth_mkseq //= 1:enc_bounds //= in H6. 
+rewrite /rel nth_mkseq //= 1:enc_bounds //=.
+smt(encK).
+(* anti-sym*)
+rewrite /rel nth_mkseq //= 1:enc_bounds //= in H3.  
+rewrite /rel nth_mkseq //= 1:enc_bounds //= in H4.  
+  have eq_idx : index i ms = index j ms by smt(encK). 
+  have eq_nth_i: nth 0 ms (index i ms) = i by smt(allpermsP nth_index mem_range perm_eq_mem).
+  have eq_nth_j: nth 0 ms (index j ms) = j by smt(allpermsP nth_index mem_range perm_eq_mem).
+rewrite -eq_nth_i -eq_nth_j  /#.
+(*total *)
+rewrite /rel !nth_mkseq 1:enc_bounds //= 1:enc_bounds //=. 
+rewrite !encK //=.
+have eq_nth_i: nth 0 ms (index i ms) = i by smt(allpermsP nth_index mem_range perm_eq_mem).
+have eq_nth_j: nth 0 ms (index j ms) = j by smt(allpermsP nth_index mem_range perm_eq_mem).
+have //= /# : (index i ms) <> (index j ms) by smt(). 
 qed.
+
 
 lemma perm_len_to_total_orderingK (ms : int list) :
   total_ordering_to_perm_len (perm_len_to_total_ordering ms) = ms.
