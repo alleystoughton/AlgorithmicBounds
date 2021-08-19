@@ -555,33 +555,53 @@ have //= /# : (index i ms) <> (index j ms) by smt().
 qed.
 
 
+lemma perm_len_to_total_ordering_indices (ms: int list) :
+    ms \in perms_len =>  forall (i j : int), 0 <= i < len  /\ 0<= j < len  =>
+    cmp_of_rel (perm_len_to_total_ordering ms) i j <=> index i ms <= index j ms.
+proof.
+move => ms_in_perms_len i j [range_i range_j ]  .  
+have uniq_ms:  uniq ms by smt(range_uniq perm_eq_mem allpermsP perm_eq_sym perm_eq_uniq).
+rewrite /perm_len_to_total_ordering /cmp_of_rel =>//=.
+have -> : 0 <= i < len by rewrite /#.
+have -> /= : 0 <= j < len by rewrite /#.
+rewrite /rel nth_mkseq //= 1:enc_bounds //=.  
+rewrite !encK //=.
+qed.
+
+
 lemma perm_len_to_total_orderingK (ms : int list) :
      ms \in perms_len =>
   total_ordering_to_perm_len (perm_len_to_total_ordering ms) = ms.
 proof.
-rewrite /perms_len  /total_ordering /total_ordering_to_perm_len /tsort .
-move => ms_in_perm_len.
+rewrite /perms_len  /total_ordering /total_ordering_to_perm_len /tsort.
+move => ms_in_perm_len //=.
 pose tot := perm_len_to_total_ordering ms. 
   have tot_ord: total_ordering (tot) by smt(perm_len_to_total_ordering_good). search sort perm_eq. search allperms.
   have perm_eq_ms_range_len: perm_eq ms range_len by smt(allpermsP perm_eq_sym ).
-  have eq_ms_sorted_range_len : sort (cmp_of_rel tot) ms = sort (cmp_of_rel tot) range_len. apply perm_sortP. 
+  have eq_ms_sorted_range_len : sort (cmp_of_rel tot) ms = sort (cmp_of_rel tot) range_len. apply perm_sortP.
 smt(tot_cmp_tot cmp_total_ordering_total).
 smt( cmp_total_ordering_trans tot_cmp_tot).
 smt( cmp_total_ordering_antisym tot_cmp_tot).
 rewrite //=.
-  rewrite -eq_ms_sorted_range_len. 
-rewrite sort_id.
+rewrite -eq_ms_sorted_range_len sort_id. 
 smt(tot_cmp_tot cmp_total_ordering_total).
 smt( cmp_total_ordering_trans tot_cmp_tot).
 smt( cmp_total_ordering_antisym tot_cmp_tot).
-rewrite /tot /perm_len_to_total_ordering.
-rewrite /sorted.
-search sorted.
-print path_sorted. print head.
-apply (path_sorted (cmp_of_rel (mkseq (fun (i : int) => index (dec i).`1 ms <= index (dec i).`2 ms)
-        arity) ) (head 0 ms) ms ) .
-  admit.
-admit.
+rewrite  /perm_len_to_total_ordering  (sorted_nthP (cmp_of_rel tot) witness ms ).
+move => i [leq_i lt_size_minus_1_i].
+rewrite /tot //= perm_len_to_total_ordering_indices //=.
+  have nth_i_in_ms: nth witness ms i \in ms by smt(mem_nth).
+  have nth_ms_i_in_range_len : nth witness ms i \in (range 0 len) by smt(perm_eq_mem).
+  have nth_ms_i_range: 0<= nth witness ms i < len by smt(mem_range).
+split => [//= | //= ].
+  have nth_ipuls1_in_m: nth witness ms (i+1) \in ms by smt(mem_nth).
+  have nth_ms_iplus1_in_range_len : nth witness ms (i+1) \in (range 0 len) by smt(perm_eq_mem).
+  have nth_ms_iplus1_range: 0<= nth witness ms (i+1) < len by smt(mem_range).
+by rewrite //=.
+  have uniq_ms:  uniq ms by smt(range_uniq perm_eq_mem allpermsP perm_eq_sym perm_eq_uniq).
+rewrite !index_uniq /= 1:/# //= 1:/# .
+by rewrite /#.
+by rewrite //=.
 qed.
 
 (* now we can define our f and show it has the correct property: *)
