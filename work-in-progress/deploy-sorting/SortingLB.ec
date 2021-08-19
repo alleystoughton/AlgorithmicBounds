@@ -883,9 +883,11 @@ qed.
 
 (* here is our main lemma: *)
 
-lemma G_Adv_main (Alg <: ALG{Adv}) : 
-  hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log_up 2 (fact len) <= res.`2].
+lemma G_Adv_main (bound : int) (Alg <: ALG{Adv}) : 
+  bound <= int_log_up 2 (fact len) =>
+  hoare [G(Alg, Adv).main : true ==> res.`1 \/ bound <= res.`2].
 proof.
+move => le_bound_ilu2_fact_len.
 proc.
 seq 7 :
   (inpss = init_inpss aux /\ !error /\ don = inpss_done aux inpss /\
@@ -928,6 +930,7 @@ by rewrite divpow2up_start init_inpss_fact_len.
 rewrite negb_and /= in H0.
 elim H0 => [inpss_done | error].
 right.
+rewrite (ler_trans (int_log_up 2 (fact len))) //.
 apply divpow2up_eq1_int_log_up_le.
 smt(ge1_fact ge1_len).
 smt(fcard_ge0).
@@ -937,6 +940,31 @@ apply ler_anti.
 rewrite ge1_dp2u /=.
 have /# : size inpss1 = 1 by rewrite -inpss_done_iff //#.
 by left. 
+qed.
+
+(* here is the generalized form of our main theorem: *)
+
+lemma lower_bound_gen &m (bound : int) :
+  bound <= int_log_up 2 (fact len) =>
+  exists (Adv <: ADV),
+  islossless Adv.init /\ islossless Adv.ans_query /\
+  forall (Alg <: ALG{Adv}),
+  islossless Alg.init => islossless Alg.make_query =>
+  islossless Alg.query_result =>
+  Pr[G(Alg, Adv).main() @ &m : res.`1 \/ bound <= res.`2] = 1%r.
+proof.
+move => le_bound_ilu2_fact_len.
+exists Adv.
+split; first apply Adv_init_ll.
+split; first apply Adv_ans_query_ll.
+move => Alg Alg_init_ll Alg_make_query_ll Alg_query_result_ll.
+byphoare => //.
+conseq
+  (_ : true ==> true)
+  (_ : true ==> res.`1 \/ bound <= res.`2) => //.
+apply (G_Adv_main bound Alg) => //.
+rewrite (G_ll Alg Adv) 1:Alg_init_ll 1:Alg_make_query_ll
+        1:Alg_query_result_ll 1:Adv_init_ll Adv_ans_query_ll.
 qed.
 
 axiom log_2_0_eq_0 : int_log 2 0 = 0.
@@ -972,5 +1000,23 @@ qed.
 lemma log2up_fact (n: int) :
      n * (int_log_up 2 n) %/ 2 <= int_log_up 2 (fact n). 
 proof.
+admit.
+qed.
+
+(* here our main theorem: *)
+
+lemma lower_bound &m :
+  exists (Adv <: ADV),
+  islossless Adv.init /\ islossless Adv.ans_query /\
+  forall (Alg <: ALG{Adv}),
+  islossless Alg.init => islossless Alg.make_query =>
+  islossless Alg.query_result =>
+  Pr[G(Alg, Adv).main() @ &m :
+       res.`1 \/ (len %%/ 2) * int_log 2 len <= res.`2] = 1%r.
+proof.
+apply (lower_bound_gen &m (len %%/ 2 * int_log 2 len) _).
+(* len %%/ 2 * int_log 2 len <= int_log_up 2 (fact len)
+
+   or whatever our best approximation turns out to be *)
 admit.
 qed.
