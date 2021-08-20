@@ -136,7 +136,7 @@ lemma int_log1_eq0 (b: int):
   2 <= b => 0 = int_log b 1.
 proof.
 move => ge2_b.
-  have [ge0_log [le1_pow _]] := int_logP b 1 _ _ => //.   
+have [ge0_log [le1_pow _]] := int_logP b 1 _ _ => //.   
 rewrite (ler_asym (int_log b 1) 0 ) 1:ge0_log //=.   
 by rewrite (ge2_exp_le_equiv b (int_log b 1) 0) // expr0. 
 qed.
