@@ -132,7 +132,7 @@ move => ge2_b ge1_n.
 have := int_logP b n _ _ => //.
 qed.
 
-lemma int_log1_eq0 (b: int):
+lemma int_log1_eq0 (b: int) :
   2 <= b => 0 = int_log b 1.
 proof.
 move => ge2_b.
