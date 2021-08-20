@@ -132,20 +132,14 @@ move => ge2_b ge1_n.
 have := int_logP b n _ _ => //.
 qed.
 
-lemma int_log_eq0 (b: int):
+lemma int_log1_eq0 (b: int):
   2 <= b => 0 = int_log b 1.
 proof.
 move => ge2_b.
-  have [ge0_log [le1_pow gt1_pow_plus1]] := int_logP b 1 _ _ => //.  
-rewrite exprD_nneg in gt1_pow_plus1.
-by rewrite int_log_ge0 //=.
-by trivial.
-  have eq_1_pow_0 : 1= b^0 by rewrite expr0 //=.
-  have leq_b_pow_log_b_1_b_pow_0 :  b ^ int_log b 1 <= b^0 by rewrite -eq_1_pow_0 //=.
-  have leq_log_0: int_log b 1 <= 0 by rewrite (ge2_exp_le_equiv b (int_log b 1) 0 _ _  ); auto. 
-rewrite (ler_asym 0 (int_log b 1) ) //=.    
+  have [ge0_log [le1_pow _]] := int_logP b 1 _ _ => //.   
+rewrite (ler_asym (int_log b 1) 0 ) 1:ge0_log //=.   
+by rewrite (ge2_exp_le_equiv b (int_log b 1) 0) // expr0. 
 qed.
-
 
 lemma int_log_lb_le (b n : int) :
   2 <= b => 1 <= n => b ^ (int_log b n) <= n.
