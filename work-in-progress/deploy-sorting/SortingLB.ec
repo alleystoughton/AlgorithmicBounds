@@ -293,7 +293,7 @@ proof.
 rewrite (pathP def e) => [[// | //]].
 qed.
 
-lemma sorted_nthP (e : 'a -> 'a -> bool, def : 'a, xs : 'a list) :
+lemma sorted_nthP (def : 'a, e : 'a -> 'a -> bool, xs : 'a list) :
   sorted e xs <=>
   (forall (i : int),
    0 <= i < size xs - 1 =>
@@ -341,40 +341,40 @@ by rewrite addr_ge0.
 by rewrite ltr_subr_addr in lt_i_size_xs_min1.
 qed.
 
-lemma sorted_nth (ms : 'a list, e : 'a -> 'a -> bool, k l : int) :
-  (forall (x y : 'a), e x y \/ e y x) =>
+lemma sorted_nth (def : 'a, ms : 'a list, e : 'a -> 'a -> bool, k l : int) :
+  (forall (x : 'a), e x x) =>
   (forall (y x z : 'a), e x y => e y z => e x z) =>
-  (forall (x y : 'a), e x y => e y x => x = y) =>
   sorted e ms => 0 <= k <= l < size ms =>
-  e (nth witness ms k) (nth witness ms l).
+  e (nth def ms k) (nth def ms l).
 proof.
-move => tot_e trans_e antisym_e sorted_e_ms.
-move : sorted_e_ms k l.
-elim ms.
-rewrite /= /#.
-move => x xs IH sorted_cons /=.
-  have path_x_xs : path e x xs by smt().
-move => k0 l0.
-case (k0 = 0) => [//= eq0_k0 | //= neq0_k0 [#] ge0_k0 le_k0_l0 lt_size_l0] .
-case (l0 = 0) => [/# | //= neq0_l0 [#] ge0_k0 le_k0_l0 lt_size_l0].
-have all_exs : all (e x) xs by smt(order_path_min). 
-rewrite allP in all_exs.
-smt(mem_nth).
-have -> //= : ! (l0 = 0) by smt(). 
-have sorted_xs : sorted e xs by smt(path_sorted).
-rewrite IH // /#.
+move => refl_e trans_e sorted_e_ms [#] ge0_k.
+have H :
+  forall (l : int),
+  0 <= l => k <= l < size ms => e (nth def ms k) (nth def ms l).
+  elim => [[le0_k _] | l' ge0_l' IH [le_k_l'_plus1 l'_plus1_lt_size_ms]].
+  have -> : k = 0 by apply ler_anti.
+  rewrite refl_e.
+  case (k = l' + 1) => [-> | lt_k_l'_plus1].
+  rewrite refl_e.
+  rewrite (trans_e (nth def ms l')) 1:IH.
+  split => [| _].
+  by rewrite -ltzS ltr_def eq_sym.
+  by rewrite (ltr_trans (l' + 1)) // ltr_spaddr.
+  have [H _] := sorted_nthP def e ms.
+  by rewrite H // ge0_l' /= ltr_subr_addl addrC.
+move => le_k_l lt_l_size_ms; by rewrite H 1:(ler_trans k).
 qed.
 
-lemma nth_exists (xs:'a list):
-    forall x, x \in xs => exists i, 0<=i < size xs /\ nth witness xs i = x.
+lemma nth_exists (xs : 'a list, x : 'a):
+  x \in xs => exists i, 0 <= i < size xs /\ nth witness xs i = x.
 proof.
-move => x x_in_xs.  
+move => x_in_xs.  
 have [i onth_xs_i_eq ] :=  onth_mem x xs _ => //=.
 exists i; by apply onth_some.
 qed.
 
 lemma sorted_exists_nth (ms : 'a list, e : 'a -> 'a -> bool, x y : 'a) :
-  (forall (x y : 'a), e x y \/ e y x) =>
+  (forall (x : 'a), e x x) =>
   (forall (y x z : 'a), e x y => e y z => e x z) =>
   (forall (x y : 'a), e x y => e y x => x = y) =>
   sorted e ms => x \in ms => y \in ms => e x y =>
@@ -382,35 +382,19 @@ lemma sorted_exists_nth (ms : 'a list, e : 'a -> 'a -> bool, x y : 'a) :
   0 <= k < size ms /\ 0 <= l < size ms /\ k <= l /\
   nth witness ms k = x /\ nth witness ms l = y.
 proof.
-move => tot_e trans_e antisym_e.
-elim ms.
-rewrite /= /#.
-move => m xs ih sorted_cons  x_in_cons  y_in_cons e_x_y.
-elim x_in_cons => [eq_x_m //= | b ].
-elim y_in_cons => [eq_y_m //= | y_in_xs].
-exists 0 0 => //= ; smt(size_ge0).
-exists 0 => //=. 
-case (y=m) => [eq_y_m| neq_y_m].
-exists 0 => //= ; smt(size_ge0).
-apply (nth_exists xs y) in y_in_xs.
-elim y_in_xs => /= [i [#] ge0_i lt_i_size nth_x_i_eq_y].
-exists (i+1); progress => //=; smt(size_ge0). 
-elim y_in_cons => [eq_y_m //= | y_in_xs //=].
-exists 0 0 => //=. 
-progress => //=.
-smt(size_ge0). smt(size_ge0). 
-  have path_e_m_xs: path e m xs by smt().
-  have all_exs : all (e m) xs by smt (order_path_min).
-rewrite allP in all_exs.
-smt(). smt().
-  have path_e_m_xs: path e m xs by   smt().
-  have sorted_xs : sorted e xs by smt(path_sorted).
-  have ihs : exists (k l : int),
-      (0 <= k && k < size xs) /\
-      (0 <= l && l < size xs) /\
-      k <= l /\ nth witness xs k = x /\ nth witness xs l = y by smt().
-elim ihs => //= [k l [#]  ge0_k lt_k_size ge0_l lt_k_size_xs le_lk_l  nth_xs_k_eq_x nth_x_l_eq_y].      
-exists (k+1) (l+1). progress; smt(). 
+move => refl_e trans_e antisym_e sorted_e_ms x_in_ms y_in_ms e_x_y.
+have [k] [#] ge0_k lt_k_size_ms nth_ms_k_eq_x := nth_exists ms x _ => //.
+case (x = y) => [<- | ne_x_y].
+by exists k k.
+have [l] [#] ge0_l lt_l_size_ms nth_ms_l_eq_y := nth_exists ms y _ => //.
+exists k l => />.
+case (k <= l) => [// | lt_l_k].
+rewrite -ltrNge in lt_l_k.
+have le_l_k : l <= k by rewrite ltzW.
+have e_y_x : e y x.
+  rewrite -nth_ms_k_eq_x -nth_ms_l_eq_y.
+  by rewrite sorted_nth.
+have // : x = y by rewrite (antisym_e x y).
 qed.
 
 lemma diff_equal_size_index_diff (xs ys : bool list) :
@@ -480,7 +464,7 @@ have H :
     move => x y; by rewrite cmp_total_ordering_total tot_cmp_tot.
   have := sorted_exists_nth (sort (cmp_of_rel xs) (range 0 len))
           (cmp_of_rel xs) j k _ _ _ _ _ _ _ => //.
-    move => x y; by rewrite cmp_total_ordering_total tot_cmp_tot.
+    move => x; by rewrite cmp_total_ordering_refl tot_cmp_tot.
     move => y x z cmp_xs_x_y cmp_xs_y_z.
     by rewrite (cmp_total_ordering_trans xs y) 1:tot_cmp_tot.
     move => x y cmp_xs_x_y cmp_xs_y_z.
@@ -498,12 +482,10 @@ have H :
     by rewrite -eq_sort_xs_sort_ys nth_sort_xs_m_eq_k.
   have cmp_of_rel_ys_j_k : cmp_of_rel ys j k.
     rewrite -nth_sort_ys_l_eq_j -nth_sort_ys_m_eq_k.
-    rewrite (sorted_nth _ (cmp_of_rel ys)) //.
-    move => x y; by rewrite cmp_total_ordering_total tot_cmp_tot.
+    rewrite (sorted_nth _ _ (cmp_of_rel ys)) //.
+    move => x; by rewrite cmp_total_ordering_refl 1:tot_cmp_tot.
     move => y x z cmp_ys_x_y cmp_ys_y_z.
     by rewrite (cmp_total_ordering_trans ys y) 1:tot_cmp_tot.
-    move => x y cmp_ys_x_y cmp_ys_y_z.
-    by rewrite (cmp_total_ordering_antisym ys x y) 1:tot_cmp_tot.
     smt().
   have // : rel ys j k by smt().
 move => xs ys tot_ord_xs tot_ord_ys eq_tot_ord_to_perm_len_xs_ys.
@@ -587,12 +569,12 @@ rewrite -eq_ms_sorted_range_len sort_id.
 smt(tot_cmp_tot cmp_total_ordering_total).
 smt( cmp_total_ordering_trans tot_cmp_tot).
 smt( cmp_total_ordering_antisym tot_cmp_tot).
-rewrite  /perm_len_to_total_ordering  (sorted_nthP (cmp_of_rel tot) witness ms ).
+rewrite /perm_len_to_total_ordering (sorted_nthP witness (cmp_of_rel tot) ms).
 move => i [leq_i lt_size_minus_1_i].
 rewrite /tot //= perm_len_to_total_ordering_indices //=.
   have nth_i_in_ms: nth witness ms i \in ms by smt(mem_nth).
   have nth_ms_i_in_range_len : nth witness ms i \in (range 0 len) by smt(perm_eq_mem).
-  have nth_ms_i_range: 0<= nth witness ms i < len by smt(mem_range).
+  have nth_ms_i_range: 0 <= nth witness ms i < len by smt(mem_range).
 split => [//= | //= ].
   have nth_ipuls1_in_m: nth witness ms (i+1) \in ms by smt(mem_nth).
   have nth_ms_iplus1_in_range_len : nth witness ms (i+1) \in (range 0 len) by smt(perm_eq_mem).
