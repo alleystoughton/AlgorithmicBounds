@@ -132,15 +132,6 @@ move => ge2_b ge1_n.
 have := int_logP b n _ _ => //.
 qed.
 
-lemma int_log1_eq0 (b: int) :
-  2 <= b => 0 = int_log b 1.
-proof.
-move => ge2_b.
-have [ge0_log [le1_pow _]] := int_logP b 1 _ _ => //.   
-rewrite (ler_asym (int_log b 1) 0 ) 1:ge0_log //=.   
-by rewrite (ge2_exp_le_equiv b (int_log b 1) 0) // expr0. 
-qed.
-
 lemma int_log_lb_le (b n : int) :
   2 <= b => 1 <= n => b ^ (int_log b n) <= n.
 proof.
@@ -165,6 +156,13 @@ have ge1_n : 1 <= n.
   by rewrite (lez_trans (b ^ l)) // exprn_ege1 // (lez_trans 2).
 have := int_logP b n _ _ => // [#] ge0_il b2il_le_n n_lt_b2ilp1.
 by apply (int_log_uniq b n).
+qed.
+
+lemma int_log1_eq0 (b: int) :
+  2 <= b => int_log b 1 = 0.
+proof.
+move => ge2_b.
+by rewrite eq_sym (int_logPuniq b 1) // expr0 expr1 /= ltzE.
 qed.
 
 lemma int_log_distr_mul (b n m : int) :
