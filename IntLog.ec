@@ -158,11 +158,46 @@ have := int_logP b n _ _ => // [#] ge0_il b2il_le_n n_lt_b2ilp1.
 by apply (int_log_uniq b n).
 qed.
 
-lemma int_log1_eq0 (b: int) :
+lemma int_log1_eq0 (b : int) :
   2 <= b => int_log b 1 = 0.
 proof.
 move => ge2_b.
 by rewrite eq_sym (int_logPuniq b 1) // expr0 expr1 /= ltzE.
+qed.
+
+lemma int_log_le (b n m : int) :
+  2 <= b => 1 <= n <= m =>
+  int_log b n <= int_log b m.
+proof.
+move => ge2_b [ge1_n le_n_m].
+have ge1_m : 1 <= m by rewrite (ler_trans n).
+case (int_log b n <= int_log b m) => [// | il_m_plus1_le_il_n].
+rewrite lerNgt /= ltzE in il_m_plus1_le_il_n.
+have [#] _ b2il_n_le_n _ := int_logP b n _ _ => //.
+have [#] _ _ m_lt_b2il_m_plus1 := int_logP b m _ _ => //.
+have lt_m_n : m < n.
+  rewrite (ltr_le_trans (b ^ (int_log b m + 1))) //.
+  rewrite (ler_trans (b ^ (int_log b n))) //.
+  rewrite ler_weexpn2l 1:(ler_trans 2) // il_m_plus1_le_il_n /=.
+  by rewrite addz_ge0 1:int_log_ge0.
+have // : n < n by rewrite (ler_lt_trans m).
+qed.
+
+lemma int_log_pow_b (b i : int) :
+  2 <= b => 0 <= i =>
+  int_log b (b ^ i) = i.
+proof.
+move => ge2_b ge0_i.
+have ge1_b2i: 1 <= b ^ i by rewrite exprn_ege1 // (ler_trans 2).
+have [#] ge0_il_b2i b2ilb2i_le_b2i b2i_lt_b2ilb2i_plus1
+     := int_logP b (b ^ i) _ _ => //.
+rewrite (ler_anti (int_log b (b ^ i)) i) //.
+split => [| _].
+rewrite (ge2_exp_le_equiv b (int_log b (b ^ i)) i) //.
+move : b2i_lt_b2ilb2i_plus1.
+rewrite -(ge2_exp_lt_equiv b i (int_log b (b ^ i) + 1)) //.
+by rewrite addz_ge0 1:int_log_ge0.
+by rewrite ltzS.
 qed.
 
 lemma int_log_distr_mul (b n m : int) :
