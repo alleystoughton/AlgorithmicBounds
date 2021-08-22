@@ -937,7 +937,8 @@ qed.
 lemma int_log_geq (x b n : int) :
   0 <= x => 2 <= b => 1 <= n =>  b^x <= n => x <= int_log b n.
 proof.
-admit.
+move => le0_x le2_b le1_n leqn_pow_b.
+rewrite -(int_log_pow_b b x) //= int_log_le //= exprn_ege1 //= 1:/#.
 qed.
 
   
