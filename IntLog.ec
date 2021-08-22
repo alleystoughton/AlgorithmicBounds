@@ -328,7 +328,7 @@ lemma int_log_up_ge0 (b n : int) :
   2 <= b => 1 <= n => 0 <= int_log_up b n.
 proof.
 move => ge2_b ge1_n.
-have [[->] | [ge1_il _]] := int_log_upP b n _ _ => //.
+have [[->] | [ge1_ilu _]] := int_log_upP b n _ _ => //.
 by rewrite (ler_trans 1).
 qed.
 
@@ -337,9 +337,9 @@ lemma int_log_up_zero_iff (b n : int) :
   int_log_up b n = 0 <=> n = 1.
 proof.
 move => ge2_b ge1_n.
-have [// | [#] ge1_il lt_b2ilmin1_n _] := int_log_upP b n _ _ => //.
-split => [eq0_il | eq1_n].
-have // : 1 <= 0 by rewrite (ler_trans (int_log_up b n)) // eq0_il.
+have [// | [#] ge1_il lt_b2ilu_min1_n _] := int_log_upP b n _ _ => //.
+split => [eq0_ilu | eq1_n].
+have // : 1 <= 0 by rewrite (ler_trans (int_log_up b n)) // eq0_ilu.
 have : b ^ (int_log_up b n - 1) = 0.
   rewrite eqr_le.
   split => [| _].
@@ -416,6 +416,60 @@ have // : 2 <= 1 by rewrite -eq1_n.
 pose l' := int_log_up b n.
 move => [#] ge1_l' lt_b2l'min1_n le_n_b2l'.
 by apply (int_log_up_ge2_uniq b n).
+qed.
+
+lemma int_log_up_le (b n m : int) :
+  2 <= b => 1 <= n <= m =>
+  int_log_up b n <= int_log_up b m.
+proof.
+move => ge2_b [ge1_n le_n_m].
+have ge1_m : 1 <= m by rewrite (ler_trans n).
+case (int_log_up b n <= int_log_up b m) => [// | ilu_m_plus1_le_ilu_n].
+rewrite lerNgt /= ltzE in ilu_m_plus1_le_ilu_n.
+have [[eq0_ilu_n _] | [#] _ b2ilu_n_min1_lt_n _] := int_log_upP b n _ _ => //.
+move : ilu_m_plus1_le_ilu_n.
+rewrite eq0_ilu_n => le0_ilu_m_plus1.
+have // : 1 <= 0.
+  by rewrite (ler_trans (int_log_up b m + 1)) // ler_addr int_log_up_ge0.
+have [[eq0_ilu_m eq1_m] | [#] _ _ le_m_b2ilu_m] := int_log_upP b m _ _ => //.
+have eq1_n : n = 1.
+  move : le_n_m; rewrite eq1_m => le1_n.
+  rewrite (ler_anti n 1) 1:le1_n //.
+rewrite -(int_log_up_zero_iff b n) // in eq1_n.
+have // : 1 <= 0.
+  have -> : 1 = int_log_up b m + 1.
+  by rewrite eq0_ilu_m.
+  by rewrite (ler_trans (int_log_up b n)) // eq1_n.
+have ilu_m_le_ilu_n_min1 : int_log_up b m <= int_log_up b n - 1.
+  by rewrite -ler_subr_addr in ilu_m_plus1_le_ilu_n.
+have lt_m_n : m < n.
+  rewrite (ler_lt_trans (b ^ (int_log_up b m))) //.
+  rewrite (ler_lt_trans (b ^ (int_log_up b n - 1))) //.
+  rewrite -ge2_exp_le_equiv // 1:int_log_up_ge0 //.
+  rewrite (ler_trans (int_log_up b m)) 1:int_log_up_ge0 //.
+have // : n < n by rewrite (ler_lt_trans m).
+qed.
+
+lemma int_log_up_pow_b (b i : int) :
+  2 <= b => 0 <= i =>
+  int_log_up b (b ^ i) = i.
+proof.
+move => ge2_b ge0_i.
+have ge1_b2i: 1 <= b ^ i by rewrite exprn_ege1 // (ler_trans 2).
+have [[-> eq1_b2i ] | [#] ge1_ilu b2ilu_b2i_min1_lt_b2i b2i_le_b2_ilu_b2i]
+     := int_log_upP b (b ^ i) _ _ => //.
+rewrite (ler_anti 0 i) // 1:ge0_i /=.
+case (i <= 0) => [// | gt0_i].
+rewrite lerNgt /= in gt0_i.
+have le_b_b2i : b <= b ^ i by rewrite ler_eexpr // (ler_trans 2).
+rewrite eq1_b2i in le_b_b2i.
+have // : 2 <= 1 by rewrite (ler_trans b).
+rewrite (ler_anti (int_log_up b (b ^ i)) i) //.
+split.
+move : b2ilu_b2i_min1_lt_b2i.
+by rewrite -(ge2_exp_lt_equiv b (int_log_up b (b ^ i) - 1) i) //
+           1:ler_subr_addr // ltr_subl_addl addrC ltzS.
+by rewrite (ge2_exp_le_equiv b i (int_log_up b (b ^ i))) // int_log_up_ge0.
 qed.
 
 lemma int_log_up_distr_mul (b n m : int) :
