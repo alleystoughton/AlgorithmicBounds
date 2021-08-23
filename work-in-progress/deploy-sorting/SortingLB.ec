@@ -840,7 +840,7 @@ move =>
   ge0_stage [ge0_i lt_i_arity] ge2_size_inpss le_size_filter_nth_not_b_b
   le_dp2u_stage_size_inpss.
 rewrite (divpow2up_next_new_ub (size inpss)) 1:ge1_fact_len //.
-smt(filter_nth_size_b_not_b).
+rewrite (filter_nth_size_b_not_b inpss i b) //#.
 qed.
 
 (* here is our main lemma, parameterized by a lower bound: *)
