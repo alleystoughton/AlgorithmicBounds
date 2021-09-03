@@ -840,7 +840,7 @@ move =>
   ge0_stage [ge0_i lt_i_arity] ge2_size_inpss le_size_filter_nth_not_b_b
   le_dp2u_stage_size_inpss.
 rewrite (divpow2up_next_new_ub (size inpss)) 1:ge1_fact_len //.
-rewrite (filter_nth_size_b_not_b inpss i b) //#.
+smt(filter_nth_size_b_not_b).
 qed.
 
 (* here is our main lemma, parameterized by a lower bound: *)
@@ -946,9 +946,10 @@ lemma log2_fact (n: int) :
    1<=n =>  (n * (int_log 2 n )) %/ 2 <= int_log 2 (fact n). 
 proof.
 have helper :
+  (* n* (log2 n + 2 ) <= ( (log2 n!) + 2^(log2 n) ) * 2 +1   *)
   0 <= n =>  1 <=n => n * (int_log 2 n +2) <= ( int_log 2 (fact n)  + 2 ^(int_log 2 n) ) *2 +1.
   (* proof of the helper *)
-  elim n => [| n ge0_n ih ].
+  elim n => [| n ge0_n ih ]. 
   smt( fact0 int_log_ge0  expr0).    
   move : ge0_n.  
   case (2 < n) => [ gt2_n _ _ | leq2_n ge0_n _].
@@ -957,20 +958,18 @@ have helper :
     have e1: 2 ^(int_log 2 n) <= n by rewrite int_log_lb_le //#.
     have e2: n < 2^((int_log 2 n) +1 ) by rewrite int_log_ub_lt //#. 
     have e3: 2 ^(int_log 2 (n+1)) <= n+1 by rewrite int_log_lb_le //#.
-    have e4: n + 1 < 2^((int_log 2 (n+1)) +1 ) by rewrite int_log_ub_lt //#. 
-    have e5:  2 ^(int_log 2 (n+1)) <=  2^( (int_log 2 n) +1 )  by rewrite /#.
-    have e6: (int_log 2 (n+1)) <= (int_log 2 n ) +1
+    have e4: (int_log 2 (n+1)) <= (int_log 2 n ) +1
     by rewrite (ge2_exp_le_equiv 2 ( int_log 2 (n+1) ) ((int_log 2 n ) +1 ) ) //= ; smt(int_log_ge0).
-    rewrite lez_eqVlt in e6.
-    elim e6 => [ e7 //= | //=].
+    rewrite lez_eqVlt in e4.
+    elim e4 => [ e5 //= | //=].
     right ; split => //#.
     rewrite ltzS lez_eqVlt => [#]  [eq_log | neq_log ].  
     by left.
     have neq_log2: (int_log 2 (n+1)) + 1 <= int_log 2 n by  smt().  
-    rewrite (ge2_exp_le_equiv 2 ( (int_log 2 (n+1)) +1 ) (int_log 2 n)  ) // in neq_log2.
-    smt(int_log_ge0). smt(int_log_ge0).
+      rewrite (ge2_exp_le_equiv 2 ( (int_log 2 (n+1)) +1 ) (int_log 2 n)  ) // in neq_log2.
+      smt(int_log_ge0). smt(int_log_ge0).
     (*contradiction: n +1 < n*)
-    smt().
+    smt(int_log_ub_lt).
   have lb1: 2 <= int_log 2 (n+1) by  rewrite int_log_geq //=  1:/# ;   smt( ltzS  expr1 exprS).
   have lb2: (int_log 2 (n+1))  + (int_log 2 (fact n) ) <= int_log 2 (fact (n+1))
     by rewrite factS // 1:/#  (int_log_distr_mul_lb) // 1: /# ; smt(ge1_fact).
@@ -987,7 +986,7 @@ have helper :
   have lb5 : n * (int_log 2 n + 2) +  (int_log 2 n + 3 + n)
               <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 +  (int_log 2 n + 3 + n)by smt(ler_add).
   rewrite (lez_trans  ( (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n + 3 + n)  ) )  // -e1 e2 mulzDl.
-  have -> :  2 ^ (int_log 2 n) * 2 = 2 ^ (int_log 2 n + 1). rewrite exprS 1:int_log_ge0 //= 1:/# /#.
+  have -> :  2 ^ (int_log 2 n) * 2 = 2 ^ (int_log 2 n + 1) by  rewrite exprS 1:int_log_ge0 //= 1:/# /#.
   smt().
   (* n <=2  *)  
   have range_n: n =0 \/ n =1 \/ n =2  by smt().
@@ -1004,16 +1003,10 @@ have helper :
   rewrite eq2_n //=.
   have -> : fact 3 = 2*3 by smt(factS fact1 fact0 expr1).
   have int_log2_3_eq_1 : 1 = int_log 2 3 by rewrite (int_logPuniq 2 3 1) //=; smt(expr1 exprS).
-  smt(int_log_distr_mul_lb int_log2_eq_1 expr1 ).                       
-smt(lez_eqVlt fact0 int_log_ge0  int_logP).
+  smt(int_log_distr_mul_lb int_log2_eq_1 expr1 ).                      
+smt( int_log_lb_le).
 qed.
 
-    
-lemma log2up_fact (n: int) :
-     n * (int_log_up 2 n) %/ 2 <= int_log_up 2 (fact n). 
-proof.
-admit.
-qed.
 
 (* here our main theorem: *)
 
