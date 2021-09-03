@@ -935,26 +935,35 @@ by rewrite eq_sym (int_logPuniq 2 2 1) // expr1 /= expr2.
 qed.
 
 lemma int_log_geq (x b n : int) :
-  0 <= x => 2 <= b => 1 <= n =>  b^x <= n => x <= int_log b n.
+  0 <= x => 2 <= b => 1 <= n =>  b ^ x <= n => x <= int_log b n.
 proof.
-move => le0_x le2_b le1_n leqn_pow_b.
+move => ge0_x ge2_b ge1_n le_pow_b_x_n.
 rewrite -(int_log_pow_b b x) //= int_log_le //= exprn_ege1 //= 1:/#.
 qed.
 
+lemma div2_le_if_le_tim2_plus1 (n m : int) :
+  n <= m * 2 + 1 => n %/ 2 <= m.
+proof.
+move => le_n_m_tim2_plus1.
+rewrite (ler_trans ((m * 2 + 1) %/ 2)).
+by rewrite leq_div2r.
+by rewrite div2_even_plus1 1:dvdz_mull // mulzK.
+qed.
   
-lemma log2_fact (n: int) :
-   1<=n =>  (n * (int_log 2 n )) %/ 2 <= int_log 2 (fact n). 
+lemma log2_fact_aux (n : int) :
+   1 <= n => n * int_log 2 n <= int_log 2 (fact n) * 2 + 1.
 proof.
 have helper :
-  (* n* (log2 n + 2 ) <= ( (log2 n!) + 2^(log2 n) ) * 2 +1   *)
-  0 <= n =>  1 <=n => n * (int_log 2 n +2) <= ( int_log 2 (fact n)  + 2 ^(int_log 2 n) ) *2 +1.
-  (* proof of the helper *)
+  0 <= n => 1 <= n =>
+  n * (int_log 2 n +2) <= (int_log 2 (fact n)  + 2 ^ int_log 2 n) * 2 + 1.
   elim n => [| n ge0_n ih ]. 
   smt( fact0 int_log_ge0  expr0).    
   move : ge0_n.  
   case (2 < n) => [ gt2_n _ _ | leq2_n ge0_n _].
   (*2 < n*)
-  have : int_log 2 (n+1) = int_log 2 n \/ int_log 2 (n+1) = (int_log 2 n) + 1 /\ 2 ^(int_log 2 (n+1)) = n +1 .  
+  have :
+    int_log 2 (n+1) = int_log 2 n \/
+    int_log 2 (n+1) = (int_log 2 n) + 1 /\ 2 ^(int_log 2 (n+1)) = n + 1.
     have e1: 2 ^(int_log 2 n) <= n by rewrite int_log_lb_le //#.
     have e2: n < 2^((int_log 2 n) +1 ) by rewrite int_log_ub_lt //#. 
     have e3: 2 ^(int_log 2 (n+1)) <= n+1 by rewrite int_log_lb_le //#.
@@ -980,11 +989,11 @@ have helper :
     by rewrite ler_add 1:ih /#.
   rewrite (lez_trans  ( (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + int_log 2 n * 2  )) //= addzC.
   have -> //= //# : int_log 2 n * 2 + ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1)
-                    = (int_log 2 n + int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 by smt().
+                      = (int_log 2 n + int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 by smt().
   rewrite e1  mulzDl.   
   have -> : n * (int_log 2 n + 1 + 2) + 1 * (int_log 2 n + 1 + 2) =  n * (int_log 2 n  + 2) + (int_log 2 n + 3 + n) by smt().
   have lb5 : n * (int_log 2 n + 2) +  (int_log 2 n + 3 + n)
-              <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 +  (int_log 2 n + 3 + n)by smt(ler_add).
+                <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 +  (int_log 2 n + 3 + n)by smt(ler_add).
   rewrite (lez_trans  ( (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n + 3 + n)  ) )  // -e1 e2 mulzDl.
   have -> :  2 ^ (int_log 2 n) * 2 = 2 ^ (int_log 2 n + 1) by  rewrite exprS 1:int_log_ge0 //= 1:/# /#.
   smt().
@@ -1003,10 +1012,16 @@ have helper :
   rewrite eq2_n //=.
   have -> : fact 3 = 2*3 by smt(factS fact1 fact0 expr1).
   have int_log2_3_eq_1 : 1 = int_log 2 3 by rewrite (int_logPuniq 2 3 1) //=; smt(expr1 exprS).
-  smt(int_log_distr_mul_lb int_log2_eq_1 expr1 ).                      
-smt( int_log_lb_le).
+  smt(int_log_distr_mul_lb int_log2_eq_1 expr1).   
+smt(int_log_lb_le).
 qed.
 
+lemma log2_fact (n: int) :
+  1 <= n => (n * (int_log 2 n )) %/ 2 <= int_log 2 (fact n). 
+proof.
+move => ge1_n.
+by rewrite div2_le_if_le_tim2_plus1 log2_fact_aux.
+qed.
 
 (* here our main theorem: *)
 
@@ -1017,15 +1032,10 @@ lemma lower_bound &m :
   islossless Alg.init => islossless Alg.make_query =>
   islossless Alg.query_result =>
   Pr[G(Alg, Adv).main() @ &m :
-       res.`1 \/ (len %%/ 2) * int_log 2 len <= res.`2] = 1%r.
+       res.`1 \/ len * int_log 2 len %/ 2 <= res.`2] = 1%r.
 proof.
-apply (lower_bound_gen (len %%/ 2 * int_log 2 len) &m _).
-(* len %%/ 2 * int_log 2 len <= int_log_up 2 (fact len)
-
-   or whatever our best approximation turns out to be *)
-admit.
+apply (lower_bound_gen (len * int_log 2 len %/ 2) &m _).
+rewrite (ler_trans (int_log 2 (fact len))).
+rewrite log2_fact ge1_len.
+rewrite int_log_int_log_up_le.
 qed.
-
-
-    
-  
