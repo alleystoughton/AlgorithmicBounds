@@ -57,6 +57,20 @@ lemma odd_iff_plus1_even (m : int) :
   ! 2 %| m <=> (2 %| (m + 1)).
 proof. by rewrite even_iff_plus1_odd. qed.
 
+lemma even_iff_eq (m : int) :
+  2 %| m <=> m = (m %/ 2) * 2.
+proof. by rewrite dvdz_eq eq_sym. qed.
+
+lemma odd_iff_eq (m : int) :
+  ! 2 %| m <=> m = (m %/ 2) * 2 + 1.
+proof.
+split => [odd_m | ->].
+rewrite {1}(divz_eq m 2).
+congr.
+by rewrite -ne0_mod2.
+by rewrite -even_iff_plus1_odd dvdz_mull.
+qed.
+
 lemma div2_even_plus1 (m : int) :
   2 %| m => (m + 1) %/ 2 = m %/ 2.
 proof.
@@ -136,6 +150,15 @@ proof.
 rewrite /(%%/).
 case (d %| m) => [d_dvdz_m // | not_d_dvdz_m].
 by rewrite ler_paddr.
+qed.
+
+lemma div2_plus_div2up_eq (n : int) :
+  n = n %/ 2 + n %%/ 2.
+proof.
+rewrite /(%%/).
+case (2 %| n) => /= [even_n | odd_n].
+by rewrite -mul2r divzK.
+by rewrite addrA -mul2r -odd_iff_eq.
 qed.
 
 lemma int_div2_up_eq0_implies_eq0 (m d : int) :
