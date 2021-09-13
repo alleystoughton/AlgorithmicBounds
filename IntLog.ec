@@ -108,7 +108,8 @@ by rewrite -ne0_mod2.
 by rewrite -even_iff_plus1_odd dvdz_mull.
 qed.
 
-(* lemmas about integer division *)
+(* lemmas about integer division, both rounding down (%/) and
+   (new) rounding up (%%/) *)
 
 lemma div_succ_plus1 (b m : int) :
   1 <= b => b %| (m + 1) => (m + 1) %/ b = m %/ b + 1.
@@ -230,6 +231,27 @@ qed.
 
 op (%%/) (m d : int) : int =
   m %/ d + ((d %| m) ? 0 : 1).
+
+lemma int_div_up_dvdz_b (b n : int) :
+  b %| n => n %%/ b = n %/ b.
+proof.
+move => b_dvdz_n.
+by rewrite /(%%/) b_dvdz_n.
+qed.
+
+lemma int_div_up2_even (n : int) :
+  2 %| n => n %%/ 2 = n %/2.
+proof.
+move => even_n.
+by rewrite int_div_up_dvdz_b.
+qed.
+
+lemma int_div_up2_odd (n : int) :
+  ! 2 %| n => n %%/ 2 = (n + 1) %/ 2.
+proof.
+move => odd_n.
+by rewrite /(%%/) odd_n /= div_succ_plus1 // -odd_iff_plus1_even.
+qed.
 
 lemma int_div2_le_int_div2_up (m d : int) :
   m %/ d <= m %%/ d.
@@ -507,19 +529,6 @@ move => ge2_b ge1_n.
 have := int_logP b n _ _ => //.
 qed.
 
-lemma int_log_ge1_when_ge_b (b n : int) :
-  2 <= b => b <= n => 1 <= int_log b n.
-proof.
-move => ge2_b le_b_n.
-have ge1_n : 1 <= n by rewrite (ler_trans b) // (ler_trans 2).
-have -> : 1 = 1 + 0 by trivial.
-rewrite lez_add1r ltz_def int_log_ge0 //=.
-case (int_log b n = 0) => [eq0_il_n | //].
-have lt_n_b2_1 := int_log_ub_lt b n _ _ => //.
-rewrite eq0_il_n /= expr1 in lt_n_b2_1.
-have // : b < b by rewrite (ler_lt_trans n).
-qed.
-
 lemma int_logPuniq (b n l : int) :
   2 <= b =>
   0 <= l => b ^ l <= n < b ^ (l + 1) =>
@@ -532,11 +541,31 @@ have := int_logP b n _ _ => // [#] ge0_il b2il_le_n n_lt_b2ilp1.
 by apply (int_log_uniq b n).
 qed.
 
+lemma int_log_lt_b_eq0 (b n : int) :
+  2 <= b => 1 <= n < b => int_log b n = 0.
+proof.
+move => ge2_b [ge1_n lt_n_b].
+by rewrite eq_sym (int_logPuniq b n) // 1:expr0 /= 1:expr1 lt_n_b.
+qed.
+
 lemma int_log1_eq0 (b : int) :
   2 <= b => int_log b 1 = 0.
 proof.
 move => ge2_b.
-by rewrite eq_sym (int_logPuniq b 1) // expr0 expr1 /= ltzE.
+by rewrite int_log_lt_b_eq0 //= ltzE.
+qed.
+
+lemma int_log_ge1_when_ge_b (b n : int) :
+  2 <= b => b <= n => 1 <= int_log b n.
+proof.
+move => ge2_b le_b_n.
+have ge1_n : 1 <= n by rewrite (ler_trans b) // (ler_trans 2).
+have -> : 1 = 1 + 0 by trivial.
+rewrite lez_add1r ltz_def int_log_ge0 //=.
+case (int_log b n = 0) => [eq0_il_n | //].
+have lt_n_b2_1 := int_log_ub_lt b n _ _ => //.
+rewrite eq0_il_n /= expr1 in lt_n_b2_1.
+have // : b < b by rewrite (ler_lt_trans n).
 qed.
 
 lemma int_log_le (b n m : int) :
@@ -1024,7 +1053,7 @@ lemma int_log_divup_eq (b n : int) :
   2 <= b => b <= n => b ^ (int_log b n + 1) - b < n =>
   int_log b (n %%/ b) = int_log b n.
 proof.
-move => ge2_b b_n b2il_n_plus1_min_b_lt_n.
+move => ge2_b le_b_n b2il_n_plus1_min_b_lt_n.
 have ge0_b : 0 <= b by rewrite (ler_trans 2).
 have ge1_b : 1 <= b by rewrite (ler_trans 2).
 have ge1_n : 1 <= n by rewrite (ler_trans b) // (ler_trans 2).
