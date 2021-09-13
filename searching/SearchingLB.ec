@@ -24,7 +24,6 @@ import IntOrder.
 require AdvLowerBounds.   (* adversarial lower bounds framework *)
 require import AllLists.  (* generating all lists of length over universe *)
 require import IntLog.    (* integer logarithms *)
-require import IntDiv2.   (* division by powers of two *)
 
 require import SearchingProb.  (* searching in ordered lists problem *)
 

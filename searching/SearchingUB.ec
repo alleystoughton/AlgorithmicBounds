@@ -23,7 +23,6 @@ import IntOrder.
 
 require UpperBounds.     (* upper bounds framework *)
 require import IntLog.   (* integer logarithms *)
-require import IntDiv2.  (* division by powers of two *)
 
 require import SearchingProb.  (* searching in ordered lists problem *)
 

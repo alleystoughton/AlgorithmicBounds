@@ -19,7 +19,6 @@ check() {
 }
 
 check IntLog.ec
-check IntDiv2.ec
 check FSetAux.ec
 check FRange.ec
 check AllLists.ec
