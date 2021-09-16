@@ -252,7 +252,7 @@ op step (t : term) : step =
     let mid = size xs %/ 2 in
     Step
     (Merge (Sort (take mid xs))  (* size: size xs %/ 2 *)
-    (Sort (drop mid xs)))        (* size: size xs %%/ 2 *)
+     (Sort (drop mid xs)))       (* size: size xs %%/ 2 *)
   with t = List xs => Stuck
   with t = Cons n u =>
     let u' = step u in
