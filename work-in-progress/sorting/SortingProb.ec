@@ -284,10 +284,18 @@ lemma pathP (def: 'a, e : 'a -> 'a -> bool, x : 'a, xs : 'a list) :
   xs = [] \/ e x (head def xs) /\ sorted e xs.
 proof. by case xs. qed.
 
-lemma path_when_ne_head (def: 'a, e : 'a -> 'a -> bool, x : 'a, xs : 'a list) :
+lemma cmp_head_ne_path (def: 'a, e : 'a -> 'a -> bool, x : 'a, xs : 'a list) :
   path e x xs => xs <> [] => e x (head def xs).
 proof.
 rewrite (pathP def e) => [[|] //].
+qed.
+
+lemma cmp_head_path_same_def (e : 'a -> 'a -> bool, x : 'a, ys : 'a list) :
+  (forall (a : 'a), e a a) => path e x ys => e x (head x ys).
+proof.
+move => refl_e.
+case ys => [| //].
+rewrite /= refl_e.
 qed.
 
 lemma sorted_nthP (def : 'a, e : 'a -> 'a -> bool, xs : 'a list) :
@@ -304,7 +312,7 @@ case (i = 0) => [eq0_i | ne0_i].
 case (i + 1 = 0) => [| ne0_i_plus1].
 by rewrite eq0_i.
 have ne_nil_xs : xs <> [] by rewrite -size_eq0 1:ltr0_neq0 1:-eq0_i.
-by rewrite eq0_i nth0_head path_when_ne_head.
+by rewrite eq0_i nth0_head cmp_head_ne_path.
 case (i + 1 = 0) => [eq0_i_plus1 | ne0_i_plus1].
 have // : i + 1 <> 0 by rewrite ltr0_neq0 1:ltr_spaddr.
 rewrite IH 1:(path_sorted _ x) //.
