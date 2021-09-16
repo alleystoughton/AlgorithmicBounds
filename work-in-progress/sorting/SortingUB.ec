@@ -60,13 +60,10 @@ by rewrite f_bad.
 qed.
 (* end of realization *)
 
-require import AllCore List IntDiv StdOrder.
-import IntOrder.
-
-(* num : int -> int returns the worst case number of comparisons used
+(* wc : int -> int returns the worst case number of comparisons used
    by merge sort when given a list of size n *)
 
-op num_wf_rec_def : (int, int) wf_rec_def =
+op wc_wf_rec_def : (int, int) wf_rec_def =
   fun (n : int,            (* input *)
        f : int -> int) =>  (* for recursive calls on < natural numbers *)
   if n <= 1  (* we only care about 1 <= n *)
@@ -75,29 +72,29 @@ op num_wf_rec_def : (int, int) wf_rec_def =
 
 (* the actual recursive definition: *)
 
-op num : int -> int =
+op wc : int -> int =
   wf_recur
   lt_nat           (* well-founded relation being used *)
   0                (* element to be returned if recursive calls
                       don't respect well-founded relation *)
-  num_wf_rec_def.  (* body of recursive definition *)
+  wc_wf_rec_def.  (* body of recursive definition *)
 
-lemma num_eq (n : int) :
-  1 <= n => num n = n * int_log 2 n - (2 ^ (int_log 2 n + 1) - n - 1).
+lemma wc_eq (n : int) :
+  1 <= n => wc n = n * int_log 2 n - (2 ^ (int_log 2 n + 1) - n - 1).
 proof.
 move : n.
 apply (wf_ind lt_nat).
 apply wf_lt_nat.
 move => /= n IH ge1_n.
 case (n = 1) => [-> /= | ne1_n].
-rewrite /num wf_recur 1:wf_lt_nat /num_wf_rec_def /=.
+rewrite /wc wf_recur 1:wf_lt_nat /wc_wf_rec_def /=.
 by rewrite int_log1_eq0 //= expr1.
 have ge2_n : 2 <= n by smt().
-rewrite /num wf_recur 1:wf_lt_nat /num_wf_rec_def.
+rewrite /wc wf_recur 1:wf_lt_nat /wc_wf_rec_def.
 have -> /= : ! (n <= 1) by smt().
 have -> /= : lt_nat (n %/ 2) n by smt().
 have -> /= : lt_nat (n %%/ 2) n by smt().
-rewrite -/num.
+rewrite -/wc.
 rewrite (IH (n %/ 2)) 1:/# 1:/#.
 rewrite (IH (n %%/ 2)) 1:/# 1:/#.
 rewrite int_log_div //=.
@@ -146,11 +143,11 @@ by rewrite odd_iff_plus1_even /= exprS 1:int_log_ge0 // dvdz_mulr.
 by rewrite {1}eq /= exprS 1:int_log_ge0 // mulKz.
 qed.
 
-lemma num_le (n : int) :
-  1 <= n => num n <= n * int_log 2 n.
+lemma wc_le (n : int) :
+  1 <= n => wc n <= n * int_log 2 n.
 proof.
 move => ge1_n.
-rewrite num_eq // ler_subl_addr ler_addl.
+rewrite wc_eq // ler_subl_addr ler_addl.
 smt(int_log_ub_lt).
 qed.
 
