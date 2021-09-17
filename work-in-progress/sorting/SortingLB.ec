@@ -432,6 +432,47 @@ move => ge1_n.
 by rewrite div2_le_if_le_tim2_plus1 log2_fact_aux.
 qed.
 
+lemma int_log_leq_plus1 (b n: int) :
+  1 <= n => 2 <= b =>  int_log b (n+1) <= (int_log b n) +1.
+proof.
+move => ge1_n ge2_b.    
+case (int_log b (n +1) = int_log b n) => [ //# | not_eq ].
+rewrite (ge2_exp_le_equiv b ( int_log b (n+1)  ) ((int_log b n) +1)  ) //=.
+smt(int_log_ge0). smt(int_log_ge0).
+smt(int_log_lb_le int_log_ub_lt).
+qed.
+
+lemma log2_fact_precise (n : int) :
+     0<=n => 1<=n => n* (int_log 2 n) - 2*2^(int_log 2 n) <= int_log 2 (fact n).
+proof.
+  elim n. rewrite fact0 //=. 
+move => i ge0_i  ih _.
+case (0= i) => [ //= |neq0_i ]. progress; smt(fact1 int_log1_eq0 expr0).
+have ge1_i : 1 <= i  by smt().
+have e: int_log 2 i <= int_log 2 (i+1) by rewrite int_log_le //#.
+have e1 : int_log 2 (i+1) <= (int_log 2 i) + 1 by smt(int_log_leq_plus1).
+have e2: (i + 1) * int_log 2 (i + 1)  <= (i + 1) * ( (int_log 2 i) + 1) by rewrite ler_wpmul2l; smt(). 
+(* search (_ <=_ => _*_<=_*_ )%Int .  *)
+have e3: (i + 1) * int_log 2 (i + 1) - (i+1)  <= (i + 1) * ( (int_log 2 i) ) by smt().
+have e5: fact(i+1) = fact i * (i+1) by smt(factS).
+have e4:   int_log 2 (fact (i )) + int_log 2 (i+1)<= int_log 2 (fact (i + 1)) by
+  smt(factS int_log_distr_mul_lb addzC fact0 ge1_fact).
+case (int_log 2 i = int_log 2 (i+1)) => [ eq_log | not_eq //].
+(* int_log 2 i = int_log 2 (i+1) *)
+rewrite -eq_log. 
+smt(lez_trans).
+(* 1 + int_log 2 i = int_log 2 (i+1) *)
+have e6:  i * int_log 2 i - 2 * 2 ^ int_log 2 i <= int_log 2 (fact i) by smt().
+rewrite (lez_trans ( (int_log 2 (fact i)) + ( int_log 2 (i + 1)) ) ) //= .
+have <- :(int_log 2 i)+1 = int_log 2 (i+1) by smt(int_log_leq_plus1).
+have -> : (i + 1) * (int_log 2 i + 1) = i*(int_log 2 i) + (int_log 2 i)+ i + 1 by smt().
+  (* have e8 : i <=  2 ^ (int_log 2 i + 1) by smt(int_log_ub_lt). *)
+  (*  have e9: 2 * 2 ^ (int_log 2 i + 1) *)
+  (*  - 2 * 2 ^ (int_log 2 i ) =  2 ^ (int_log 2 i + 1) by smt(exprS int_log_ge0). *)
+smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt ). 
+qed. 
+
+
 (* here our main theorem: *)
 
 lemma lower_bound &m :
