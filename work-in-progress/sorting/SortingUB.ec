@@ -221,49 +221,49 @@ op of_list (t : term) : int list =
   with t = Merge u v    => []
   with t = Cond i j u v => [].
 
-type step = [
-  | Stuck
-  | Step    of term
-  | Compare of int & int
+type step = [  (* result of call to step on term t *)
+  | Done                  (* t is fully evaluated - List ... *)
+  | Compare of int & int  (* t's evaluation needs answer to query *)
+  | Step    of term       (* the step succeeded *)
 ].
 
 op is_step (s : step) : bool =
-  with s = Stuck       => false
-  with s = Step t      => true
-  with s = Compare i j => false.
+  with s = Done        => false
+  with s = Compare i j => false
+  with s = Step t      => true.
 
 op of_step (s : step) : term =
-  with s = Stuck       => deft
-  with s = Step t      => t
-  with s = Compare i j => deft.
+  with s = Done        => deft
+  with s = Compare i j => deft
+  with s = Step t      => t.
 
 op is_compare (s : step) : bool =
-  with s = Stuck       => false
-  with s = Step t      => false
-  with s = Compare i j => true.
+  with s = Done        => false
+  with s = Compare i j => true
+  with s = Step t      => false.
 
 op of_compare (s : step) : int * int =
-  with s = Stuck       => (0, 0)
-  with s = Step t      => (0, 0)
-  with s = Compare i j => (i, j).
+  with s = Done        => (0, 0)
+  with s = Compare i j => (i, j)
+  with s = Step t      => (0, 0).
 
 op step (t : term) : step =
-  with t = Sort xs =>
+  with t = Sort xs      =>
     let mid = size xs %/ 2 in
     Step
-    (Merge (Sort (take mid xs))  (* size: size xs %/ 2 *)
-     (Sort (drop mid xs)))       (* size: size xs %%/ 2 *)
-  with t = List xs => Stuck
-  with t = Cons n u =>
+    (Merge
+     (Sort (take mid xs))   (* size: size xs %/ 2 *)
+     (Sort (drop mid xs)))  (* size: size xs %%/ 2 *)
+  with t = List xs      => Done
+  with t = Cons n u     =>
     let u' = step u in
     if is_step u'
       then Step (Cons n (of_step u'))
     else if is_compare u'
       then u'
-    else if is_list u
-      then Step (List (n :: of_list u))
-    else Stuck
-  with t = Merge u v =>
+    else (* is_list u *)
+         Step (List (n :: of_list u))
+  with t = Merge u v    =>
     let u' = step u in
     if is_step u'
       then Step (Merge (of_step u') v)
@@ -274,48 +274,118 @@ op step (t : term) : step =
            then Step (Merge u (of_step v'))
          else if is_compare v'
            then v'
-         else if is_list u /\ is_list v
-           then if of_list u = []
-                  then Step v
-                else if of_list v = []
-                  then Step u
-                else let i = head 0 (of_list u) in
-                     let ms = behead (of_list u) in
-                     let j = head 0 (of_list v) in
-                     let ns = behead (of_list v) in
-                     Step (Cond i j
-                           (Cons i (Merge (List ms) v))
-                           (Cons j (Merge u (List ns))))
-         else Stuck
+         else (* is_list u /\ is_list v *)
+              if of_list u = []
+                then Step v
+              else if of_list v = []
+                then Step u
+              else let i  = head 0 (of_list u) in
+                   let ms = behead (of_list u) in
+                   let j  = head 0 (of_list v) in
+                   let ns = behead (of_list v) in
+                   Step (Cond i j
+                         (Cons i (Merge (List ms) v))
+                         (Cons j (Merge u (List ns))))
   with t = Cond i j u v => Compare i j.
 
+lemma step_done_iff (t : term) :
+  step t = Done <=> is_list t.
+proof.
+elim t => // /#.
+qed.
+
+lemma step_compare_iff (t : term, i j : int) :
+  step t = Compare i j <=>
+  (exists (n : int, u : term),
+   t = Cons n u /\ step u = Compare i j) \/
+  (exists (u v : term),
+   t = Merge u v /\ step u = Compare i j) \/
+  (exists (xs : int list, v : term),
+   t = Merge (List xs) v /\ step v = Compare i j) \/
+  (exists (u v : term), t = Cond i j u v).
+proof.
+case t.
+smt().
+smt().
+move => n u.
+split => [H | /#].
+left; exists n u; smt().
+move => u v.
+split => [/= | /#].
+case (is_step (step u)) => [// | not_is_step_u].
+case (is_compare (step u)) =>
+  [is_compare_u step_u_eq_Compare_i_j | not_is_compare_u].
+left; by exists u v.
+case (is_step (step v)) => [// | not_is_step_v].
+case (is_compare (step v)) =>
+  [is_compare_v step_u_eq_Compare_i_j | not_is_compare_v].
+right.
+have is_list_u : is_list u.
+  move : not_is_step_u not_is_compare_u.
+  case u; smt().
+have [xs ->] : exists xs, u = List xs.
+  move : is_list_u.  
+  clear not_is_step_u not_is_compare_u.
+  (case u; first smt()); last 3 smt().
+  move => ys _; by exists ys.
+by exists xs v.
+smt().
+smt().
+qed.
+
 op answer (t : term, b : bool) : term option =
-  with t = Sort xs => None
-  with t = List xs => None
-  with t = Cons n u =>
+  with t = Sort xs      => None  (* should not happen *)
+  with t = List xs      => None
+  with t = Cons n u     =>
     let u' = answer t b in
-    if u' = None then None else Some (Cons n (oget u'))
-  with t = Merge u v =>
+    if u' = None  (* should not happen *)
+    then None
+    else Some (Cons n (oget u'))
+  with t = Merge u v    =>
     let u' = answer u b in
     if u' <> None
     then Some (Merge (oget u') v)
-    else let v' = answer v b in
-         if v' = None then None else Some (Merge u (oget v'))
+    else (* u should be List ... *)
+         let v' = answer v b in
+         if v' = None
+         then None  (* should not happen *)
+         else Some (Merge u (oget v'))
   with t = Cond i j u v =>
     if b then Some u else Some v.
 
 (* here is our algorithm: *)
 
 module Alg : ALG = {
+  var term : term
+
   proc init(aux : aux) : unit = {
+    term <- Sort range_len;
   }
 
   proc make_query_or_report_output() : response = {
     var r : response;
+    var step : step;
+    var don : bool <- false;
+    while (!don) {
+      step <- step term;
+      if (step = Done \/ is_compare step) {
+        don <- true;
+      }
+      else {
+        term <- of_step step;
+      }
+    }
+    if (step = Done) {  (* term = List ... *)
+      r <- Response_Report (of_list term);
+    }
+    else {
+      r <- Response_Query (enc (of_compare step));
+    }
     return r;
   }
 
-  proc query_result(x : inp) : unit = {
+  proc query_result(b : inp) : unit = {
+    term <- oget (answer term b);
   }
 }.
 
@@ -329,7 +399,8 @@ qed.
 lemma Alg_make_query_or_report_output_ll :
   islossless Alg.make_query_or_report_output.
 proof.
-proc; auto.
+proc.
+admit.  (* will need termination metric for while loop *)
 qed.
 
 lemma Alg_query_result_ll :
