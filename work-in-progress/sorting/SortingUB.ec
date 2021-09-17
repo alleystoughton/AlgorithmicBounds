@@ -190,22 +190,26 @@ by rewrite IH_inner // (path_sorted _ v).
 qed.
 
 type term = [
-  | Sort  of int list  (* list is nonempty *)
+  | Sort  of int list
   | List  of int list
   | Cons  of int & term
   | Merge of term & term
   | Cond  of int & int & term & term
 ].
 
-op deft : term = List [].
+op is_sort (t : term) : bool =
+  with t = Sort xs      => true
+  with t = List xs      => false
+  with t = Cons i u     => false
+  with t = Merge u v    => false
+  with t = Cond i j u v => false.
 
-op repr (cmp : int -> int -> bool, t : term) : int list =
-  with t = Sort xs      => sort cmp xs
-  with t = List xs      => xs
-  with t = Cons i u     => i :: repr cmp u
-  with t = Merge u v    => merge cmp (repr cmp u) (repr cmp v)
-  with t = Cond i j u v =>
-    if cmp i j then repr cmp u else repr cmp v.
+op of_sort (t : term) : int list =
+  with t = Sort xs      => xs
+  with t = List xs      => []
+  with t = Cons i u     => []
+  with t = Merge u v    => []
+  with t = Cond i j u v => [].
 
 op is_list (t : term) : bool =
   with t = Sort xs      => false
@@ -221,6 +225,97 @@ op of_list (t : term) : int list =
   with t = Merge u v    => []
   with t = Cond i j u v => [].
 
+op is_cons (t : term) : bool =
+  with t = Sort xs      => false
+  with t = List xs      => false
+  with t = Cons i u     => true
+  with t = Merge u v    => false
+  with t = Cond i j u v => false.
+
+op of_cons (t : term) : int * term =
+  with t = Sort xs      => (0, List [])
+  with t = List xs      => (0, List [])
+  with t = Cons i u     => (i, u)
+  with t = Merge u v    => (0, List [])
+  with t = Cond i j u v => (0, List []).
+
+op is_merge (t : term) : bool =
+  with t = Sort xs      => false
+  with t = List xs      => false
+  with t = Cons i u     => false
+  with t = Merge u v    => true
+  with t = Cond i j u v => false.
+
+op of_merge (t : term) : term * term =
+  with t = Sort xs      => (List [], List [])
+  with t = List xs      => (List [], List [])
+  with t = Cons i u     => (List [], List [])
+  with t = Merge u v    => (u, v)
+  with t = Cond i j u v => (List [], List []).
+
+op is_cond (t : term) : bool =
+  with t = Sort xs      => false
+  with t = List xs      => false
+  with t = Cons i u     => false
+  with t = Merge u v    => false
+  with t = Cond i j u v => true.
+
+op of_cond (t : term) : int * int * term * term =
+  with t = Sort xs      => (0, 0, List [], List [])
+  with t = List xs      => (0, 0, List [], List [])
+  with t = Cons i u     => (0, 0, List [], List [])
+  with t = Merge u v    => (0, 0, List [], List [])
+  with t = Cond i j u v => (i, j, u, v).
+
+op is_cons_of_list (t : term) : bool =
+  with t = Sort xs      => false
+  with t = List xs      => false
+  with t = Cons i u     => is_list u
+  with t = Merge u v    => false
+  with t = Cond i j u v => false.
+
+op proper_list (xs : int list) : bool =
+  xs <> [] /\ uniq xs /\ all (mem range_len) xs.
+
+op disj_lists (xs ys : 'a list) : bool =
+  ! has (mem xs) ys /\ ! has (mem ys) xs.
+
+op elems (t : term) : int list =  (* may have duplicates *)
+  with t = Sort xs      => xs
+  with t = List xs      => xs
+  with t = Cons i u     => i :: elems u
+  with t = Merge u v    => elems u ++ elems v
+  with t = Cond i j u v => elems u ++ elems v.  (* elems u and elems v
+                                                   should be permutation
+                                                   of each other *)
+
+op proper (t : term) : bool =
+  with t = Sort xs      => proper_list xs
+  with t = List xs      => proper_list xs
+  with t = Cons i u     => proper u /\ ! mem (elems u) i
+  with t = Merge u v    =>
+    proper u /\ proper v /\ (is_list v => is_list u) /\
+    disj_lists (elems u) (elems v)
+  with t = Cond i j u v =>
+    is_cons_of_list u /\ is_cons_of_list v /\ elems u = elems v.
+
+lemma proper_start :
+  proper (Sort range_len).
+proof.
+rewrite /= /proper_list /range_len.
+split; first by rewrite range_ltn 1:ltzE /= 1:ge1_len.
+split; first rewrite range_uniq.
+by rewrite allP.
+qed.
+
+op repr (cmp : int -> int -> bool, t : term) : int list =
+  with t = Sort xs      => sort cmp xs
+  with t = List xs      => xs
+  with t = Cons i u     => i :: repr cmp u
+  with t = Merge u v    => merge cmp (repr cmp u) (repr cmp v)
+  with t = Cond i j u v =>
+    if cmp i j then repr cmp u else repr cmp v.
+
 type step = [  (* result of call to step on term t *)
   | Done                  (* t is fully evaluated - List ... *)
   | Compare of int & int  (* t's evaluation needs answer to query *)
@@ -233,8 +328,8 @@ op is_step (s : step) : bool =
   with s = Step t      => true.
 
 op of_step (s : step) : term =
-  with s = Done        => deft
-  with s = Compare i j => deft
+  with s = Done        => List [1]
+  with s = Compare i j => List [1]
   with s = Step t      => t.
 
 op is_compare (s : step) : bool =
@@ -352,6 +447,22 @@ op answer (t : term, b : bool) : term option =
          else Some (Merge u (oget v'))
   with t = Cond i j u v =>
     if b then Some u else Some v.
+
+lemma square_divide_lt (n : int) :
+  2 <= n =>
+  (n %/ 2) ^ 2 + (n %%/ 2) ^ 2 < n ^ 2.
+proof.
+admit.
+qed.
+
+(* termination metric for step *)
+
+op metric (t : term) : int =
+  with t = Sort xs      => size xs ^ 2
+  with t = List xs      => 0
+  with t = Cons i u     => metric u + 1
+  with t = Merge u v    => 1 + metric u + metric v
+  with t = Cond i j u v => 0.
 
 (* here is our algorithm: *)
 

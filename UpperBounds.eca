@@ -14,7 +14,6 @@ timeout 2.  (* can increase *)
 
 require import AllCore List FSetAux.
 require import FRange.    (* finite ranges as sets *)
-require import AllLists.  (* generating all lists of length over universe *)
 
 (* theory parameters *)
 
