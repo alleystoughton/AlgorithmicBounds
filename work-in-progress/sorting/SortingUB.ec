@@ -60,15 +60,18 @@ by rewrite f_bad.
 qed.
 (* end of realization *)
 
-(* wc : int -> int returns the worst case number of comparisons used
-   by merge sort when given a list of size n *)
+(* wc : int -> int recursively calculates an upper bound on the worst
+   case number of comparisons used by merge sort when given a list of
+   size n *)
 
 op wc_wf_rec_def : (int, int) wf_rec_def =
   fun (n : int,            (* input *)
        f : int -> int) =>  (* for recursive calls on < natural numbers *)
   if n <= 1  (* we only care about 1 <= n *)
   then 0
-  else f (n %/ 2) + f (n %%/ 2) + n - 1.
+  else f (n %/ 2)  +  (* sorting the first n %/ 2 elements *)
+       f (n %%/ 2) +  (* sorting the remaining elements *)
+       n - 1.         (* top-level merge, in the worse case *)
 
 (* the actual recursive definition: *)
 
@@ -189,115 +192,173 @@ rewrite cmp_head_merge cmp_head_path_same_def //= path_u_us /= 1:/#.
 by rewrite IH_inner // (path_sorted _ v).
 qed.
 
+lemma cat_eq_nil_iff (xs ys : 'a list) :
+  xs ++ ys = [] <=> xs = [] /\ ys = [].
+proof. by case xs. qed.
+
 type term = [
   | Sort  of int list
   | List  of int list
   | Cons  of int & term
   | Merge of term & term
-  | Cond  of int & int & term & term
+  | Cond  of int & int & int list & int list
 ].
 
 op is_sort (t : term) : bool =
-  with t = Sort xs      => true
-  with t = List xs      => false
-  with t = Cons i u     => false
-  with t = Merge u v    => false
-  with t = Cond i j u v => false.
+  with t = Sort _         => true
+  with t = List _         => false
+  with t = Cons _ _       => false
+  with t = Merge _ _      => false
+  with t = Cond i j us vs => false.
 
 op of_sort (t : term) : int list =
-  with t = Sort xs      => xs
-  with t = List xs      => []
-  with t = Cons i u     => []
-  with t = Merge u v    => []
-  with t = Cond i j u v => [].
+  with t = Sort xs        => xs
+  with t = List xs        => []
+  with t = Cons i u       => []
+  with t = Merge u v      => []
+  with t = Cond i j us vs => [].
+
+lemma is_sort (t : term) :
+  is_sort t => t = Sort (of_sort t).
+proof. by case t. qed.
 
 op is_list (t : term) : bool =
-  with t = Sort xs      => false
-  with t = List xs      => true
-  with t = Cons i u     => false
-  with t = Merge u v    => false
-  with t = Cond i j u v => false.
+  with t = Sort xs        => false
+  with t = List xs        => true
+  with t = Cons i u       => false
+  with t = Merge u v      => false
+  with t = Cond i j us vs => false.
 
 op of_list (t : term) : int list =
-  with t = Sort xs      => []
+  with t = Sort _       => []
   with t = List xs      => xs
-  with t = Cons i u     => []
-  with t = Merge u v    => []
-  with t = Cond i j u v => [].
+  with t = Cons _ _     => []
+  with t = Merge _ _    => []
+  with t = Cond _ _ _ _ => [].
+
+lemma is_list (t : term) :
+  is_list t => t = List (of_list t).
+proof. by case t. qed.
 
 op is_cons (t : term) : bool =
-  with t = Sort xs      => false
-  with t = List xs      => false
-  with t = Cons i u     => true
-  with t = Merge u v    => false
-  with t = Cond i j u v => false.
+  with t = Sort _       => false
+  with t = List _       => false
+  with t = Cons _ _     => true
+  with t = Merge _ _    => false
+  with t = Cond _ _ _ _ => false.
 
 op of_cons (t : term) : int * term =
-  with t = Sort xs      => (0, List [])
-  with t = List xs      => (0, List [])
+  with t = Sort _       => (0, List [])
+  with t = List _       => (0, List [])
   with t = Cons i u     => (i, u)
-  with t = Merge u v    => (0, List [])
-  with t = Cond i j u v => (0, List []).
+  with t = Merge _ _    => (0, List [])
+  with t = Cond _ _ _ _ => (0, List []).
+
+lemma is_cons (t : term) :
+  is_cons t => t = Cons (of_cons t).`1 (of_cons t).`2.
+proof. by case t. qed.
 
 op is_merge (t : term) : bool =
-  with t = Sort xs      => false
-  with t = List xs      => false
-  with t = Cons i u     => false
-  with t = Merge u v    => true
-  with t = Cond i j u v => false.
+  with t = Sort _       => false
+  with t = List _       => false
+  with t = Cons _ _     => false
+  with t = Merge _ _    => true
+  with t = Cond _ _ _ _ => false.
 
 op of_merge (t : term) : term * term =
-  with t = Sort xs      => (List [], List [])
-  with t = List xs      => (List [], List [])
-  with t = Cons i u     => (List [], List [])
+  with t = Sort _       => (List [], List [])
+  with t = List _       => (List [], List [])
+  with t = Cons _ _     => (List [], List [])
   with t = Merge u v    => (u, v)
-  with t = Cond i j u v => (List [], List []).
+  with t = Cond _ _ _ _ => (List [], List []).
+
+lemma is_merge (t : term) :
+  is_merge t => t = Merge (of_merge t).`1 (of_merge t).`2.
+proof. by case t. qed.
 
 op is_cond (t : term) : bool =
-  with t = Sort xs      => false
-  with t = List xs      => false
-  with t = Cons i u     => false
-  with t = Merge u v    => false
-  with t = Cond i j u v => true.
+  with t = Sort _       => false
+  with t = List _       => false
+  with t = Cons _ _     => false
+  with t = Merge _ _    => false
+  with t = Cond _ _ _ _ => true.
 
-op of_cond (t : term) : int * int * term * term =
-  with t = Sort xs      => (0, 0, List [], List [])
-  with t = List xs      => (0, 0, List [], List [])
-  with t = Cons i u     => (0, 0, List [], List [])
-  with t = Merge u v    => (0, 0, List [], List [])
-  with t = Cond i j u v => (i, j, u, v).
+op of_cond (t : term) : int * int * int list * int list =
+  with t = Sort _         => (0, 0, [], [])
+  with t = List _         => (0, 0, [], [])
+  with t = Cons _ _       => (0, 0, [], [])
+  with t = Merge _ _      => (0, 0, [], [])
+  with t = Cond i j us vs => (i, j, us, vs).
 
-op is_cons_of_list (t : term) : bool =
-  with t = Sort xs      => false
-  with t = List xs      => false
-  with t = Cons i u     => is_list u
-  with t = Merge u v    => false
-  with t = Cond i j u v => false.
+lemma is_cond (t : term) :
+  is_cond t => t =
+  Cond (of_cond t).`1 (of_cond t).`2 (of_cond t).`3 (of_cond t).`4.
+proof. by case t. qed.
 
 op proper_list (xs : int list) : bool =
   xs <> [] /\ uniq xs /\ all (mem range_len) xs.
 
-op disj_lists (xs ys : 'a list) : bool =
-  ! has (mem xs) ys /\ ! has (mem ys) xs.
+lemma proper_list_split (xs ys : int list) :
+  proper_list (xs ++ ys) => xs <> [] => ys <> [] =>
+  proper_list xs /\ proper_list ys /\ ! has (mem ys) xs.
+proof.
+by rewrite /proper_list has_sym all_cat cat_uniq.
+qed.
 
-op elems (t : term) : int list =  (* may have duplicates *)
-  with t = Sort xs      => xs
-  with t = List xs      => xs
-  with t = Cons i u     => i :: elems u
-  with t = Merge u v    => elems u ++ elems v
-  with t = Cond i j u v => elems u ++ elems v.  (* elems u and elems v
-                                                   should be permutation
-                                                   of each other *)
+lemma proper_list_cons (i : int, xs : int list) :
+  proper_list xs => mem range_len i => ! mem xs i =>
+  proper_list (i :: xs).
+proof. by rewrite /proper_list. qed.
+
+lemma proper_list_cat (xs ys : int list) :
+  proper_list xs => proper_list ys => ! has (mem xs) ys =>
+  proper_list (xs ++ ys).
+proof.
+rewrite /proper_list =>
+  [#] nonnil_xs uniq_xs all_in_range_xs
+  [#] nonnil_ys uniq_ys all_in_range_ys
+  disj_xs_ys.
+split; first smt(cat_eq_nil_iff).
+split; first by rewrite cat_uniq.
+by rewrite all_cat.
+qed.
+
+op elems (t : term) : int fset =
+  with t = Sort xs        => oflist xs
+  with t = List xs        => oflist xs
+  with t = Cons i u       => fset1 i `|` elems u
+  with t = Merge u v      => elems u `|` elems v
+  with t = Cond i j us vs => fset1 i  `|` fset1 j  `|` oflist us `|` oflist vs.
+
+lemma is_list_elems (t : term) :
+  is_list t => oflist (of_list t) = elems t.
+proof. by case t. qed.
 
 op proper (t : term) : bool =
-  with t = Sort xs      => proper_list xs
-  with t = List xs      => proper_list xs
-  with t = Cons i u     => proper u /\ ! mem (elems u) i
-  with t = Merge u v    =>
+  with t = Sort xs        => proper_list xs
+  with t = List xs        => proper_list xs
+  with t = Cons i u       =>
+    mem range_len i /\ proper u /\ ! mem (elems u) i
+  with t = Merge u v      =>
     proper u /\ proper v /\ (is_list v => is_list u) /\
-    disj_lists (elems u) (elems v)
-  with t = Cond i j u v =>
-    is_cons_of_list u /\ is_cons_of_list v /\ elems u = elems v.
+    elems u `&` elems v = fset0
+  with t = Cond i j us vs =>
+    mem range_len i /\ mem range_len j /\
+    all (mem range_len) us /\ all (mem range_len) vs /\
+    ! mem us i /\ ! mem vs j /\
+    ! mem vs i /\ ! mem us j /\
+    ! has (mem us) vs.
+
+lemma is_list_proper_iff (t : term) :
+  is_list t => proper t <=> proper_list (of_list t).
+proof. by case t. qed.
+
+lemma is_list_mem_iff (i : int, t : term) :
+  is_list t => i \in of_list t <=> i \in elems t.
+proof.
+case t => //= xs.
+by rewrite mem_oflist.
+qed.
 
 lemma proper_start :
   proper (Sort range_len).
@@ -308,79 +369,83 @@ split; first rewrite range_uniq.
 by rewrite allP.
 qed.
 
-op repr (cmp : int -> int -> bool, t : term) : int list =
-  with t = Sort xs      => sort cmp xs
-  with t = List xs      => xs
-  with t = Cons i u     => i :: repr cmp u
-  with t = Merge u v    => merge cmp (repr cmp u) (repr cmp v)
-  with t = Cond i j u v =>
-    if cmp i j then repr cmp u else repr cmp v.
-
 type step = [  (* result of call to step on term t *)
   | Done                  (* t is fully evaluated - List ... *)
   | Compare of int & int  (* t's evaluation needs answer to query *)
-  | Step    of term       (* the step succeeded *)
+  | Worked  of term       (* the step succeeded *)
 ].
-
-op is_step (s : step) : bool =
-  with s = Done        => false
-  with s = Compare i j => false
-  with s = Step t      => true.
-
-op of_step (s : step) : term =
-  with s = Done        => List [1]
-  with s = Compare i j => List [1]
-  with s = Step t      => t.
 
 op is_compare (s : step) : bool =
   with s = Done        => false
   with s = Compare i j => true
-  with s = Step t      => false.
+  with s = Worked t    => false.
 
 op of_compare (s : step) : int * int =
   with s = Done        => (0, 0)
   with s = Compare i j => (i, j)
-  with s = Step t      => (0, 0).
+  with s = Worked t    => (0, 0).
+
+op is_worked (s : step) : bool =
+  with s = Done        => false
+  with s = Compare i j => false
+  with s = Worked t    => true.
+
+op of_worked (s : step) : term =
+  with s = Done        => List [1]
+  with s = Compare i j => List [1]
+  with s = Worked t    => t.
+
+lemma is_compare_iff (s : step) :
+  is_compare s <=> s <> Done /\ ! is_worked s.
+proof. by case s. qed.
+
+lemma is_worked_iff (s : step) :
+  is_worked s <=> s <> Done /\ ! is_compare s.
+proof. by case s. qed.
+
+lemma eq_done_iff (s : step) :
+  s = Done <=> ! is_compare s /\ ! is_worked s.
+proof. by case s. qed.
 
 op step (t : term) : step =
   with t = Sort xs      =>
-    let mid = size xs %/ 2 in
-    Step
-    (Merge
-     (Sort (take mid xs))   (* size: size xs %/ 2 *)
-     (Sort (drop mid xs)))  (* size: size xs %%/ 2 *)
+    if size xs <= 1  (* will never be 0 *)
+    then Worked (List xs)
+    else let mid = size xs %/ 2 in
+         Worked
+         (Merge
+          (Sort (take mid xs))   (* size: size xs %/ 2 *)
+          (Sort (drop mid xs)))  (* size: size xs %%/ 2 *)
   with t = List xs      => Done
   with t = Cons n u     =>
     let u' = step u in
-    if is_step u'
-      then Step (Cons n (of_step u'))
+    if is_worked u'
+      then Worked (Cons n (of_worked u'))
     else if is_compare u'
       then u'
     else (* is_list u *)
-         Step (List (n :: of_list u))
+         Worked (List (n :: of_list u))
   with t = Merge u v    =>
     let u' = step u in
-    if is_step u'
-      then Step (Merge (of_step u') v)
+    if is_worked u'
+      then Worked (Merge (of_worked u') v)
     else if is_compare u'
       then u'
     else let v' = step v in
-         if is_step v'
-           then Step (Merge u (of_step v'))
+         if is_worked v'
+           then Worked (Merge u (of_worked v'))
          else if is_compare v'
            then v'
          else (* is_list u /\ is_list v *)
               if of_list u = []
-                then Step v
+                then Worked v
               else if of_list v = []
-                then Step u
+                then Worked u
               else let i  = head 0 (of_list u) in
                    let ms = behead (of_list u) in
                    let j  = head 0 (of_list v) in
                    let ns = behead (of_list v) in
-                   Step (Cond i j
-                         (Cons i (Merge (List ms) v))
-                         (Cons j (Merge u (List ns))))
+                   Worked (Cond i j ms ns)
   with t = Cond i j u v => Compare i j.
 
 lemma step_done_iff (t : term) :
@@ -389,6 +454,160 @@ proof.
 elim t => // /#.
 qed.
 
+lemma step_compare_iff (t : term, i j : int) :
+  step t = Compare i j <=>
+  (exists (n : int, u : term),
+   t = Cons n u /\ step u = Compare i j) \/
+  (exists (u v : term),
+   t = Merge u v /\ step u = Compare i j) \/
+  (exists (xs : int list, v : term),
+   t = Merge (List xs) v /\ step v = Compare i j) \/
+  (exists (us vs : int list), t = Cond i j us vs).
+proof.
+case t.
+smt().
+smt().
+move => n u.
+split => [H | /#].
+left; exists n u; smt().
+move => u v.
+split => [/= | /#].
+case (is_worked (step u)) => [// | not_is_worked_u].
+case (is_compare (step u)) =>
+  [is_compare_u step_u_eq_Compare_i_j | not_is_compare_u].
+left; by exists u v.
+case (is_worked (step v)) => [// | not_is_worked_v].
+case (is_compare (step v)) =>
+  [is_compare_v step_u_eq_Compare_i_j | not_is_compare_v].
+right.
+have is_list_u : is_list u.
+  move : not_is_worked_u not_is_compare_u.
+  case u; smt().
+have [xs ->] : exists xs, u = List xs.
+  move : is_list_u.  
+  clear not_is_worked_u not_is_compare_u.
+  (case u; first smt()); last 3 smt().
+  move => ys _; by exists ys.
+by exists xs v.
+smt().
+smt().
+qed.
+
+lemma proper_step (t : term) :
+  proper t => is_worked (step t) =>
+  elems (of_worked (step t)) = elems t /\ proper (of_worked (step t)).
+proof.
+elim t.
+move => xs /=.
+case (size xs <= 1) => [// | gt1_size_xs pl_xs _].
+rewrite lerNgt /= in gt1_size_xs.
+have xs_eq := cat_take_drop (size xs %/ 2) xs.
+split; first by rewrite -{5}xs_eq oflist_cat.
+have pls_xs :=
+     proper_list_split (take (size xs %/ 2) xs) (drop (size xs %/ 2) xs)
+     _ _ _ => //.
+  smt().
+  rewrite -size_eq0 size_take /#.
+  rewrite -size_eq0 size_drop /#.
+split; first by elim pls_xs.
+split => [| /=]; first by elim pls_xs.
+rewrite disjointP => x.
+rewrite 2!mem_oflist.
+smt(hasPn).
+trivial.
+move => i t IH /= [i_in_range [prop_t not_i_in_elems_t]].
+case (is_worked (step t)) => [is_wkd_step_t | not_is_wkd_step_t].
+have [elems_eq prop_of_wrkd_step_t] := IH _ _ => //.
+by rewrite elems_eq /= prop_of_wrkd_step_t.
+case (is_compare (step t)) =>
+  [is_cmp_step_t is_wrkd_step_t | not_is_cmp_step_t _].
+smt(eq_done_iff).
+have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
+split; first by rewrite oflist_cons is_list_elems.
+rewrite proper_list_cons //.
+by rewrite -is_list_proper_iff.
+by rewrite is_list_mem_iff.
+move => t u IHt IHu.
+rewrite /= => [#] prop_t prop_u is_list_imp_u_t disj_t_u.
+case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
+have [elems_eq prop_of_wrkd_step_t] := IHt _ _ => //.
+rewrite elems_eq /= prop_of_wrkd_step_t prop_u /=.
+split => [is_list_u | //].
+smt(step_done_iff).
+case (is_compare (step t)) => [is_cmp_step_t | not_is_cmp_step_t].
+smt(step_compare_iff).
+case (is_worked (step u)) => [is_wkd_step_u _ | not_is_wkd_step_u].
+have [elems_eq prop_of_wrkd_step_u] := IHu _ _ => //.
+rewrite elems_eq /= prop_of_wrkd_step_u prop_t /=.
+split => [is_list_of_wkd_step_u | //].
+by rewrite -step_done_iff eq_done_iff.
+case (is_compare (step u)) => [is_cmp_step_u | not_is_cmp_step_u].
+smt(step_compare_iff).
+case (of_list t = []) => [| of_list_t_ne_nil].
+rewrite -(is_list_elems t) 1:-step_done_iff 1:eq_done_iff //.
+move => -> /=; by rewrite -set0E fset0U.
+case (of_list u = []) => [| of_list_u_ne_nil].
+rewrite -(is_list_elems u) 1:-step_done_iff 1:eq_done_iff //.
+move => -> /=; by rewrite -set0E fsetU0.
+move => _.
+have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
+have is_list_u : is_list u by rewrite -step_done_iff eq_done_iff.
+split.
+rewrite -(is_list_elems t) // -(is_list_elems u) //.
+rewrite -{3}(head_behead (of_list t) 0) //.
+rewrite -{3}(head_behead (of_list u) 0) //.
+rewrite 2!oflist_cons.
+smt(fsetUC fsetUA).
+have proper_list_of_list_t :
+  proper_list (of_list t) by rewrite -is_list_proper_iff.
+have proper_list_of_list_u :
+  proper_list (of_list u) by rewrite -is_list_proper_iff.
+split; first smt(allP mem_head_behead).
+split; first smt(allP mem_head_behead).
+have of_list_t_eq := head_behead (of_list t) 0 _ => //.
+have of_list_u_eq := head_behead (of_list u) 0 _ => //.
+split; first smt(allP).
+split; first smt(allP).
+split; first smt().
+split; first smt().
+have all_in_of_list_t_not_in_of_list_u :
+  forall (x : int), x \in of_list t => ! (x \in of_list u).
+  move => x x_in_of_list_t.
+  move : disj_t_u.
+  rewrite disjointP -is_list_elems // -is_list_elems // => H.
+  by rewrite -mem_oflist // H 1:mem_oflist.
+have all_in_of_list_u_not_in_of_list_t :
+  forall (x : int), x \in of_list u => ! (x \in of_list t).
+  smt(hasPn).
+split.
+have hd_of_list_t_in_of_list_t : head 0 (of_list t) \in of_list t.
+  by rewrite -{1}of_list_t_eq in_cons.
+case (head 0 (of_list t) \in behead (of_list u)) =>
+  [hd_of_list_t_in_behead_of_list_u | //].
+have hd_of_list_t_in_of_list_u : head 0 (of_list t) \in of_list u.
+  by rewrite -{1}of_list_u_eq in_cons hd_of_list_t_in_behead_of_list_u.
+have // : ! (head 0 (of_list t) \in of_list u).
+  by rewrite all_in_of_list_t_not_in_of_list_u 1:hd_of_list_t_in_of_list_t.
+split.
+have hd_of_list_u_in_of_list_u : head 0 (of_list u) \in of_list u.
+  by rewrite -{1}of_list_u_eq in_cons.
+case (head 0 (of_list u) \in behead (of_list t)) =>
+  [hd_of_list_u_in_behead_of_list_t | //].
+have hd_of_list_t_in_of_list_u : head 0 (of_list u) \in of_list t.
+  by rewrite -{1}of_list_t_eq in_cons hd_of_list_u_in_behead_of_list_t.
+have // : ! (head 0 (of_list u) \in of_list t).
+  by rewrite all_in_of_list_u_not_in_of_list_t 1:hd_of_list_u_in_of_list_u.
+rewrite hasPn => x x_in_behead_of_list_u.
+case (x \in behead (of_list t)) => [x_in_behead_of_list_t | //].
+have x_in_of_list_t : x \in of_list t.
+  by rewrite -of_list_t_eq in_cons x_in_behead_of_list_t.
+have x_in_of_list_u : x \in of_list u.
+  by rewrite -of_list_u_eq in_cons x_in_behead_of_list_u.
+have // : ! (x \in of_list t) by rewrite all_in_of_list_u_not_in_of_list_t.
+smt().
+qed.
+
+(* not needed?
 lemma step_compare_iff (t : term, i j : int) :
   step t = Compare i j <=>
   (exists (n : int, u : term),
@@ -407,26 +626,47 @@ split => [H | /#].
 left; exists n u; smt().
 move => u v.
 split => [/= | /#].
-case (is_step (step u)) => [// | not_is_step_u].
+case (is_worked (step u)) => [// | not_is_worked_u].
 case (is_compare (step u)) =>
   [is_compare_u step_u_eq_Compare_i_j | not_is_compare_u].
 left; by exists u v.
-case (is_step (step v)) => [// | not_is_step_v].
+case (is_worked (step v)) => [// | not_is_worked_v].
 case (is_compare (step v)) =>
   [is_compare_v step_u_eq_Compare_i_j | not_is_compare_v].
 right.
 have is_list_u : is_list u.
-  move : not_is_step_u not_is_compare_u.
+  move : not_is_worked_u not_is_compare_u.
   case u; smt().
 have [xs ->] : exists xs, u = List xs.
   move : is_list_u.  
-  clear not_is_step_u not_is_compare_u.
+  clear not_is_worked_u not_is_compare_u.
   (case u; first smt()); last 3 smt().
   move => ys _; by exists ys.
 by exists xs v.
 smt().
 smt().
 qed.
+*)
+
+lemma step_worked_iff (t : term, i j : int) :
+  step t = Worked u <=>
+  (exists (xs : int list),
+   
+   t = List xs /\ 
+
+
+
+  (exists (n : int, u : term),
+   t = Cons n u /\ step u = Compare i j) \/
+  (exists (u v : term),
+   t = Merge u v /\ step u = Compare i j) \/
+  (exists (xs : int list, v : term),
+   t = Merge (List xs) v /\ step v = Compare i j) \/
+  (exists (u v : term), t = Cond i j u v).
+proof.
+case t.
+
+
 
 op answer (t : term, b : bool) : term option =
   with t = Sort xs      => None  (* should not happen *)
@@ -446,7 +686,19 @@ op answer (t : term, b : bool) : term option =
          then None  (* should not happen *)
          else Some (Merge u (oget v'))
   with t = Cond i j u v =>
-    if b then Some u else Some v.
+    if b
+    then Some (Cons i (Merge u (Cons j v)))
+    else Some (Cons j (Merge (Cons i u) v).
+
+op repr (cmp : int -> int -> bool, t : term) : int list =
+  with t = Sort xs      => sort cmp xs
+  with t = List xs      => xs
+  with t = Cons i u     => i :: repr cmp u
+  with t = Merge u v    => merge cmp (repr cmp u) (repr cmp v)
+  with t = Cond i j u v =>
+    if cmp i j
+    then i :: merge cmp (repr cmp u)      (j :: repr cmp v)
+    else j :: merge cmp (i :: repr cmp u) (repr cmp v).
 
 lemma square_divide_lt (n : int) :
   2 <= n =>
