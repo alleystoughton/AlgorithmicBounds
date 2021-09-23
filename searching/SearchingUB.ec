@@ -388,6 +388,6 @@ conseq
    all (mem univ) inps /\ good aux inps ==>
    res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity) => //.
 by conseq (G_main aux' inps').
-rewrite (G_ll Alg) 1:Alg_init_ll 1:Alg_make_query_or_report_output_ll
+rewrite (G_ll Alg predT) 1:Alg_init_ll 1:Alg_make_query_or_report_output_ll
         Alg_query_result_ll.
 qed.

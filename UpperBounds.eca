@@ -194,27 +194,38 @@ rewrite FRange.sub_range_card_leq 1:ge0_arity.
 apply qir_queries.
 qed.
 
-lemma G_ll (Alg <: ALG) :
-  islossless Alg.init => islossless Alg.make_query_or_report_output =>
-  islossless Alg.query_result =>
+lemma G_ll (Alg <: ALG) (alg_term_invar : glob Alg -> bool) :
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query_or_report_output :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
   islossless G(Alg).main.
 proof.
 move =>
-  Alg_init_ll Alg_make_query_or_report_output_ll Alg_query_result_ll.
+  Alg_init_term Alg_make_query_or_report_output_term Alg_query_result_term.
 proc.
 while
-  (queries_in_range queries /\ stage = card queries)
+  (queries_in_range queries /\ stage = card queries /\
+   alg_term_invar (glob Alg))
   (if out_opt <> None \/ error then 0 else arity - stage + 1).
 move => z.
 seq 1 :
-  (queries_in_range queries /\ stage = card queries /\ out_opt = None /\
+  (queries_in_range queries /\ stage = card queries /\
+   alg_term_invar (glob Alg) /\ out_opt = None /\
    !error /\ (if out_opt <> None \/ error then 0 else arity - stage + 1) = z).
-call (_ : true); first auto.
-call (_ : true); first auto.
+conseq (_ : _ ==> _ : = 1%r).
+call Alg_make_query_or_report_output_term.
+auto.
+call Alg_make_query_or_report_output_term.
+auto.
 if.
 sp.
 if.
-call (_ : true).
+call Alg_query_result_term.
 auto; progress.
 by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
@@ -222,10 +233,12 @@ smt().
 auto; smt(queries_in_range_card_le_arity).
 auto; smt(not_is_response_query queries_in_range_card_le_arity).
 hoare.
-call (_ : true); first auto.
+conseq (_ : _ ==> _ : = 1%r).
+call Alg_make_query_or_report_output_term.
+auto.
 trivial.
 wp.
-call (_ : true).
+call Alg_init_term.
 auto; progress.
 rewrite queries_in_range0.
 by rewrite fcards0.

@@ -264,6 +264,12 @@ op tsorted (xs: inp list) (bs : int list) : bool =
 
 op range_len : int list = range 0 len.
 
+lemma in_range_len (n : int) :
+  n \in range_len <=> 0 <= n < len.
+proof.
+by rewrite /range_len mem_range.
+qed.
+
 (* all permutations of 0 .. len - 1 *)
 
 op perms_len : int list list = allperms range_len.

@@ -377,20 +377,27 @@ qed.
 lemma lower_bound &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}),
-  islossless Alg.init => islossless Alg.make_query =>
-  islossless Alg.query_result =>
+  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
   Pr[G(Alg, Adv).main() @ &m : res.`1 \/ res.`2 = arity] = 1%r.
 proof.
 exists Adv.
 split; first apply Adv_init_ll.
 split; first apply Adv_ans_query_ll.
-move => Alg Alg_init_ll Alg_make_query_ll Alg_query_result_ll.
+move =>
+  Alg alg_term_invar Alg_init_ll Alg_make_query_ll Alg_query_result_ll.
 byphoare => //.
 conseq
   (_ : true ==> true)
   (_ : true ==> res.`1 \/ res.`2 = arity) => //.
 apply (G_Adv_main Alg).
-rewrite (G_ll Alg Adv) 1:Alg_init_ll 1:Alg_make_query_ll
+rewrite (G_ll Alg Adv alg_term_invar predT) 1:Alg_init_ll 1:Alg_make_query_ll
         1:Alg_query_result_ll 1:Adv_init_ll Adv_ans_query_ll.
 qed.

@@ -319,23 +319,31 @@ lemma lower_bound_gen (bound : int) &m :
   bound <= int_log_up 2 (fact len) =>
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}),
-  islossless Alg.init => islossless Alg.make_query =>
-  islossless Alg.query_result =>
+  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
   Pr[G(Alg, Adv).main() @ &m : res.`1 \/ bound <= res.`2] = 1%r.
 proof.
 move => le_bound_ilu2_fact_len.
 exists Adv.
 split; first apply Adv_init_ll.
 split; first apply Adv_ans_query_ll.
-move => Alg Alg_init_ll Alg_make_query_ll Alg_query_result_ll.
+move =>
+  Alg alg_term_invar Alg_init_term Alg_make_query_term Alg_query_result_term.
 byphoare => //.
 conseq
   (_ : true ==> true)
   (_ : true ==> res.`1 \/ bound <= res.`2) => //.
 apply (G_Adv_main bound Alg) => //.
-rewrite (G_ll Alg Adv) 1:Alg_init_ll 1:Alg_make_query_ll
-        1:Alg_query_result_ll 1:Adv_init_ll Adv_ans_query_ll.
+rewrite (G_ll Alg Adv alg_term_invar predT)
+        1:Alg_init_term 1:Alg_make_query_term 1:Alg_query_result_term
+        1:Adv_init_ll Adv_ans_query_ll.
 qed.
 
 lemma int_log2_eq_1 : int_log 2 2 = 1.
@@ -472,15 +480,20 @@ have -> : (i + 1) * (int_log 2 i + 1) = i*(int_log 2 i) + (int_log 2 i)+ i + 1 b
 smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt ). 
 qed. 
 
-
 (* here our main theorem: *)
 
 lemma lower_bound &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}),
-  islossless Alg.init => islossless Alg.make_query =>
-  islossless Alg.query_result =>
+  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
   Pr[G(Alg, Adv).main() @ &m :
        res.`1 \/ len * int_log 2 len %/ 2 <= res.`2] = 1%r.
 proof.

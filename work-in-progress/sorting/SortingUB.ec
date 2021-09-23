@@ -154,14 +154,26 @@ rewrite wc_eq // ler_subl_addr ler_addl.
 smt(int_log_ub_lt).
 qed.
 
-op merge (cmp : 'a -> 'a -> bool, xs ys : 'a list) : 'a list =
+op merge (e : 'a -> 'a -> bool, xs ys : 'a list) : 'a list =
   with xs = [],      ys = []      => []
   with xs = [],      ys = _ :: _  => ys
   with xs = _ :: _,  ys = []      => xs
   with xs = u :: us, ys = v :: vs =>
-    if cmp u v
-    then u :: merge cmp us ys
-    else v :: merge cmp xs vs.
+    if e u v
+    then u :: merge e us ys
+    else v :: merge e xs vs.
+
+lemma merge_nil_r (e : 'a -> 'a -> bool, xs : 'a list) :
+  merge e xs [] = xs.
+proof.
+by case xs.
+qed.
+
+lemma merge_nil_l (e : 'a -> 'a -> bool, xs : 'a list) :
+  merge e [] xs = xs.
+proof.
+by case xs.
+qed.
 
 lemma cmp_head_merge (cmp : 'a -> 'a -> bool, n : 'a, xs ys : 'a list) :
   cmp n (head n xs) => cmp n (head n ys) =>
@@ -190,6 +202,48 @@ by rewrite IH_outer (path_sorted _ u).
 rewrite (pathP v); right; split => [| /=].
 rewrite cmp_head_merge cmp_head_path_same_def //= path_u_us /= 1:/#.
 by rewrite IH_inner // (path_sorted _ v).
+qed.
+
+lemma perm_eq_merge (e : 'a -> 'a -> bool, xs ys : 'a list) :
+  perm_eq (merge e xs ys) (xs ++ ys).
+proof.
+move : ys.
+elim xs => [ys /= | x xs IH_outer ys].
+rewrite merge_nil_l perm_eq_refl.
+elim ys => [/= | v vs IH_inner /=].
+rewrite cats0 perm_eq_refl.
+case (e x v) => [e_x_v | not_e_x_v].
+rewrite -cat1s -(cat1s _ (xs ++ v :: vs)) perm_cat2l IH_outer.
+rewrite -cat1s (perm_eq_trans ([v] ++ (x :: xs ++ vs)))
+        1:perm_cat2l 1:IH_inner.
+have -> : [v] ++ (x :: xs ++ vs) = [v] ++ [x] ++ (xs ++ vs) by smt(catA).
+have -> : x :: (xs ++ v :: vs) = [x] ++ xs ++ ([v] ++ vs) by smt(catA).
+rewrite perm_catCAl -!catA perm_cat2l !catA.
+rewrite perm_catCAl -!catA perm_cat2l perm_eq_refl.
+qed.
+
+lemma perm_eq_merge_perms (e : 'a -> 'a -> bool, xs ys us vs : 'a list) :
+  perm_eq us xs => perm_eq vs ys =>
+  perm_eq (merge e us vs) (xs ++ ys).
+proof.
+move => pe_us_xs pe_vs_ys.
+rewrite (perm_eq_trans (us ++ vs)) 1:perm_eq_merge.
+by rewrite (perm_eq_trans (xs ++ vs)) 1:perm_cat2r // perm_cat2l.
+qed.
+
+lemma merge_sort_cat (e : 'a -> 'a -> bool, xs ys : 'a list) :
+  (forall (x : 'a), e x x) =>
+  (forall (y x z : 'a), e x y => e y z => e x z) =>
+  (forall (x y : 'a), e x y => e y x => x = y) =>
+  (forall (x y : 'a), e x y \/ e y x) =>
+  merge e (sort e xs) (sort e ys) = sort e (xs ++ ys).
+proof.
+move => refl_e trans_e antisym_e tot_e.
+have -> :
+  merge e (sort e xs) (sort e ys) =
+  sort e (merge e (sort e xs) (sort e ys)).
+  by rewrite eq_sym sort_id // merge_sorted // sort_sorted.
+rewrite -perm_sortP // perm_eq_merge_perms 2!perm_sort.
 qed.
 
 lemma cat_eq_nil_iff (xs ys : 'a list) :
@@ -295,6 +349,9 @@ lemma is_cond (t : term) :
   Cond (of_cond t).`1 (of_cond t).`2 (of_cond t).`3 (of_cond t).`4.
 proof. by case t. qed.
 
+op proper_list_pre (xs : int list) : bool =
+  uniq xs /\ all (mem range_len) xs.
+
 op proper_list (xs : int list) : bool =
   xs <> [] /\ uniq xs /\ all (mem range_len) xs.
 
@@ -305,10 +362,19 @@ proof.
 by rewrite /proper_list has_sym all_cat cat_uniq.
 qed.
 
+lemma proper_list_cons_pre (i : int, xs : int list) :
+  proper_list_pre xs => mem range_len i => ! mem xs i =>
+  proper_list (i :: xs).
+proof.
+by rewrite /proper_list /proper_list_pre.
+qed.
+
 lemma proper_list_cons (i : int, xs : int list) :
   proper_list xs => mem range_len i => ! mem xs i =>
   proper_list (i :: xs).
-proof. by rewrite /proper_list. qed.
+proof.
+smt(proper_list_cons_pre).
+qed.
 
 lemma proper_list_cat (xs ys : int list) :
   proper_list xs => proper_list ys => ! has (mem xs) ys =>
@@ -497,7 +563,7 @@ lemma proper_step (t : term) :
   proper t => is_worked (step t) =>
   elems (of_worked (step t)) = elems t /\ proper (of_worked (step t)).
 proof.
-elim t.
+elim t => //.
 move => xs /=.
 case (size xs <= 1) => [// | gt1_size_xs pl_xs _].
 rewrite lerNgt /= in gt1_size_xs.
@@ -514,7 +580,6 @@ split => [| /=]; first by elim pls_xs.
 rewrite disjointP => x.
 rewrite 2!mem_oflist.
 smt(hasPn).
-trivial.
 move => i t IH /= [i_in_range [prop_t not_i_in_elems_t]].
 case (is_worked (step t)) => [is_wkd_step_t | not_is_wkd_step_t].
 have [elems_eq prop_of_wrkd_step_t] := IH _ _ => //.
@@ -604,79 +669,163 @@ have x_in_of_list_t : x \in of_list t.
 have x_in_of_list_u : x \in of_list u.
   by rewrite -of_list_u_eq in_cons x_in_behead_of_list_u.
 have // : ! (x \in of_list t) by rewrite all_in_of_list_u_not_in_of_list_t.
-smt().
 qed.
 
-(* not needed?
-lemma step_compare_iff (t : term, i j : int) :
-  step t = Compare i j <=>
-  (exists (n : int, u : term),
-   t = Cons n u /\ step u = Compare i j) \/
-  (exists (u v : term),
-   t = Merge u v /\ step u = Compare i j) \/
-  (exists (xs : int list, v : term),
-   t = Merge (List xs) v /\ step v = Compare i j) \/
-  (exists (u v : term), t = Cond i j u v).
+op repr (cmp : int -> int -> bool, t : term) : int list =
+  with t = Sort xs        => sort cmp xs
+  with t = List xs        => xs
+  with t = Cons i u       => i :: repr cmp u
+  with t = Merge u v      => merge cmp (repr cmp u) (repr cmp v)
+  with t = Cond i j us vs =>
+    if cmp i j
+    then i :: merge cmp us        (j :: vs)
+    else j :: merge cmp (i :: us) vs.
+
+lemma repr_start (cmp : int -> int -> bool) :
+  repr cmp (Sort range_len) = sort cmp range_len.
+proof. trivial. qed.
+
+lemma repr_step (cmp : int -> int -> bool, t : term) :
+  (forall (x : int), cmp x x) =>
+  (forall (y x z : int), cmp x y => cmp y z => cmp x z) =>
+  (forall (x y : int), cmp x y => cmp y x => x = y) =>
+  (forall (x y : int), cmp x y \/ cmp y x) =>
+  proper t => is_worked (step t) =>
+  repr cmp (of_worked (step t)) = repr cmp t.
 proof.
-case t.
-smt().
-smt().
-move => n u.
-split => [H | /#].
-left; exists n u; smt().
-move => u v.
-split => [/= | /#].
-case (is_worked (step u)) => [// | not_is_worked_u].
-case (is_compare (step u)) =>
-  [is_compare_u step_u_eq_Compare_i_j | not_is_compare_u].
-left; by exists u v.
-case (is_worked (step v)) => [// | not_is_worked_v].
-case (is_compare (step v)) =>
-  [is_compare_v step_u_eq_Compare_i_j | not_is_compare_v].
-right.
-have is_list_u : is_list u.
-  move : not_is_worked_u not_is_compare_u.
-  case u; smt().
-have [xs ->] : exists xs, u = List xs.
-  move : is_list_u.  
-  clear not_is_worked_u not_is_compare_u.
-  (case u; first smt()); last 3 smt().
-  move => ys _; by exists ys.
-by exists xs v.
-smt().
-smt().
+move => refl_e trans_e antisym_e tot_e.
+elim t => //.
+move => xs /= _.
+case (size xs <= 1) => [le1_size_xs _ | gt1_size_xs _].
+have [eq0_size_xs | eq1_size_xs] :
+  size xs = 0 \/ size xs = 1 by smt(size_ge0).
+rewrite size_eq0 in eq0_size_xs.
+by rewrite eq0_size_xs /sort.
+rewrite size_eq1 in eq1_size_xs.
+elim eq1_size_xs => x ->; by rewrite /sort.
+rewrite lerNgt /= in gt1_size_xs.
+have {5}<- := cat_take_drop (size xs %/ 2) xs.
+by rewrite merge_sort_cat.
+move => i t IH /= [#] _ prop_t _.
+case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
+by rewrite IH.
+case (is_compare (step t)) => [| not_is_cmp_step_t _].
+smt(is_worked_iff).
+congr.
+have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
+by rewrite is_list.
+move => t u IHt IHu /= [#] prop_t prop_u _ _.
+case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
+by rewrite IHt.
+case (is_compare (step t)) => [| not_is_cmp_step_t].
+by rewrite is_compare_iff.
+case (is_worked (step u)) => [is_wkd_step_u _ | not_is_wkd_step_u].
+by rewrite IHu.
+case (is_compare (step u)) => [| not_is_cmp_step_u].
+smt(is_compare_iff).
+have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
+have is_list_u : is_list u by rewrite -step_done_iff eq_done_iff.
+case (of_list t = []) => [| of_list_t_ne_nil].
+smt(is_list_proper_iff).
+case (of_list u = []) => [| of_list_u_ne_nil _].
+smt(is_list_proper_iff).
+have -> : repr cmp t = of_list t by rewrite is_list.
+have -> : repr cmp u = of_list u by rewrite is_list.
+have of_list_t_eq := head_behead (of_list t) 0 _ => //.
+have of_list_u_eq := head_behead (of_list u) 0 _ => //.
+case (cmp (head 0 (of_list t)) (head 0 (of_list u))) =>
+  [cmp_t_u | not_cmp_t_u].
+by rewrite -{3}of_list_t_eq -{3}of_list_u_eq /= cmp_t_u.
+by rewrite -{3}of_list_t_eq -{3}of_list_u_eq /= not_cmp_t_u.
 qed.
-*)
 
-lemma step_worked_iff (t : term, i j : int) :
-  step t = Worked u <=>
-  (exists (xs : int list),
-   
-   t = List xs /\ 
+(* supporting lemma for termination metric for step *)
 
-
-
-  (exists (n : int, u : term),
-   t = Cons n u /\ step u = Compare i j) \/
-  (exists (u v : term),
-   t = Merge u v /\ step u = Compare i j) \/
-  (exists (xs : int list, v : term),
-   t = Merge (List xs) v /\ step v = Compare i j) \/
-  (exists (u v : term), t = Cond i j u v).
+lemma square_divide_lt (n : int) :
+  2 <= n =>
+  1 + (n %/ 2) ^ 2 + (n %%/ 2) ^ 2 < n ^ 2.
 proof.
-case t.
+move => ge2_n.
+have -> : n ^ 2 = (n %/ 2 + n %%/ 2) ^ 2 by rewrite {1}div2_plus_div2up_eq.
+rewrite 3!expr2.
+have -> /# :
+  (n %/ 2 + n %%/ 2) * (n %/ 2 + n %%/ 2) =
+  (n %/ 2) * (n %/ 2) + (n %/ 2) * (n %%/ 2) +
+  (n %%/ 2) * (n %/ 2) + (n %%/ 2) * (n %%/ 2).
+  algebra.
+qed.
 
+(* termination metric for step *)
 
+op metric (t : term) : int =
+  with t = Sort xs        => size xs ^ 2
+  with t = List xs        => 0
+  with t = Cons i u       => metric u + 1
+  with t = Merge u v      => 1 + metric u + metric v
+  with t = Cond i j us vs => 0.
+
+lemma metric_ge0 (t : term) :
+  0 <= metric t.
+proof.
+elim t => //.
+move => xs /=; smt(size_ge0 expr2).
+smt(). smt().
+qed.
+
+lemma metric_step (t : term) :
+  proper t => is_worked (step t) =>
+  metric (of_worked (step t)) < metric t.
+proof.
+elim t => //.
+move => xs /= pl_xs.
+case (size xs <= 1) => [le1_size_xs _ | gt1_size_xs _].
+have -> : size xs = 1 by smt(size_ge0 size_eq0).
+by rewrite expr2.
+have -> : size (take (size xs %/ 2) xs) = size xs %/ 2.
+  rewrite size_take /#.
+have -> : size (drop (size xs %/ 2) xs) = size xs %%/ 2.
+  rewrite size_drop /#.
+rewrite square_divide_lt /#.
+trivial.
+move => i xs /= IH [#] _ prop_t _.
+case (is_worked (step xs)) => [is_wkd_step_xs _ | not_is_wkd_step_xs].
+by rewrite ltz_add2r IH.
+case (is_compare (step xs)) => [/# | not_is_cmp_step_xs _].
+smt(metric_ge0).
+move => t u IHt IHu /= [#] prop_t prop_u _ _.
+case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
+smt(metric_ge0).
+case (is_compare (step t)) => [/# | not_is_cmp_step_t].
+case (is_worked (step u)) => [/# | not_is_wkd_step_u].
+case (is_compare (step u)) => [/# | not_is_cmp_step_u].
+have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
+have is_list_u : is_list u by rewrite -step_done_iff eq_done_iff.
+have ne_nil_of_list_t : of_list t <> [] by smt(is_list_proper_iff).
+have ne_nil_of_list_u : of_list u <> [] by smt(is_list_proper_iff).
+case (of_list t = []) => [/# | of_list_t_ne_nil].
+case (of_list u = []) => [/# | of_list_u_ne_nil].
+smt(metric_ge0).
+qed.
+
+lemma metric0_no_step (t : term) :
+  proper t => metric t = 0 => ! is_worked (step t).
+proof.
+move => prop_t eq0_metric_t.
+case (is_worked (step t)) => [is_wkd_step_t | //].
+have := metric_step t _ _ => //.
+rewrite eq0_metric_t.
+smt(metric_ge0).
+qed.
 
 op answer (t : term, b : bool) : term option =
-  with t = Sort xs      => None  (* should not happen *)
-  with t = List xs      => None
-  with t = Cons n u     =>
-    let u' = answer t b in
+  with t = Sort xs        => None  (* should not happen *)
+  with t = List xs        => None  (* should not happen *)
+  with t = Cons n u       =>
+    let u' = answer u b in
     if u' = None  (* should not happen *)
     then None
     else Some (Cons n (oget u'))
-  with t = Merge u v    =>
+  with t = Merge u v      =>
     let u' = answer u b in
     if u' <> None
     then Some (Merge (oget u') v)
@@ -685,36 +834,34 @@ op answer (t : term, b : bool) : term option =
          if v' = None
          then None  (* should not happen *)
          else Some (Merge u (oget v'))
-  with t = Cond i j u v =>
+  with t = Cond i j us vs =>
     if b
-    then Some (Cons i (Merge u (Cons j v)))
-    else Some (Cons j (Merge (Cons i u) v).
+    then Some (Cons i (Merge (List us)        (List (j :: vs))))
+    else Some (Cons j (Merge (List (i :: us)) (List vs))).
 
-op repr (cmp : int -> int -> bool, t : term) : int list =
-  with t = Sort xs      => sort cmp xs
-  with t = List xs      => xs
-  with t = Cons i u     => i :: repr cmp u
-  with t = Merge u v    => merge cmp (repr cmp u) (repr cmp v)
-  with t = Cond i j u v =>
-    if cmp i j
-    then i :: merge cmp (repr cmp u)      (j :: repr cmp v)
-    else j :: merge cmp (i :: repr cmp u) (repr cmp v).
-
-lemma square_divide_lt (n : int) :
-  2 <= n =>
-  (n %/ 2) ^ 2 + (n %%/ 2) ^ 2 < n ^ 2.
+lemma proper_answer (t : term, b : bool) :
+  proper t => answer t b <> None =>
+  proper (oget (answer t b)) /\ elems (oget (answer t b)) = elems t.
 proof.
+elim t => //.
+move => i u IH /= [#] i_in_range prop_u i_not_in_elems_u.
+case (answer u b = None) => [// | ans_u_b_ne_none _].
+rewrite oget_some /= i_in_range /= /#.
 admit.
-qed.
-
-(* termination metric for step *)
-
-op metric (t : term) : int =
-  with t = Sort xs      => size xs ^ 2
-  with t = List xs      => 0
-  with t = Cons i u     => metric u + 1
-  with t = Merge u v    => 1 + metric u + metric v
-  with t = Cond i j u v => 0.
+move =>
+  i j us vs /= [#] i_in_range j_in_range all_us_in_range
+  all_vs_in_range i_notin_us j_notin_vs i_notin_vs
+  j_notin_us disj_us_vs.
+case b => _ _ /=.
+admit.
+admit.
+(*
+rewrite oflist_cons; smt(fsetUC fsetUA).
+split.
+admit.
+rewrite oflist_cons; smt(fsetUC fsetUA).
+*)
+qed.  
 
 (* here is our algorithm: *)
 
@@ -727,47 +874,132 @@ module Alg : ALG = {
 
   proc make_query_or_report_output() : response = {
     var r : response;
-    var step : step;
-    var don : bool <- false;
-    while (!don) {
-      step <- step term;
-      if (step = Done \/ is_compare step) {
-        don <- true;
-      }
-      else {
-        term <- of_step step;
-      }
+    var stp : step;
+    stp <- step term;
+    while (stp <> Done /\ ! is_compare stp) {
+      term <- of_worked stp;
+      stp <- step term;
     }
-    if (step = Done) {  (* term = List ... *)
+    if (stp = Done) {  (* term = List ... *)
       r <- Response_Report (of_list term);
     }
     else {
-      r <- Response_Query (enc (of_compare step));
+      r <- Response_Query (enc (of_compare stp));
     }
     return r;
   }
 
   proc query_result(b : inp) : unit = {
-    term <- oget (answer term b);
+    var oterm : term option;
+    oterm <- answer term b;
+    if (oterm = None) {  (* will not happen, but termination *)
+      term <- List [0];  (* invariant only says term is proper *)
+    }
+    else {
+      term <- oget (answer term b);
+    }
   }
 }.
 
-(* algorithm is lossless *)
+(* algorithm's termination invariant *)
 
-lemma Alg_init_ll : islossless Alg.init.
+op alg_term_invar (x : glob Alg) : bool =
+  proper x.
+
+lemma Alg_init_term :
+  phoare [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r.
 proof.
-proc; auto.
+proc; auto => &hr _.
+rewrite /alg_term_invar proper_start.
 qed.
 
-lemma Alg_make_query_or_report_output_ll :
-  islossless Alg.make_query_or_report_output.
+lemma Alg_make_query_or_report_output_term :
+  phoare
+  [Alg.make_query_or_report_output :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r.
 proof.
-proc.
-admit.  (* will need termination metric for while loop *)
+proc; wp; sp.
+while
+  (proper Alg.term /\ stp = step Alg.term)
+  (metric Alg.term).
+move => z.
+auto =>
+  &hr [#] prop_term stp_eq_step_term step_term_not_done
+  not_is_cmp_step_term <- /=.
+have is_wkd_step_term :
+  is_worked (step Alg.term{hr}) by smt(is_worked_iff).
+split.
+smt(proper_step).
+rewrite stp_eq_step_term.
+rewrite metric_step.
+trivial.
+trivial.
+auto; progress.
+trivial.
+have eq0_metric_term : metric term = 0 by smt(metric_ge0).
+have := metric0_no_step term _ _ => //.
+by rewrite is_worked_iff.
+by rewrite /alg_term_invar.
 qed.
 
-lemma Alg_query_result_ll :
-  islossless Alg.query_result.
+lemma Alg_query_result_term :
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> 
+   alg_term_invar (glob Alg)] = 1%r.
 proof.
-proc; auto.
+proc; auto => &hr.
+rewrite /alg_term_invar => prop_term.
+case (answer Alg.term{hr} b{hr} = None) => [_ | ans_term_b_ne_none].
+rewrite /proper_list /= in_range_len /= gt0_len.
+smt(proper_answer).
+qed.
+
+(* the main lemma: *)
+
+lemma G_main (aux' : aux, inps' : inp list) :
+  hoare
+  [G(Alg).main :
+   aux = aux' /\ inps = inps' /\ size inps = arity /\
+   all (mem univ) inps /\ good aux inps ==>
+   res.`1 = f aux' inps' /\ res.`2 <= len * int_log 2 len].
+proof.
+admit.
+qed.
+
+(* here is our main theorem: *)
+
+lemma upper_bound &m :
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
+  phoare
+  [Alg.make_query_or_report_output :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+  (forall (aux : aux, inps : inp list),
+   size inps = arity => all (mem univ) inps => good aux inps =>
+   Pr[G(Alg).main(aux, inps) @ &m :
+      res.`1 = f aux inps /\ res.`2 <= len * int_log 2 len] = 1%r).
+proof.
+split; first apply Alg_init_term.
+split; first apply Alg_make_query_or_report_output_term.
+split; first apply Alg_query_result_term.
+move => aux' inps' size_inps'_eq_arity all_inps'_in_univ good_aux'_inps'.
+byphoare
+  (_ :
+   aux = aux' /\ inps = inps' /\ size inps = arity /\
+   all (mem univ) inps /\ good aux inps ==>
+   res.`1 = f aux' inps' /\ res.`2 <= len * int_log 2 len) => //.
+conseq
+  (_ : true ==> true)
+  (_ :
+   aux = aux' /\ inps = inps' /\ size inps = arity /\
+   all (mem univ) inps /\ good aux inps ==>
+   res.`1 = f aux' inps' /\ res.`2 <= len * int_log 2 len) => //.
+by conseq (G_main aux' inps').
+print G_ll.
+rewrite (G_ll Alg alg_term_invar) 1:Alg_init_term
+        1:Alg_make_query_or_report_output_term Alg_query_result_term.
 qed.
