@@ -52,3 +52,53 @@ rewrite in_fsetI in_fset0 /= negb_and.
 case (x \in xs) => [x_in_xs | //].
 right; by rewrite all_xs_not_in_ys.
 qed.
+
+lemma fset1_ne_fset0 (x : 'a) :
+  fset1 x <> fset0.
+proof.
+case (fset1 x = fset0) => [H /= | //].
+by rewrite -(in_fset0 x) -H in_fset1.
+qed.
+
+lemma union_eq_fset0_iff (xs ys : 'a fset) :
+  xs `|` ys = fset0 <=> xs = fset0 /\ ys = fset0.
+proof.
+split => [xs_union_ys_eq_fset0 | [-> ->]].
+split.
+rewrite fsetP => x.
+split => [x_in_xs |].
+rewrite -xs_union_ys_eq_fset0 in_fsetU.
+by left.
+by rewrite in_fset0.
+rewrite fsetP => x.
+split => [x_in_xs |].
+rewrite -xs_union_ys_eq_fset0 in_fsetU.
+by right.
+by rewrite in_fset0.
+by rewrite fsetU0.
+qed.
+
+lemma fset1_union_any_ne_fset0 (x : 'a, xs : 'a fset) :
+  fset1 x `|` xs <> fset0.
+proof.
+rewrite union_eq_fset0_iff negb_and.
+left.
+case (fset1 x = fset0) => [H | //].
+by rewrite /= -(in_fset0 x) -H in_fset1.
+qed.
+
+lemma oflist_eq_fset0_iff (xs : 'a list) :
+  oflist xs = fset0 <=> xs = [].
+proof.
+case xs => [/= | x xs /=].
+by rewrite -set0E.
+by rewrite oflist_cons fset1_union_any_ne_fset0.
+qed.
+
+lemma uniq_card_oflist (xs : 'a list) :
+  uniq xs => card (oflist xs) = size xs.
+proof.
+move => uniq_xs.
+rewrite cardE (perm_eq_size (elems (oflist xs)) xs) //.
+by rewrite perm_eq_sym oflist_uniq.
+qed.

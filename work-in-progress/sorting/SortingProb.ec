@@ -264,6 +264,12 @@ op tsorted (xs: inp list) (bs : int list) : bool =
 
 op range_len : int list = range 0 len.
 
+lemma size_range_len :
+  size range_len = len.
+proof.
+by rewrite /range_len size_range /= ler_maxr 1:ge0_len.
+qed.
+
 lemma in_range_len (n : int) :
   n \in range_len <=> 0 <= n < len.
 proof.
