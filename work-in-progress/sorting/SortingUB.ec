@@ -82,14 +82,29 @@ op wc : int -> int =
                       don't respect well-founded relation *)
   wc_wf_rec_def.  (* body of recursive definition *)
 
-lemma wc_le1 (n : int) :
+lemma wc_ge0 (n : int) :
+  0 <= wc n.
+proof.
+move : n.
+apply (wf_ind lt_nat).
+apply wf_lt_nat.
+move => /= n IH.
+rewrite /wc wf_recur 1:wf_lt_nat /wc_wf_rec_def.
+case (n <= 1) => [// | gt1_n].
+rewrite lerNgt /= in gt1_n.
+have -> /= : lt_nat (n %/ 2) n by smt().
+have -> /= : lt_nat (n %%/ 2) n by smt().
+rewrite -/wc /#.
+qed.
+
+lemma wc_when_le1 (n : int) :
   n <= 1 => wc n = 0.
 proof.
 move => le1_n.
 by rewrite /wc wf_recur 1:wf_lt_nat /wc_wf_rec_def le1_n.
 qed.
 
-lemma wc_ge2 (n : int) :
+lemma wc_when_ge2 (n : int) :
   2 <= n => wc n = wc (n %/ 2) + wc (n %%/ 2) + n - 1.
 proof.
 move => ge2_n.
@@ -582,7 +597,7 @@ proof.
 elim t => // /#.
 qed.
 
-lemma proper_step_aux (t : term) :
+lemma proper_step_gen (t : term) :
   proper t => is_worked (step t) =>
   elems (of_worked (step t)) = elems t /\ elems t <> fset0 /\
   proper (of_worked (step t)).
@@ -683,11 +698,16 @@ qed.
 
 lemma proper_step (t : term) :
   proper t => is_worked (step t) => proper (of_worked (step t)).
-proof. smt(proper_step_aux). qed.
+proof. smt(proper_step_gen). qed.
+
+lemma is_worked_step_elems_eq (t : term) :
+  proper t => is_worked (step t) =>
+  elems (of_worked (step t)) = elems t.
+proof. smt(proper_step_gen). qed.
 
 lemma is_worked_step_elems_ne (t : term) :
   proper t => is_worked (step t) => elems (of_worked (step t)) <> fset0.
-proof. smt(proper_step_aux). qed.
+proof. smt(proper_step_gen). qed.
 
 (* the list represented by a term, relative to a comparison
    relation *)
@@ -748,8 +768,16 @@ rewrite disjointP => x.
 rewrite !in_fset1 => ->.
 by rewrite eq_sym ne_j_i.
 rewrite 2!fcard1.
-search card oflist.
 by rewrite uniq_card_oflist // uniq_card_oflist.
+qed.
+
+lemma size_term_ge1_when_proper_elems_ne (t : term) :
+  proper t => elems t <> fset0 =>
+  1 <= size_term t.
+proof.
+move => prop_t elems_t_ne.
+rewrite size_term_eq_card_elems //.
+smt(fcard_ge0 fcard_eq0).
 qed.
 
 lemma size_term_eq_size_repr (cmp : int -> int -> bool, t : term) :
@@ -769,38 +797,12 @@ rewrite size_merge /=; algebra.
 qed.
 
 lemma size_term_step (t : term) :
-  is_worked (step t) =>
-  size_term (of_worked (step t)) <= size_term t.
+  proper t => is_worked (step t) =>
+  size_term (of_worked (step t)) = size_term t.
 proof.
-elim t => //.
-move => xs /=.
-case (size xs <= 1) => [// | gt1_size_xs _].
-rewrite lerNgt /= in gt1_size_xs.
-have -> : size (take (size xs %/ 2) xs) = size xs %/ 2.
-  rewrite size_take /#.
-have -> : size (drop (size xs %/ 2) xs) = size xs %%/ 2.
-  rewrite size_drop /#.
-by rewrite -div2_plus_div2up_eq.
-move => i t IHt /=.
-case (is_worked (step t)) => [/# | not_is_wkd_step_t].
-case (is_compare (step t)) => [/# | not_is_cmp_step_t _].
-have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
-by rewrite is_list.
-move => t u IHt IHu /=.
-case (is_worked (step t)) => [/# | not_is_wkd_step_t].
-case (is_compare (step t)) => [/# | not_is_cmp_step_t].
-case (is_worked (step u)) => [/# | not_is_wkd_step_u].
-case (is_compare (step u)) => [/# | not_is_cmp_step_u].
-case (of_list t = []) => [/= | of_list_t_nonnil].
-smt(size_term_ge0).
-case (of_list u = []) => [/= | of_list_u_nonnil _].
-smt(size_term_ge0).
-have of_list_t_eq := head_behead (of_list t) 0 _ => //.
-have of_list_u_eq := head_behead (of_list u) 0 _ => //.
-have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
-have is_list_u : is_list u by rewrite -step_done_iff eq_done_iff.
-rewrite {2}is_list // {2}(is_list u) //=.
-rewrite -{2}of_list_t_eq -{2}of_list_u_eq /= /#.
+move => prop_t is_wkd_step_t.
+rewrite size_term_eq_card_elems 1:proper_step //.
+by rewrite size_term_eq_card_elems // is_worked_step_elems_eq.
 qed.
 
 lemma repr_start (cmp : int -> int -> bool) :
@@ -960,7 +962,7 @@ op answer (t : term, b : bool) : term option =
     then Some (Cons i (Merge (List us)        (List (j :: vs))))
     else Some (Cons j (Merge (List (i :: us)) (List vs))).
 
-lemma proper_answer_aux (t : term, b : bool) :
+lemma proper_answer_gen (t : term, b : bool) :
   proper t => answer t b <> None =>
   proper (oget (answer t b)) /\ elems (oget (answer t b)) = elems t /\
   elems t <> fset0 /\ (is_list (oget (answer t b)) = is_list t).
@@ -1019,12 +1021,27 @@ qed.
 lemma proper_answer (t : term, b : bool) :
   proper t => answer t b <> None => proper (oget (answer t b)).
 proof.
-smt(proper_answer_aux).
+smt(proper_answer_gen).
 qed.
 
-lemma proper_answer_good_elems_ne (t : term, b : bool) :
+lemma proper_answer_elems_eq (t : term, b : bool) :
+  proper t => answer t b <> None =>
+  elems (oget (answer t b)) = elems t.
+proof. smt(proper_answer_gen). qed.
+
+lemma proper_answer_size_term_eq (t : term, b : bool) :
+  proper t => answer t b <> None =>
+  size_term (oget (answer t b)) = size_term t.
+proof.
+move => prop_t good_ans_t_b.
+rewrite size_term_eq_card_elems 1:proper_answer //.
+rewrite size_term_eq_card_elems //.
+by rewrite proper_answer_elems_eq.
+qed.
+
+lemma proper_answer_elems_ne (t : term, b : bool) :
   proper t => answer t b <> None => elems (oget (answer t b)) <> fset0.
-proof. smt(proper_answer_aux). qed.
+proof. smt(proper_answer_gen). qed.
 
 lemma is_compare_step_impl_good_answer(t : term, b : bool) :
   proper t => is_compare (step t) <=> answer t b <> None.
@@ -1114,7 +1131,22 @@ op wc_term (t : term) : int =
   with t = Cons _ t       => wc_term t
   with t = Merge t u      =>
     wc_term t + wc_term u + size_term t + size_term u - 1
-  with t = Cond i j us vs => size us + size vs - 1.
+  with t = Cond i j us vs => size us + size vs + 1.
+
+lemma wc_term_ge0 (t : term) :
+  proper t => 0 <= wc_term t.
+proof.
+elim t => //.
+move => xs /= _.
+rewrite wc_ge0.
+move => i t IHt /= [#] _ prop_t _ /#.
+move => t u IHt IHu /= [#] prop_t prop_u _ _.
+rewrite union_eq_fset0_iff negb_and =>
+  [[elems_t_ne_fset0 | elems_u_ne_fset0]];
+smt(size_term_ge1_when_proper_elems_ne size_term_ge0).
+move => i j us vs /=.
+smt(size_ge0).
+qed.
 
 lemma wc_term_start :
   wc_term (Sort range_len) = wc len.
@@ -1126,45 +1158,77 @@ lemma wc_term_list (xs : int list) :
   wc_term (List xs) = 0.
 proof. trivial. qed.
 
+(* when we take a step, wc_term never gets bigger (but sometimes gets
+   smaller): *)
+
 lemma wc_term_step (t : term) :
-  is_worked (step t) => wc_term (of_worked (step t)) <= wc_term t.
+  proper t => is_worked (step t) =>
+  wc_term (of_worked (step t)) <= wc_term t.
 proof.
 elim t => //.
-move => xs /=.
+move => xs /= prop_t.
 case (size xs <= 1) => [le1_size_xs _ | gt1_size_xs _].
-by rewrite wc_le1.
+by rewrite wc_when_le1.
 rewrite lerNgt /= in gt1_size_xs.
 have -> : size (take (size xs %/ 2) xs) = size xs %/ 2.
   rewrite size_take /#.
 have -> : size (drop (size xs %/ 2) xs) = size xs %%/ 2.
   rewrite size_drop /#.
-rewrite (wc_ge2 (size xs)) 1:/#.
+rewrite (wc_when_ge2 (size xs)) 1:/#.
 smt(div2_plus_div2up_eq).
-move => i t IH /=.
+move => i t IH /= [#] _ prop_t _.
 case (is_worked (step t)) => [/# | not_is_wkd_step_t].
 case (is_compare (step t)) => [/# | not_is_cmp_step_t _].
 have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
 by rewrite is_list.
-move => t u IHt IHu /=.
+move =>
+  t u IHt IHu /= [#] prop_t prop_u _ _ elems_t_union_elems_u_ne_fset0.
 case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
 smt(size_term_step).
 case (is_compare (step t)) => [/# | not_is_cmp_step_t].
 case (is_worked (step u)) => [is_wkd_step_t _ | not_is_wkd_step_u].
 smt(size_term_step).
 case (is_compare (step u)) => [/# | not_is_cmp_step_u].
-case (of_list t = []) => [of_list_t_eqnil _ |].
 have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
 have is_list_u : is_list u by rewrite -step_done_iff eq_done_iff.
-rewrite (is_list u) // (is_list t) //= of_list_t_eqnil /=.
+case (of_list t = []) => [of_list_t_eqnil _ | of_list_t_nenil].
+move : elems_t_union_elems_u_ne_fset0.
+rewrite -is_list_elems // -is_list_elems //.
+rewrite of_list_t_eqnil -set0E fset0U => oflist_of_list_u_ne_fset0.
+rewrite (is_list t) // of_list_t_eqnil /=.
+smt(is_list_elems size_term_ge1_when_proper_elems_ne).
+case (of_list u = []) => [of_list_u_eqnil _ | of_list_u_nenil _].
+move : elems_t_union_elems_u_ne_fset0.
+rewrite -is_list_elems // -is_list_elems //.
+rewrite of_list_u_eqnil -set0E fsetU0 => oflist_of_list_u_ne_fset0.
+rewrite (is_list u) // of_list_u_eqnil /=.
+smt(is_list_elems size_term_ge1_when_proper_elems_ne).
+rewrite (is_list t) // (is_list u) //=.
+have <- := head_behead (of_list t) 0 _ => //.
+have <- := head_behead (of_list u) 0 _ => //#.
+qed.
 
+(* when we answer a comparision query, wc_term always gets strictly
+   smaller *)
 
-
-
-
-
-
-
-
+lemma wc_term_answer (t : term, b : bool) :
+  proper t => answer t b <> None =>
+  wc_term (oget (answer t b)) < wc_term t.
+proof.
+elim t => //.
+move => i t IHt /= [#] _ prop_t _.
+case (answer t b = None) => [// | ans_t_b_not_none _].
+by rewrite oget_some /= IHt.
+move => t u IHt IHu /= [#] prop_t prop_u _ _ H.
+case (is_list t) => [is_list_t | not_is_list_t].
+case (answer u b = None) => [// | ans_u_b_not_none _].
+rewrite oget_some /= -!addrA ltz_add2l ltr_le_add 1:IHu //.
+by rewrite ler_add2l proper_answer_size_term_eq.
+case (answer t b = None) => [// | ans_t_b_not_none _].
+rewrite oget_some /= -!addrA ltr_le_add 1:IHt //.
+by rewrite ler_add2l proper_answer_size_term_eq.
+move => i j us vs /= H.
+case b => [b_true | b_false] _; rewrite oget_some /= /#.
 qed.
 
 (* here is our algorithm: *)
@@ -1303,7 +1367,6 @@ conseq
    all (mem univ) inps /\ good aux inps ==>
    res.`1 = f aux' inps' /\ res.`2 <= len * int_log 2 len) => //.
 by conseq (G_main aux' inps').
-print G_ll.
 rewrite (G_ll Alg alg_term_invar) 1:Alg_init_term
         1:Alg_make_query_or_report_output_term Alg_query_result_term.
 qed.
