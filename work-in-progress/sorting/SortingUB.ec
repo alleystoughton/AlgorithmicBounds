@@ -486,7 +486,7 @@ op proper (t : term) : bool =
   with t = Cons i u       =>
     mem range_len i /\ proper u /\ ! mem (elems u) i
   with t = Merge u v      =>
-    proper u /\ proper v /\ (is_list v => is_list u) /\
+    proper u /\ proper v /\ (! is_sort v => is_list u) /\
     elems u `&` elems v = fset0 /\ elems u `|` elems v <> fset0
   with t = Cond i j us vs =>
     proper_list0 (i :: us) /\ proper_list0 (j :: vs) /\
@@ -642,8 +642,7 @@ by rewrite -is_list_proper_iff.
 by rewrite is_list_mem_iff.
 move => t u IHt IHu.
 rewrite /= =>
-  [#] prop_t prop_u is_list_imp_u_t disj_t_u
-  elems_t_union_elems_u_ne_fset0.
+  [#] prop_t prop_u kind_imp disj_t_u elems_t_union_elems_u_ne_fset0.
 case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
 have [elems_eq [elems_t_ne_fset0 prop_of_wrkd_step_t]] := IHt _ _ => //.
 rewrite elems_eq /= prop_of_wrkd_step_t prop_u /=.
@@ -974,7 +973,7 @@ rewrite oget_some /= i_in_range /=.
 split; first smt().
 split; first smt().
 by rewrite fset1_union_any_ne_fset0.
-move => t u IHt IHu /= [#] prop_t prop_u is_list_imp_u_t disj_t_u.
+move => t u IHt IHu /= [#] prop_t prop_u kind_imp disj_t_u.
 case (is_list t) => [is_list_t | not_is_list_t].
 case (answer u b = None) => [// | /#].
 case (answer t b = None) => [// | /#].
