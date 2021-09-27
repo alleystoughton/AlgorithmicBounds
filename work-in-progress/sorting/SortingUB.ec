@@ -1230,6 +1230,80 @@ move => i j us vs /= H.
 case b => [b_true | b_false] _; rewrite oget_some /= /#.
 qed.
 
+op poten_cmps (t : term) : (int * int) fset =
+  with t = Sort xs        => product (oflist xs) (oflist xs)
+  with t = List _         => fset0
+  with t = Cons _ t       => poten_cmps t
+  with t = Merge t u      =>
+    poten_cmps t `|` poten_cmps u `|` product (elems t) (elems u)
+  with t = Cond i j us vs =>
+    product (oflist (i :: us)) (oflist (j :: vs)).
+
+lemma poten_cmps_step (t : term) :
+  proper t => is_worked (step t) =>
+  poten_cmps (of_worked (step t)) \subset poten_cmps t.
+proof.
+elim t => //.
+move => xs prop_t /=.
+case (size xs <= 1) => [le1_size_xs _ | gt1_size_xs _].
+rewrite sub0set.
+rewrite lerNgt /= in gt1_size_xs.
+have xs_eq := cat_take_drop (size xs %/ 2) xs.
+rewrite subsetP => [[a b]].
+rewrite !in_fsetU !productP =>
+  [[[[a_in_take_xs b_in_take_xs] | [a_in_drop_xs b_in_drop_xs]] |
+   [a_in_take_xs b_in_drop_xs]]].
+rewrite -xs_eq oflist_cat !in_fsetU /#.
+rewrite -xs_eq oflist_cat !in_fsetU /#.
+rewrite -xs_eq oflist_cat !in_fsetU /#.
+move => i t IHt /= [#] _ prop_t _.
+case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
+by rewrite IHt.
+case (is_compare (step t)) => [/# | not_is_cmp_step_t _].
+rewrite sub0set.
+move => t u IHt IHu /= [#] prop_t prop_u A B C.
+case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
+rewrite subsetP => [[a b]].
+rewrite !in_fsetU !productP =>
+  [[[/# | /#] | [a_in_elems_of_wkd_step_t -> /=]]].
+right; by rewrite -is_worked_step_elems_eq.
+case (is_compare (step t)) => [/# | not_is_cmp_step_t].
+case (is_worked (step u)) => [is_wkd_step_u | not_is_wkd_step_u].
+rewrite subsetP => [[a b]].
+rewrite !in_fsetU !productP =>
+  [[[/# | /#] | [-> b_in_elems_of_wkd_step_u /=]]].
+right; by rewrite -is_worked_step_elems_eq.
+case (is_compare (step u)) => [/# | not_is_cmp_step_u].
+case (of_list t = []) => [of_list_t_eq_nil _ | of_list_t_ne_nil].
+rewrite subsetP => p.
+by rewrite !in_fsetU => ->.
+case (of_list u = []) => [of_list_u_eq_nil _ | of_list_u_ne_nil _].
+rewrite subsetP => p.
+by rewrite !in_fsetU => ->.
+have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
+have is_list_u : is_list u by rewrite -step_done_iff eq_done_iff.
+have of_list_t_eq := head_behead (of_list t) 0 _ => //.
+have of_list_u_eq := head_behead (of_list u) 0 _ => //.
+rewrite subsetP => [[a b]].
+rewrite !in_fsetU !productP !oflist_cons !in_fsetU !in_fset1 =>
+  [[[-> [-> | ] |]]].
+right.
+rewrite {1}is_list //= mem_oflist -{1}of_list_t_eq /=.
+by rewrite {1}(is_list u) //= mem_oflist -{1}of_list_u_eq.
+rewrite mem_oflist => /mem_behead b_in_of_list_u.
+right.
+rewrite {1}is_list //= mem_oflist -{1}of_list_t_eq /=.
+rewrite {1}(is_list u) //= mem_oflist //.
+rewrite mem_oflist => /mem_behead a_in_of_list_t [-> |].
+right.
+rewrite {1}is_list //= mem_oflist a_in_of_list_t /=.
+by rewrite {1}(is_list u) //= mem_oflist // -{1}of_list_u_eq.
+rewrite mem_oflist => /mem_behead b_in_of_list_t.
+right.
+rewrite {1}is_list //= mem_oflist a_in_of_list_t.
+by rewrite {1}is_list //= mem_oflist.
+qed.
+
 (* here is our algorithm: *)
 
 module Alg : ALG = {
