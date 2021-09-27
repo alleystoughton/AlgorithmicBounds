@@ -1239,6 +1239,53 @@ op poten_cmps (t : term) : (int * int) fset =
   with t = Cond i j us vs =>
     product (oflist (i :: us)) (oflist (j :: vs)).
 
+lemma poten_cmps_subset (t : term) :
+  poten_cmps t \subset product (elems t) (elems t).
+proof.
+elim t => //.
+move => xs /=; by rewrite sub0set.
+move => i xs IH /=.
+rewrite (subset_trans _ (product (elems xs) (elems xs))) 1:IH => [[a b]].
+rewrite !productP !in_fsetU !in_fset1 /#.
+move => t u IHt IHu /=.
+rewrite subsetP => [[a b]].
+smt(productP in_fsetU).
+move => i j us vs /=.
+rewrite oflist_cons subsetP => [[a b]].
+rewrite !productP oflist_cons !in_fsetU !in_fset1 !mem_oflist /#.
+qed.
+
+lemma mem_poten_cmps_disjoint (t u : term, p q : int * int) :
+  p \in poten_cmps t => q \in poten_cmps u =>
+  elems t `&` elems u = fset0 => p <> q.
+proof.
+move => p_in_pcs_t q_in_pcs_u disj_t_u.
+case (p = q) => [eq_p_q | //].
+have p1_in_elems_t : p.`1 \in elems t by smt(poten_cmps_subset productP).
+have p1_in_elems_u : p.`1 \in elems u by smt(poten_cmps_subset productP).
+by rewrite /= -(in_fset0 (p.`1)) -disj_t_u in_fsetI.
+qed.
+
+lemma mem_poten_cmps_disjoint_not_elems1 (t u : term, c d : int) :
+  (c, d) \in poten_cmps t => elems t `&` elems u = fset0 =>
+  ! c \in elems u.
+proof.
+move => c_d_in_pcs_t disj_t_u.
+case (c \in elems u) => [c_in_elems_u | //].
+have c_in_elems_t : c \in elems t by smt(poten_cmps_subset productP).
+by rewrite /= -(in_fset0 c) -disj_t_u in_fsetI.
+qed.
+
+lemma mem_poten_cmps_disjoint_not_elems2 (t u : term, c d : int) :
+  (c, d) \in poten_cmps t => elems t `&` elems u = fset0 =>
+  ! d \in elems u.
+proof.
+move => c_d_in_pcs_t disj_t_u.
+case (d \in elems u) => [d_in_elems_u | //].
+have d_in_elems_t : d \in elems t by smt(poten_cmps_subset productP).
+by rewrite /= -(in_fset0 d) -disj_t_u in_fsetI.
+qed.
+
 lemma poten_cmps_step (t : term) :
   proper t => is_worked (step t) =>
   poten_cmps (of_worked (step t)) \subset poten_cmps t.
@@ -1261,7 +1308,7 @@ case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
 by rewrite IHt.
 case (is_compare (step t)) => [/# | not_is_cmp_step_t _].
 rewrite sub0set.
-move => t u IHt IHu /= [#] prop_t prop_u A B C.
+move => t u IHt IHu /= [#] prop_t prop_u _ _ _.
 case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
 rewrite subsetP => [[a b]].
 rewrite !in_fsetU !productP =>
@@ -1302,6 +1349,126 @@ rewrite mem_oflist => /mem_behead b_in_of_list_t.
 right.
 rewrite {1}is_list //= mem_oflist a_in_of_list_t.
 by rewrite {1}is_list //= mem_oflist.
+qed.
+
+op poten_cmps_invar (t : term, qs : (int * int) fset) : bool =
+  poten_cmps t `&` qs = fset0.
+
+lemma poten_cmps_invar_start :
+  poten_cmps_invar (Sort range_len) fset0.
+proof.
+by rewrite /poten_cmps_invar fsetI0.
+qed.
+
+lemma poten_cmps_disjoint_step (t : term, qs : (int * int) fset) :
+  proper t => is_worked (step t) =>
+  poten_cmps_invar t qs =>
+  poten_cmps_invar (of_worked (step t)) qs.
+proof.
+rewrite /poten_cmps_invar.
+smt(disjointP poten_cmps_step).
+qed.
+
+lemma poten_cmps_answer (t : term, b : bool) :
+  proper t => is_compare (step t) =>
+  of_compare (step t) \in poten_cmps t /\
+  poten_cmps (oget (answer t b)) \subset
+  poten_cmps t `\` fset1 (of_compare (step t)).
+proof.
+elim t => //.
+move => xs /=; by case (size xs <= 1).
+move => i t IHt /= [#] _ prop_t _.
+case (is_worked (step t)) => [// | not_is_wkd_step_t].
+case (is_compare (step t)) => [is_cmp_step_t _ | //].
+split; first smt().
+have -> : answer t b <> None.
+rewrite -is_compare_step_impl_good_answer //=.
+case b => [b_true | b_false] /=; rewrite subsetP => p /#.
+move => t u IHt IHu /= [#] prop_t prop_u A disj_elems_t_u _.
+case (is_worked (step t)) => [// | not_is_wkd_step_t].
+case (is_compare (step t)) => [is_cmp_step_t _ | not_is_cmp_step_t].
+have -> /= : ! is_list t by rewrite -step_done_iff eq_done_iff /#.
+have -> /= : answer t b <> None.
+  by rewrite -is_compare_step_impl_good_answer.
+have [#] of_cmp_step_t_in_pcs_t
+     pts_ans_t_b_subset_pts_t_min_of_cmp_step_t
+     := IHt _ _ => //.
+split; first smt(in_fsetU).
+rewrite subsetP => [[c d]].
+rewrite !in_fsetU in_fsetD1 !productP =>
+  [[[c_d_in_pcs_ans_t_b | c_d_in_pcs_u] | [c_in_elems_ans_t_b d_in_elems_u]]].
+split; first smt(in_fsetU in_fsetD1).
+smt(in_fsetD1).
+split; first smt(in_fsetU).
+case ((c, d) = of_compare (step t)) => [c_d_eq_of_cmp_step_t | //].
+have c_d_in_pcs_t : (c, d) \in poten_cmps t by rewrite c_d_eq_of_cmp_step_t.
+smt(mem_poten_cmps_disjoint).
+split.
+rewrite in_fsetU productP.
+right.
+by rewrite -(proper_answer_elems_eq t b) // -is_compare_step_impl_good_answer.
+case ((c, d) = of_compare (step t)) => [c_d_eq_of_cmp_step_t | //].
+have c_d_in_pcs_t : (c, d) \in poten_cmps t by rewrite c_d_eq_of_cmp_step_t.
+smt(mem_poten_cmps_disjoint_not_elems2).
+case (is_worked (step u)) => [// | not_is_wkd_step_u].
+case (is_compare (step u)) => [is_cmp_step_u _ | not_is_cmp_step_u].
+have -> /= : is_list t by rewrite -step_done_iff eq_done_iff.
+have -> /= : answer u b <> None.
+  by rewrite -is_compare_step_impl_good_answer.
+have [#] of_cmp_step_u_in_pcs_u
+     pts_ans_u_b_subset_pts_u_min_of_cmp_step_u
+     := IHu _ _ => //.
+split; first smt(in_fsetU).
+rewrite subsetP => [[c d]].
+rewrite !in_fsetU in_fsetD1 !productP =>
+  [[[c_d_in_pcs_t | c_d_in_pcs_ans_u_b] | [c_in_elems_t d_in_elems_ans_u_b]]].
+split; first smt(in_fsetU).
+case ((c, d) = of_compare (step u)) => [c_d_eq_of_cmp_step_u | //].
+have c_d_in_pcs_u : (c, d) \in poten_cmps u by rewrite c_d_eq_of_cmp_step_u.
+smt(mem_poten_cmps_disjoint).
+split; first smt(in_fsetU in_fsetD1).
+case ((c, d) = of_compare (step u)) => [c_d_eq_of_cmp_step_u | //].
+smt(in_fsetU in_fsetD1).
+split.
+rewrite in_fsetU productP.
+right.
+by rewrite -(proper_answer_elems_eq u b) // -is_compare_step_impl_good_answer.
+case ((c, d) = of_compare (step u)) => [c_d_eq_of_cmp_step_u | //].
+have c_d_in_pcs_u : (c, d) \in poten_cmps u by rewrite c_d_eq_of_cmp_step_u.
+have disj_u_t : elems u `&` elems t = fset0 by rewrite fsetIC.
+smt(mem_poten_cmps_disjoint_not_elems1).
+case (of_list t = []) => [// | not_of_list_t_eq_nil].
+by case (of_list u = []).
+move => i j us vs /= H.
+rewrite !oflist_cons.
+rewrite productP !in_fsetU !in_fset1 !mem_oflist.
+split => [// |].
+case b => [b_true | b_false] /=.
+rewrite oflist_cons !fset0U subsetP => [[c d]].
+rewrite in_fsetD1 !productP !in_fsetU !in_fset1 !mem_oflist /#.
+rewrite oflist_cons !fset0U subsetP => [[c d]].
+rewrite in_fsetD1 !productP !in_fsetU !in_fset1 !mem_oflist /#.
+qed.
+
+lemma poten_cmps_disjoint_answer
+      (t : term, qs : (int * int) fset, b : bool) :
+  proper t => is_compare (step t) =>
+  poten_cmps_invar t qs =>
+  poten_cmps_invar
+  (oget (answer t b))
+  (qs `|` fset1 (of_compare (step t))).
+proof.
+rewrite /poten_cmps_invar.
+move => prop_t is_cmp_step_t disj_pcs_t_qs.
+rewrite disjointP => p p_in_pcs_ans_t_b.
+rewrite in_fsetU negb_or in_fset1.
+have [of_cmp_step_t_in_pcs_t
+      pcs_ans_t_b_sub_pcs_t_min_of_cmp_step_t]
+     := poten_cmps_answer t b _ _ => //.
+have : p \in poten_cmps t `\` (fset1 (of_compare (step t))).
+  by rewrite pcs_ans_t_b_sub_pcs_t_min_of_cmp_step_t.
+rewrite in_fsetD1 => [[p_in_pcs_t p_ne_of_cmp_step_t]].
+smt(disjointP).
 qed.
 
 (* here is our algorithm: *)
