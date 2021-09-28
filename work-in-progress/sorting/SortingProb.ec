@@ -276,6 +276,11 @@ proof.
 by rewrite /range_len mem_range.
 qed.
 
+lemma uniq_range_len : uniq range_len.
+proof.
+rewrite /range_len range_uniq.
+qed.
+
 (* all permutations of 0 .. len - 1 *)
 
 op perms_len : int list list = allperms range_len.
