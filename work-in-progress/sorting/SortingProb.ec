@@ -75,6 +75,16 @@ have -> : (len - 1) * len + j = len * len + j - len by algebra.
 by rewrite -addrA ltr_snaddr // 1:subr_lt0.
 qed.
 
+lemma enc_bounds_ge0 (p : int * int) :
+  0 <= p.`1 < len => 0 <= p.`2 < len =>
+  0 <= enc p.
+proof. smt(enc_bounds). qed.
+
+lemma enc_bounds_lt_arity (p : int * int) :
+  0 <= p.`1 < len => 0 <= p.`2 < len =>
+  enc p < arity.
+proof. smt(enc_bounds). qed.
+
 lemma encK (p : int * int) :
   0 <= p.`1 < len => 0 <= p.`2 < len => dec (enc p) = p.
 proof.
@@ -201,6 +211,18 @@ lemma cmp_of_rel_in_range (xs : inp list) (i j : int) :
   cmp_of_rel xs i j <=> rel xs i j.
 proof.
 rewrite /cmp_of_rel /#.
+qed.
+
+lemma cmp_of_rel_pair_eq (xs : inp list) (p : int * int) :
+  total_ordering xs =>
+  0 <= p.`1 < len => 0 <= p.`2 < len =>
+  cmp_of_rel xs p.`1 p.`2 = nth witness xs (enc p).
+proof.
+move => to_xs p1_rng p2_rng.
+rewrite cmp_of_rel_in_range // /rel.
+rewrite (nth_change_dfl false witness).
+rewrite total_ordering_size // enc_bounds //.
+smt().
 qed.
 
 op nosmt cmp_tot_ord (xs: inp list) : bool =
