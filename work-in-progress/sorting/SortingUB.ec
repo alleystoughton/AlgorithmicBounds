@@ -1,5 +1,5 @@
 (* Application of Upper Bounds Framework to Comparison-based
-   Sorting *)
+   Sorting and the Merge Sort Algorithm *)
 
 (* --------------------------------------------------------------------
  * Copyright (c) - 2021 - Boston University
@@ -17,15 +17,17 @@ timeout 2.  (* can increase *)
    it can ask queries of the form (i, j), for 0 <= i, j < len,
    asking whether the ith element of the list is less-than-or-equal-to
    the jth element (the answer is true or false); it can't ask
-   questions about the values of the list elements themselves *)
+   questions about the values of the list elements themselves
+
+   we prove a len * int_log 2 len upper bound on the worst case number
+   of comparisons needed to find the correct permuation of the list 0
+   .. len - 1 *)
 
 require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial WF.
 import IntOrder.
 
-require UpperBounds.       (* adversarial lower bounds framework *)
-require import ListSizes.  (* showing uniq lists have the same size *)
-require import AllLists.   (* generating all lists of length over universe *)
-require import IntLog.     (* integer logarithms *)
+require UpperBounds.    (* upper bounds framework *)
+require import IntLog.  (* integer logarithms *)
 
 require import SortingProb.  (* comparison-based sorting problem *)
 
@@ -186,6 +188,8 @@ rewrite wc_eq // ler_subl_addr ler_addl.
 smt(int_log_ub_lt).
 qed.
 
+(* we define the merge operator and prove properies of it *)
+
 op merge (e : 'a -> 'a -> bool, xs ys : 'a list) : 'a list =
   with xs = [],      ys = []      => []
   with xs = [],      ys = _ :: _  => ys
@@ -291,9 +295,21 @@ have -> :
 rewrite -perm_sortP // perm_eq_merge_perms 2!perm_sort.
 qed.
 
-lemma cat_eq_nil_iff (xs ys : 'a list) :
-  xs ++ ys = [] <=> xs = [] /\ ys = [].
-proof. by case xs. qed.
+(* the state of the merge sort algorithm is a term in a simple
+   functional programming language
+
+   below we will specify, as a function of a comparison
+   operation, the list of integers that is represented
+   by a term (i.e., the meaning of the term)
+
+   we will also give a single-step operational semantics
+   for terms, which periodically blocks, waiting for
+   the result of a comparision
+
+   in the operational semantics, we'll start with
+   Sort range_len, and end with List xs where xs
+   is the permutation of range_len consistent with
+   the comparison operation *)
 
 type term = [
   | Sort  of int list
@@ -312,8 +328,8 @@ op is_sort (t : term) : bool =
 
 op of_sort (t : term) : int list =
   with t = Sort xs      => xs
-  with t = List _       => []
-  with t = Cons _ _     => []
+  with t = List _       => []  (* in the other cases, we don't *)
+  with t = Cons _ _     => []  (* care what is returned *)
   with t = Merge _ _    => []
   with t = Cond _ _ _ _ => [].
 
@@ -394,17 +410,38 @@ lemma is_cond (t : term) :
   Cond (of_cond t).`1 (of_cond t).`2 (of_cond t).`3 (of_cond t).`4.
 proof. by case t. qed.
 
-op proper_list0 (xs : int list) : bool =
+(* the list represented by a term, relative to a comparison
+   relation *)
+
+op repr (cmp : int -> int -> bool, t : term) : int list =
+  with t = Sort xs        => sort cmp xs
+  with t = List xs        => xs
+  with t = Cons i u       => i :: repr cmp u
+  with t = Merge u v      => merge cmp (repr cmp u) (repr cmp v)
+  with t = Cond i j us vs =>
+    if cmp i j
+    then i :: merge cmp us        (j :: vs)
+    else j :: merge cmp (i :: us) vs.
+
+(* we are going to define which terms are "proper", i.e., well-formed;
+   to do this, we need some auxiliary definitions, about which we
+   prove some lemmas *)
+
+op proper_list0 (xs : int list) : bool =  (* may be empty *)
   uniq xs /\ all (mem range_len) xs.
 
 op proper_list (xs : int list) : bool =
   xs <> [] /\ uniq xs /\ all (mem range_len) xs.
 
-lemma proper_list_from0 (xs : int list) :
+lemma proper_list0_from_proper_list (xs : int list) :
   proper_list xs => proper_list0 xs.
 proof.
 by rewrite /proper_list /proper_list0.
 qed.
+
+lemma cat_eq_nil_iff (xs ys : 'a list) :
+  xs ++ ys = [] <=> xs = [] /\ ys = [].
+proof. by case xs. qed.
 
 lemma proper_list_cat_iff (xs ys : int list) :
   proper_list (xs ++ ys) <=>
@@ -477,16 +514,21 @@ split; first by rewrite -size_eq0 size_range_len gtr_eqF 1:ltzE /= 1:ge1_len.
 by rewrite uniq_range_len /= allP.
 qed.
 
+(* elems t is the set of integers appearing in t *)
+
 op elems (t : term) : int fset =
   with t = Sort xs        => oflist xs
   with t = List xs        => oflist xs
   with t = Cons i u       => fset1 i `|` elems u
   with t = Merge u v      => elems u `|` elems v
-  with t = Cond i j us vs => fset1 i  `|` fset1 j  `|` oflist us `|` oflist vs.
+  with t = Cond i j us vs => fset1 i `|` fset1 j  `|` oflist us `|` oflist vs.
 
 lemma is_list_elems (t : term) :
   is_list t => oflist (of_list t) = elems t.
 proof. by case t. qed.
+
+(* we will often only be interested in terms that are proper in the
+   following sense: *)
 
 op proper (t : term) : bool =
   with t = Sort xs        => proper_list xs
@@ -520,10 +562,15 @@ split; first rewrite range_uniq.
 by rewrite allP.
 qed.
 
+(* our operational semantics has two parts, the first part
+   being a step operator *)
+
 type step = [  (* result of call to step on term t *)
-  | Done                  (* t is fully evaluated - List ... *)
-  | Compare of int & int  (* t's evaluation needs answer to query *)
-  | Worked  of term       (* the step succeeded *)
+  | Done                  (* t is fully evaluated: List ... *)
+  | Compare of int & int  (* t's evaluation needs answer to comparison
+                             request i, j: is element at index i less
+                             than element at index j *)
+  | Worked  of term       (* the step succeeded, producing term *)
 ].
 
 op is_compare (s : step) : bool =
@@ -605,6 +652,8 @@ proof.
 elim t => // /#.
 qed.
 
+(* a "general" lemma, with specializations to follow *)
+
 lemma is_worked_proper_step_gen (t : term) :
   proper t => is_worked (step t) =>
   elems (of_worked (step t)) = elems t /\ elems t <> fset0 /\
@@ -640,7 +689,7 @@ rewrite elems_eq /= prop_of_wrkd_step_t.
 split => [| //].
 by rewrite fset1_union_any_ne_fset0.
 case (is_compare (step t)) =>
-  [is_cmp_step_t is_wrkd_step_t | not_is_cmp_step_t _].
+  [is_cmp_step_t is_wkd_step_t | not_is_cmp_step_t _].
 smt(eq_done_iff).
 have is_list_t : is_list t by rewrite -step_done_iff eq_done_iff.
 split; first by rewrite oflist_cons is_list_elems.
@@ -707,12 +756,12 @@ lemma is_worked_proper_step (t : term) :
   proper t => is_worked (step t) => proper (of_worked (step t)).
 proof. smt(is_worked_proper_step_gen). qed.
 
-lemma is_worked_step_elems_eq (t : term) :
+lemma is_worked_proper_step_elems_eq (t : term) :
   proper t => is_worked (step t) =>
   elems (of_worked (step t)) = elems t.
 proof. smt(is_worked_proper_step_gen). qed.
 
-lemma is_worked_step_elems_ne (t : term) :
+lemma is_worked_proper_step_elems_ne_fset0 (t : term) :
   proper t => is_worked (step t) => elems (of_worked (step t)) <> fset0.
 proof. smt(is_worked_proper_step_gen). qed.
 
@@ -747,19 +796,6 @@ lemma is_compare_proper_step_range2 (t : term) :
   proper t => is_compare (step t) =>
   0 <= (of_compare (step t)).`2 < len.
 proof. smt(is_compare_proper_step_range). qed.
-
-(* the list represented by a term, relative to a comparison
-   relation *)
-
-op repr (cmp : int -> int -> bool, t : term) : int list =
-  with t = Sort xs        => sort cmp xs
-  with t = List xs        => xs
-  with t = Cons i u       => i :: repr cmp u
-  with t = Merge u v      => merge cmp (repr cmp u) (repr cmp v)
-  with t = Cond i j us vs =>
-    if cmp i j
-    then i :: merge cmp us        (j :: vs)
-    else j :: merge cmp (i :: us) vs.
 
 (* the size of repr of a term, uniform for all comparision
    relations *)
@@ -810,7 +846,7 @@ rewrite 2!fcard1.
 by rewrite uniq_card_oflist // uniq_card_oflist.
 qed.
 
-lemma size_term_ge1_when_proper_elems_ne (t : term) :
+lemma size_term_ge1_when_proper_elems_ne_fset0 (t : term) :
   proper t => elems t <> fset0 =>
   1 <= size_term t.
 proof.
@@ -841,7 +877,7 @@ lemma size_term_step (t : term) :
 proof.
 move => prop_t is_wkd_step_t.
 rewrite size_term_eq_card_elems 1:is_worked_proper_step //.
-by rewrite size_term_eq_card_elems // is_worked_step_elems_eq.
+by rewrite size_term_eq_card_elems // is_worked_proper_step_elems_eq.
 qed.
 
 lemma repr_start (cmp : int -> int -> bool) :
@@ -918,7 +954,7 @@ move => to_inps prop_t is_wkd_step_t.
 rewrite is_worked_repr_step //.
 move => x.
 by rewrite cmp_tot_ord_refl cmp_tot_ord_of_tot_ord.
-move => y x z cor_xs cor_yz.
+move => y x z cor_x_y cor_y_z.
 by rewrite (cmp_tot_ord_trans inps y x z) 1:cmp_tot_ord_of_tot_ord.
 move => x y cor_x_y cor_y_x.
 by rewrite (cmp_tot_ord_antisym inps x y) 1:cmp_tot_ord_of_tot_ord.
@@ -1002,6 +1038,13 @@ rewrite eq0_metric_t.
 smt(metric_ge0).
 qed.
 
+(* the second part of our operational semantics: how we supply the
+   boolean answer to a comparison request
+
+   returns Some of term when this succeeds, and None otherwise;
+   see below for necessary and sufficient condition for None
+   not resulting *)
+
 op answer (t : term, b : bool) : term option =
   with t = Sort xs        => None
   with t = List xs        => None
@@ -1025,10 +1068,12 @@ op answer (t : term, b : bool) : term option =
     then Some (Cons i (Merge (List us)        (List (j :: vs))))
     else Some (Cons j (Merge (List (i :: us)) (List vs))).
 
+(* "general" result - see below for specializations *)
+
 lemma proper_answer_gen (t : term, b : bool) :
   proper t => answer t b <> None =>
   proper (oget (answer t b)) /\ elems (oget (answer t b)) = elems t /\
-  elems t <> fset0 /\ (is_list (oget (answer t b)) = is_list t).
+  elems t <> fset0 /\ (is_list (oget (answer t b)) <=> is_list t).
 proof.
 elim t => //.
 move => i u IH /= [#] i_in_range prop_u i_not_in_elems_u.
@@ -1102,11 +1147,11 @@ rewrite size_term_eq_card_elems //.
 by rewrite proper_answer_elems_eq.
 qed.
 
-lemma proper_answer_elems_ne (t : term, b : bool) :
+lemma proper_answer_elems_ne_fset0 (t : term, b : bool) :
   proper t => answer t b <> None => elems (oget (answer t b)) <> fset0.
 proof. smt(proper_answer_gen). qed.
 
-lemma is_compare_step_impl_good_answer(t : term, b : bool) :
+lemma is_compare_step_iff_good_answer (t : term, b : bool) :
   proper t => is_compare (step t) <=> answer t b <> None.
 proof.
 elim t => //.
@@ -1157,14 +1202,14 @@ case (is_worked (step t)) => [// | not_is_wkd_step_t].
 case (is_compare (step t)) => [is_cmp_step_t _ | //].
 have -> /= :
   answer t (cmp (of_compare (step t)).`1 (of_compare (step t)).`2) <> None.
-  smt(is_compare_step_impl_good_answer).
+  smt(is_compare_step_iff_good_answer).
 by rewrite IH.
 move => t u IHt IHu /= [#] prop_t prop_u _ _.
 case (is_worked (step t)) => [// | not_is_wkd_step_t].
 case (is_compare (step t)) => [is_cmp_step_t _ | not_is_cmp_step_t].
 have -> /= :
   answer t (cmp (of_compare (step t)).`1 (of_compare (step t)).`2) <> None.
-  smt(is_compare_step_impl_good_answer).
+  smt(is_compare_step_iff_good_answer).
 have -> /= : ! is_list t.
   rewrite -step_done_iff eq_done_iff negb_and /=.
   by left.
@@ -1173,10 +1218,10 @@ case (is_worked (step u)) => [// | not_is_wkd_step_u].
 case (is_compare (step u)) => [is_cmp_step_u _ | not_is_cmp_step_u].
 have -> /= :
   answer u (cmp (of_compare (step u)).`1 (of_compare (step u)).`2) <> None.
-  smt(is_compare_step_impl_good_answer).
+  smt(is_compare_step_iff_good_answer).
 have -> /= :
   answer t (cmp (of_compare (step u)).`1 (of_compare (step u)).`2) = None.
-  smt(is_compare_step_impl_good_answer).
+  smt(is_compare_step_iff_good_answer).
 have -> /= : is_list t by rewrite -step_done_iff eq_done_iff.
 by rewrite IHu.
 case (of_list t = []) => [// | _].
@@ -1206,7 +1251,7 @@ move => i t IHt /= [#] _ prop_t _ /#.
 move => t u IHt IHu /= [#] prop_t prop_u _ _.
 rewrite union_eq_fset0_iff negb_and =>
   [[elems_t_ne_fset0 | elems_u_ne_fset0]];
-smt(size_term_ge1_when_proper_elems_ne size_term_ge0).
+smt(size_term_ge1_when_proper_elems_ne_fset0 size_term_ge0).
 move => i j us vs /=.
 smt(size_ge0).
 qed.
@@ -1259,19 +1304,19 @@ move : elems_t_union_elems_u_ne_fset0.
 rewrite -is_list_elems // -is_list_elems //.
 rewrite of_list_t_eqnil -set0E fset0U => oflist_of_list_u_ne_fset0.
 rewrite (is_list t) // of_list_t_eqnil /=.
-smt(is_list_elems size_term_ge1_when_proper_elems_ne).
+smt(is_list_elems size_term_ge1_when_proper_elems_ne_fset0).
 case (of_list u = []) => [of_list_u_eqnil _ | of_list_u_nenil _].
 move : elems_t_union_elems_u_ne_fset0.
 rewrite -is_list_elems // -is_list_elems //.
 rewrite of_list_u_eqnil -set0E fsetU0 => oflist_of_list_u_ne_fset0.
 rewrite (is_list u) // of_list_u_eqnil /=.
-smt(is_list_elems size_term_ge1_when_proper_elems_ne).
+smt(is_list_elems size_term_ge1_when_proper_elems_ne_fset0).
 rewrite (is_list t) // (is_list u) //=.
 have <- := head_behead (of_list t) 0 _ => //.
 have <- := head_behead (of_list u) 0 _ => //#.
 qed.
 
-(* when we answer a comparision query, wc_term always gets strictly
+(* when we answer a comparision request, wc_term always gets strictly
    smaller *)
 
 lemma wc_term_answer (t : term, b : bool) :
@@ -1293,6 +1338,9 @@ by rewrite ler_add2l proper_answer_size_term_eq.
 move => i j us vs /= H.
 case b => [b_true | b_false] _; rewrite oget_some /= /#.
 qed.
+
+(* poten_cmps returns the set of comparison requests that could
+   possibly result from t's evaluation *)
 
 op poten_cmps (t : term) : (int * int) fset =
   with t = Sort xs        => product (oflist xs) (oflist xs)
@@ -1350,6 +1398,8 @@ have d_in_elems_t : d \in elems t by smt(poten_cmps_subset productP).
 by rewrite /= -(in_fset0 d) -disj_t_u in_fsetI.
 qed.
 
+(* the potential comparison requests never increase, as we step *)
+
 lemma is_worked_poten_cmps_step (t : term) :
   proper t => is_worked (step t) =>
   poten_cmps (of_worked (step t)) \subset poten_cmps t.
@@ -1377,13 +1427,13 @@ case (is_worked (step t)) => [is_wkd_step_t _ | not_is_wkd_step_t].
 rewrite subsetP => [[a b]].
 rewrite !in_fsetU !productP =>
   [[[/# | /#] | [a_in_elems_of_wkd_step_t -> /=]]].
-right; by rewrite -is_worked_step_elems_eq.
+right; by rewrite -is_worked_proper_step_elems_eq.
 case (is_compare (step t)) => [/# | not_is_cmp_step_t].
 case (is_worked (step u)) => [is_wkd_step_u | not_is_wkd_step_u].
 rewrite subsetP => [[a b]].
 rewrite !in_fsetU !productP =>
   [[[/# | /#] | [-> b_in_elems_of_wkd_step_u /=]]].
-right; by rewrite -is_worked_step_elems_eq.
+right; by rewrite -is_worked_proper_step_elems_eq.
 case (is_compare (step u)) => [/# | not_is_cmp_step_u].
 case (of_list t = []) => [of_list_t_eq_nil _ | of_list_t_ne_nil].
 rewrite subsetP => p.
@@ -1440,8 +1490,11 @@ move => i j us vs /=.
 by rewrite /proper_list0 /= !oflist_cons !productP !in_fsetU !in_fset1.
 qed.
 
+(* potential comparison requests invariant, where qs are sets of
+   queries (encodings of comparison requests) *)
+
 op poten_cmps_invar (t : term, qs : int fset) : bool =
-  poten_cmps t `&` (image dec qs) = fset0.
+  poten_cmps t `&` image dec qs = fset0.
 
 lemma poten_cmps_invar_start :
   poten_cmps_invar (Sort range_len) fset0.
@@ -1449,7 +1502,7 @@ proof.
 by rewrite /poten_cmps_invar image0 fsetI0.
 qed.
 
-lemma is_worked_poten_cmps_disjoint_step (t : term, qs : int fset) :
+lemma poten_cms_invar_is_worked (t : term, qs : int fset) :
   proper t => is_worked (step t) =>
   poten_cmps_invar t qs =>
   poten_cmps_invar (of_worked (step t)) qs.
@@ -1461,7 +1514,7 @@ case (x \in image dec qs) => [x_in_image_dec_qs | //].
 by rewrite /= -(in_fset0 x) -disj_t_u in_fsetI.
 qed.
 
-lemma is_compare_poten_cmps_disjoint_step (t : term, qs : int fset) :
+lemma is_compare_poten_cmps_invar_not_query (t : term, qs : int fset) :
   proper t => is_compare (step t) =>
   poten_cmps_invar t qs =>
   ! enc (of_compare (step t)) \in qs.
@@ -1480,7 +1533,6 @@ qed.
 
 lemma poten_cmps_answer (t : term, b : bool) :
   proper t => is_compare (step t) =>
-  of_compare (step t) \in poten_cmps t /\
   poten_cmps (oget (answer t b)) \subset
   poten_cmps t `\` fset1 (of_compare (step t)).
 proof.
@@ -1489,20 +1541,17 @@ move => xs /=; by case (size xs <= 1).
 move => i t IHt /= [#] _ prop_t _.
 case (is_worked (step t)) => [// | not_is_wkd_step_t].
 case (is_compare (step t)) => [is_cmp_step_t _ | //].
-split; first smt().
 have -> : answer t b <> None.
-rewrite -is_compare_step_impl_good_answer //=.
+rewrite -is_compare_step_iff_good_answer //=.
 case b => [b_true | b_false] /=; rewrite subsetP => p /#.
 move => t u IHt IHu /= [#] prop_t prop_u A disj_elems_t_u _.
 case (is_worked (step t)) => [// | not_is_wkd_step_t].
 case (is_compare (step t)) => [is_cmp_step_t _ | not_is_cmp_step_t].
 have -> /= : ! is_list t by rewrite -step_done_iff eq_done_iff /#.
 have -> /= : answer t b <> None.
-  by rewrite -is_compare_step_impl_good_answer.
-have [#] of_cmp_step_t_in_pcs_t
-     pts_ans_t_b_subset_pts_t_min_of_cmp_step_t
+  by rewrite -is_compare_step_iff_good_answer.
+have pts_ans_t_b_subset_pts_t_min_of_cmp_step_t
      := IHt _ _ => //.
-split; first smt(in_fsetU).
 rewrite subsetP => [[c d]].
 rewrite !in_fsetU in_fsetD1 !productP =>
   [[[c_d_in_pcs_ans_t_b | c_d_in_pcs_u] | [c_in_elems_ans_t_b d_in_elems_u]]].
@@ -1510,30 +1559,31 @@ split; first smt(in_fsetU in_fsetD1).
 smt(in_fsetD1).
 split; first smt(in_fsetU).
 case ((c, d) = of_compare (step t)) => [c_d_eq_of_cmp_step_t | //].
-have c_d_in_pcs_t : (c, d) \in poten_cmps t by rewrite c_d_eq_of_cmp_step_t.
+have c_d_in_pcs_t : (c, d) \in poten_cmps t.
+ by rewrite c_d_eq_of_cmp_step_t is_compare_poten_cmps_step.
 smt(mem_poten_cmps_disjoint).
 split.
 rewrite in_fsetU productP.
 right.
-by rewrite -(proper_answer_elems_eq t b) // -is_compare_step_impl_good_answer.
+by rewrite -(proper_answer_elems_eq t b) // -is_compare_step_iff_good_answer.
 case ((c, d) = of_compare (step t)) => [c_d_eq_of_cmp_step_t | //].
-have c_d_in_pcs_t : (c, d) \in poten_cmps t by rewrite c_d_eq_of_cmp_step_t.
+have c_d_in_pcs_t : (c, d) \in poten_cmps t.
+ by rewrite c_d_eq_of_cmp_step_t is_compare_poten_cmps_step.
 smt(mem_poten_cmps_disjoint_not_elems2).
 case (is_worked (step u)) => [// | not_is_wkd_step_u].
 case (is_compare (step u)) => [is_cmp_step_u _ | not_is_cmp_step_u].
 have -> /= : is_list t by rewrite -step_done_iff eq_done_iff.
 have -> /= : answer u b <> None.
-  by rewrite -is_compare_step_impl_good_answer.
-have [#] of_cmp_step_u_in_pcs_u
-     pts_ans_u_b_subset_pts_u_min_of_cmp_step_u
+  by rewrite -is_compare_step_iff_good_answer.
+have pts_ans_u_b_subset_pts_u_min_of_cmp_step_u
      := IHu _ _ => //.
-split; first smt(in_fsetU).
 rewrite subsetP => [[c d]].
 rewrite !in_fsetU in_fsetD1 !productP =>
   [[[c_d_in_pcs_t | c_d_in_pcs_ans_u_b] | [c_in_elems_t d_in_elems_ans_u_b]]].
 split; first smt(in_fsetU).
 case ((c, d) = of_compare (step u)) => [c_d_eq_of_cmp_step_u | //].
-have c_d_in_pcs_u : (c, d) \in poten_cmps u by rewrite c_d_eq_of_cmp_step_u.
+have c_d_in_pcs_u : (c, d) \in poten_cmps u.
+ by rewrite c_d_eq_of_cmp_step_u is_compare_poten_cmps_step.
 smt(mem_poten_cmps_disjoint).
 split; first smt(in_fsetU in_fsetD1).
 case ((c, d) = of_compare (step u)) => [c_d_eq_of_cmp_step_u | //].
@@ -1541,17 +1591,16 @@ smt(in_fsetU in_fsetD1).
 split.
 rewrite in_fsetU productP.
 right.
-by rewrite -(proper_answer_elems_eq u b) // -is_compare_step_impl_good_answer.
+by rewrite -(proper_answer_elems_eq u b) // -is_compare_step_iff_good_answer.
 case ((c, d) = of_compare (step u)) => [c_d_eq_of_cmp_step_u | //].
-have c_d_in_pcs_u : (c, d) \in poten_cmps u by rewrite c_d_eq_of_cmp_step_u.
+have c_d_in_pcs_u : (c, d) \in poten_cmps u.
+ by rewrite c_d_eq_of_cmp_step_u is_compare_poten_cmps_step.
 have disj_u_t : elems u `&` elems t = fset0 by rewrite fsetIC.
 smt(mem_poten_cmps_disjoint_not_elems1).
 case (of_list t = []) => [// | not_of_list_t_eq_nil].
 by case (of_list u = []).
 move => i j us vs /= H.
 rewrite !oflist_cons.
-rewrite productP !in_fsetU !in_fset1 !mem_oflist.
-split => [// |].
 case b => [b_true | b_false] /=.
 rewrite oflist_cons !fset0U subsetP => [[c d]].
 rewrite in_fsetD1 !productP !in_fsetU !in_fset1 !mem_oflist /#.
@@ -1559,7 +1608,7 @@ rewrite oflist_cons !fset0U subsetP => [[c d]].
 rewrite in_fsetD1 !productP !in_fsetU !in_fset1 !mem_oflist /#.
 qed.
 
-lemma poten_cmps_disjoint_answer
+lemma poten_cmps_invar_is_compare_answer
       (t : term, qs : int fset, b : bool) :
   proper t => is_compare (step t) =>
   poten_cmps_invar t qs =>
@@ -1569,8 +1618,7 @@ lemma poten_cmps_disjoint_answer
 proof.
 rewrite /poten_cmps_invar =>
   prop_t is_cmp_step_t disj_pcs_t_image_dec_qs.
-have [of_cmp_step_t_in_pcs_t
-      pcs_ans_t_b_sub_pcs_t_min_of_cmp_step_t]
+have pcs_ans_t_b_sub_pcs_t_min_of_cmp_step_t
      := poten_cmps_answer t b _ _ => //.
 have [rang1 rang2] := is_compare_proper_step_range t _ _ => //.
 rewrite disjointP => p p_in_pcs_ans_t_b.
@@ -1679,10 +1727,11 @@ rewrite /proper_list0 /= in_range_len /= gt0_len.
 smt(proper_answer).
 qed.
 
+(* here is the invariant for the proof of our main lemma *)
+
 op nosmt invar (inps : bool list, qs : int fset, t : term) : bool =
   proper t /\
-  repr (cmp_of_rel inps) t =
-  sort (cmp_of_rel inps) range_len /\
+  repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len /\
   wc_term t + card qs <= wc len /\
   poten_cmps_invar t qs.
 
@@ -1723,7 +1772,7 @@ progress.
 by rewrite is_worked_proper_step.
 by rewrite is_worked_repr_step_cmp_of_rel.
 smt(wc_term_step).
-by rewrite is_worked_poten_cmps_disjoint_step.
+by rewrite poten_cms_invar_is_worked.
 qed.
 
 lemma invar_is_compare_answer (inps : inp list, qs : int fset, t : term) :
@@ -1736,13 +1785,13 @@ lemma invar_is_compare_answer (inps : inp list, qs : int fset, t : term) :
 proof.
 move => is_cmp_step_t.
 rewrite /invar => [#] prop_t repr_eq wc_le pcs_invar.
-split; first by rewrite proper_answer // -is_compare_step_impl_good_answer.
+split; first by rewrite proper_answer // -is_compare_step_iff_good_answer.
 split; first by rewrite is_compare_step_answer_repr.
 split.
-rewrite fcardUindep1 1:is_compare_poten_cmps_disjoint_step // !addrA -ltzE.
+rewrite fcardUindep1 1:is_compare_poten_cmps_invar_not_query // !addrA -ltzE.
 rewrite (ltr_le_trans (wc_term t + card qs)) //.
-by rewrite ltr_add2r wc_term_answer 1:/# -is_compare_step_impl_good_answer.
-by rewrite poten_cmps_disjoint_answer.
+by rewrite ltr_add2r wc_term_answer 1:/# -is_compare_step_iff_good_answer.
+by rewrite poten_cmps_invar_is_compare_answer.
 qed.
 
 (* the main lemma: *)
@@ -1798,18 +1847,17 @@ rewrite is_compare_proper_step_range1
 rewrite is_compare_proper_step_range2
         1:(invar_impl_proper_term inps{hr} queries{hr}) // /#.
 by rewrite
-     is_compare_poten_cmps_disjoint_step //
+     is_compare_poten_cmps_invar_not_query //
      1:(invar_impl_proper_term inps{hr} queries{hr}) // 1:/#
      (invar_impl_poten_cmps_invar inps{hr} queries{hr}).
-sp.
-elim* => stage' queries'.
+sp; elim* => stage' queries'.
 inline Alg.query_result.
 sp 2.
 rcondf 1; auto; progress [-delta].
-rewrite -is_compare_step_impl_good_answer
+rewrite -is_compare_step_iff_good_answer
         1:(invar_impl_proper_term inps{hr} queries') // /#.
 by rewrite
-     fcardUindep1 // is_compare_poten_cmps_disjoint_step
+     fcardUindep1 // is_compare_poten_cmps_invar_not_query
      1:(invar_impl_proper_term inps{hr} queries') // 1:/#
      1:(invar_impl_poten_cmps_invar inps{hr}).
 rewrite -cmp_of_rel_pair_eq //.
@@ -1854,7 +1902,7 @@ proof.
 split; first apply Alg_init_term.
 split; first apply Alg_make_query_or_report_output_term.
 split; first apply Alg_query_result_term.
-move => inps' size_inps'_eq_arity good__inps'.
+move => inps' size_inps'_eq_arity good_inps'.
 byphoare
   (_ :
    inps = inps' /\ size inps = arity /\ good () inps ==>
