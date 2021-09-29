@@ -527,8 +527,11 @@ lemma is_list_elems (t : term) :
   is_list t => oflist (of_list t) = elems t.
 proof. by case t. qed.
 
-(* we will often only be interested in terms that are proper in the
-   following sense: *)
+(* we will often only be interested in terms that are "proper" (well
+   formed) in the following sense
+
+   the clause for Merge is written to enforce that the operational
+   semantics evaluates in a left-to-right order *)
 
 op proper (t : term) : bool =
   with t = Sort xs        => proper_list xs
@@ -1799,84 +1802,71 @@ qed.
 lemma G_main (inps' : inp list) :
   hoare
   [G(Alg).main :
-   inps = inps' /\ size inps = arity /\ good () inps ==>
+   inps = inps' /\ total_ordering inps ==>
    res.`1 = f () inps' /\ res.`2 <= len * int_log 2 len].
 proof.
 proc => /=.
 seq 5 :
-  (inps = inps' /\ size inps = arity /\ total_ordering inps /\
+  (inps = inps' /\ total_ordering inps /\
    out_opt = None /\ stage = 0 /\ queries = fset0 /\
    ! error /\ Alg.term = Sort range_len).
 inline Alg.init; auto; smt().
 while
-  (inps = inps' /\ size inps = arity /\
-   total_ordering inps /\ stage = card queries /\ !error /\
-   invar inps queries Alg.term /\
+  (inps = inps' /\ total_ordering inps /\ stage = card queries /\
+   !error /\ invar inps queries Alg.term /\
    (out_opt <> None =>
     out_opt = Some (of_list Alg.term) /\ is_list Alg.term)).
 inline Alg.make_query_or_report_output.
 seq 2 :
-  (inps = inps' /\ size inps = arity /\
-   total_ordering inps /\ stage = card queries /\ !error /\
-   out_opt = None /\ invar inps queries Alg.term /\
+  (inps = inps' /\ total_ordering inps /\ stage = card queries /\
+   !error /\ out_opt = None /\ invar inps queries Alg.term /\
    stp = step Alg.term /\ (stp = Done \/ is_compare stp)).
 while
   (total_ordering inps /\ stp = step Alg.term /\
    invar inps queries Alg.term).
 auto; progress [-delta].
 by rewrite invar_is_worked_step // is_worked_iff.
-auto; progress [-delta].
-by rewrite negb_and in H5.
+auto; smt().
 if.
 sp.
 rcondf 1; first auto; smt().
-auto; progress [-delta].
-by rewrite -step_done_iff.
+auto; progress [-delta]; by rewrite -step_done_iff.
 sp.
 rcondt 1; first auto.
 sp.
-rcondt 1; first auto; progress [-delta].
-rewrite enc_bounds_ge0.
-rewrite is_compare_proper_step_range1
-        1:(invar_impl_proper_term inps{hr} queries{hr}) // /#.
-rewrite is_compare_proper_step_range2
-        1:(invar_impl_proper_term inps{hr} queries{hr}) // /#.
-rewrite enc_bounds_lt_arity.
-rewrite is_compare_proper_step_range1
-        1:(invar_impl_proper_term inps{hr} queries{hr}) // /#.
-rewrite is_compare_proper_step_range2
-        1:(invar_impl_proper_term inps{hr} queries{hr}) // /#.
-by rewrite
-     is_compare_poten_cmps_invar_not_query //
-     1:(invar_impl_proper_term inps{hr} queries{hr}) // 1:/#
-     (invar_impl_poten_cmps_invar inps{hr} queries{hr}).
+rcondt 1; first auto => |> &hr to_inps' _ inv [// | is_cmp_step_term _].
+have prop_term : proper Alg.term{hr}.
+  by rewrite (invar_impl_proper_term inps' queries{hr}).
+rewrite enc_bounds_ge0 1:is_compare_proper_step_range1 //
+        1:is_compare_proper_step_range2 //=.
+rewrite enc_bounds_lt_arity 1:is_compare_proper_step_range1 //
+        1:is_compare_proper_step_range2 //=.
+by rewrite is_compare_poten_cmps_invar_not_query //
+           (invar_impl_poten_cmps_invar inps' queries{hr}).
 sp; elim* => stage' queries'.
 inline Alg.query_result.
 sp 2.
-rcondf 1; auto; progress [-delta].
-rewrite -is_compare_step_iff_good_answer
-        1:(invar_impl_proper_term inps{hr} queries') // /#.
-by rewrite
-     fcardUindep1 // is_compare_poten_cmps_invar_not_query
-     1:(invar_impl_proper_term inps{hr} queries') // 1:/#
-     1:(invar_impl_poten_cmps_invar inps{hr}).
-rewrite -cmp_of_rel_pair_eq //.
-rewrite is_compare_proper_step_range1
-        1:(invar_impl_proper_term inps{hr} queries') // /#.
-rewrite is_compare_proper_step_range2
-        1:(invar_impl_proper_term inps{hr} queries') // /#.
-by rewrite invar_is_compare_answer 1:/#.
-auto; progress [-delta].
-by rewrite fcards0.
-rewrite invar_start.
-rewrite H5 /=.
-rewrite negb_and /= in H2.
-elim H2 => [/H7 [-> is_list_t] | //].
-rewrite /f H0 /= /total_ordering_to_perm_len /tsort.
-rewrite -(repr_done (cmp_of_rel inps{hr})) //.
-by rewrite (invar_impl_repr_eq inps{hr} queries0 term).
-move : H2.
-rewrite H5 /= => /H7 [_ is_list_term].
+rcondf 1; first auto => |> &hr to_inps' _ inv [// | is_cmp_step_term _].
+have prop_term : proper Alg.term{hr}.
+  by rewrite (invar_impl_proper_term inps' queries').
+rewrite -is_compare_step_iff_good_answer //.
+auto => |> &hr to_inps' _ inv [// | is_cmp_step_term _].
+have prop_term : proper Alg.term{hr}.
+  by rewrite (invar_impl_proper_term inps' queries').
+split.
+by rewrite fcardUindep1 // 1:is_compare_poten_cmps_invar_not_query //
+           1:(invar_impl_poten_cmps_invar inps').
+by rewrite -cmp_of_rel_pair_eq // 1:is_compare_proper_step_range1 //
+           1:is_compare_proper_step_range2 // invar_is_compare_answer.
+auto => |> &hr to_inps' _.
+split => [| term error out_opt queries].
+rewrite fcards0 /= invar_start.
+rewrite negb_and => [[out_opt_ne_none _ inv out_opt_impl | //]].
+have [-> is_list_term] := out_opt_impl _ => //.
+split.
+rewrite /f to_inps' /= /total_ordering_to_perm_len /tsort.
+by rewrite -(repr_done (cmp_of_rel inps')) //
+           (invar_impl_repr_eq inps' queries).
 have eq0_wc_term_term : wc_term term = 0 by rewrite is_list.
 rewrite (ler_trans (wc len)).
 smt(invar_impl_wc_le).
@@ -1894,23 +1884,23 @@ lemma upper_bound &m :
   phoare
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-  (forall (inps : inp list),
-   size inps = arity => good () inps =>
+  (forall (inps : inp list),  (* so all (mem univ) inps *)
+   total_ordering inps =>  (* so size inps = arity and good () inps *)
    Pr[G(Alg).main((), inps) @ &m :
       res.`1 = f () inps /\ res.`2 <= len * int_log 2 len] = 1%r).
 proof.
 split; first apply Alg_init_term.
 split; first apply Alg_make_query_or_report_output_term.
 split; first apply Alg_query_result_term.
-move => inps' size_inps'_eq_arity good_inps'.
+move => inps' to_inps'.
 byphoare
   (_ :
-   inps = inps' /\ size inps = arity /\ good () inps ==>
+   inps = inps' /\ total_ordering inps ==>
    res.`1 = f () inps' /\ res.`2 <= len * int_log 2 len) => //.
 conseq
   (_ : true ==> true)
   (_ :
-   inps = inps' /\ size inps = arity /\ good () inps ==>
+   inps = inps' /\ total_ordering inps ==>
    res.`1 = f () inps' /\ res.`2 <= len * int_log 2 len) => //.
 by conseq (G_main inps').
 rewrite (G_ll Alg alg_term_invar) 1:Alg_init_term
