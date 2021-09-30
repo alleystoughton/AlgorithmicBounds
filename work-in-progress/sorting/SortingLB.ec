@@ -237,7 +237,7 @@ move => [ge0_i lt_i_arity].
 rewrite /filter_nth.
 elim inpss => [// | x xs IH /#].
 qed.
-
+ 
 lemma divpow2up_next_size_ge2
       (inpss : inp list list, stage i : int, b : bool) :
   0 <= stage => 0 <= i < arity => 2 <= size inpss =>
@@ -301,7 +301,7 @@ by rewrite divpow2up_start init_inpss_fact_len.
 rewrite negb_and /= in H0.
 elim H0 => [inpss_done | error].
 right.
-rewrite (ler_trans (int_log_up 2 (fact len))) //.
+rewrite (ler_trans (int_log_up 2 (fact len))) //. 
 apply divpow2up_eq1_int_log_up_le.
 smt(ge1_fact ge1_len).
 smt(fcard_ge0).
@@ -363,120 +363,103 @@ lemma div2_le_if_le_tim2_plus1 (n m : int) :
 proof.
 move => le_n_m_tim2_plus1.
 rewrite (ler_trans ((m * 2 + 1) %/ 2)).
-by rewrite leq_div2r.
+by rewrite leq_div2r.  
 by rewrite div_succ_eq // 1:-even_iff_plus1_odd 1:dvdz_mull // mulzK.
 qed.
-  
+
+lemma log_fact_helper (n : int) :
+  0 <= n => 1 <= n => n * (int_log 2 n + 2) <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1.
+proof.    
+elim n => [le1_0 /# | n ge0_n ih].   
+move : ge0_n.  
+case (2 < n) => [gt2_n _ _ | leq2_n ge0_n _].
+      (*2 < n*)
+have lb1 : 2 <= int_log 2 (n + 1) by rewrite int_log_geq // 1:/# expr2 /#.
+have lb2: (int_log 2 (n + 1)) + (int_log 2 (fact n)) <= int_log 2 (fact(n + 1))
+  by rewrite factS // 1:/# int_log_distr_mul_lb // 1:/#; smt(ge1_fact).       
+have [e | [ e1 e2 ]] : int_log 2 (n + 1) = int_log 2 n \/ int_log 2 (n + 1) = (int_log 2 n) + 1
+  /\ 2 ^(int_log 2 (n + 1)) = n + 1.
+have h4: (int_log 2 (n + 1)) <= (int_log 2 n) + 1
+by rewrite (ge2_exp_le_equiv 2 (int_log 2 (n + 1)) ((int_log 2 n) + 1)) //; smt(int_log_lb_le int_log_ub_lt int_log_ge0).
+rewrite lez_eqVlt in h4.
+elim h4 => [h5 //= | //=].
+right; split; smt(int_log_lb_le int_log_ub_lt). 
+rewrite ltzS lez_eqVlt => [#] [eq_log | neq_log].  
+by left.
+have neq_log2: 2 ^ (int_log 2 (n + 1) + 1) <= 2 ^ (int_log 2 n) 
+by rewrite -(ge2_exp_le_equiv 2 ((int_log 2 (n + 1)) + 1 ) (int_log 2 n)) //= ; smt(int_log_ge0).
+(*contradiction: n +1 < n*)
+smt(int_log_le).   
+rewrite e mulzDl.
+have lb : n * (int_log 2 n + 2) + (int_log 2 n + 2) <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n * 2) by rewrite ler_add 1:ih // 1://# mul2r -e //#. 
+rewrite (lez_trans ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + int_log 2 n * 2)) // addzC.
+have -> //= /#: int_log 2 n * 2 + ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1)
+  = (int_log 2 n + int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 by smt().
+rewrite e1 mulzDl.   
+have -> : n * (int_log 2 n + 1 + 2) + 1 * (int_log 2 n + 1 + 2)
+  = n * (int_log 2 n + 2) + (int_log 2 n + 3 + n) by smt().
+have lb : n * (int_log 2 n + 2) +  (int_log 2 n + 3 + n)
+  <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 +  (int_log 2 n + 3 + n) by smt(ler_add).     
+rewrite (lez_trans ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n + 3 + n))) // -e1 e2 mulzDl.             
+have -> /# : 2 ^ (int_log 2 n) * 2 = 2 ^ (int_log 2 n + 1) by rewrite exprS 1:int_log_ge0 //= 1:/# /#.
+(* n <=2  *)  
+have [eq0_n //= |[eq1_n | eq2_n]] : n = 0 \/ n = 1 \/ n = 2 by smt().
+(* n =0 *)
+rewrite eq0_n (fact1 0) //=. 
+have -> //= : int_log 2 1 = 0 by smt(int_log1_eq0).
+smt(expr0).
+(* n =1 *)                  
+rewrite eq1_n //=.
+have -> : fact 2 = 2 by smt(factS fact1 fact0 expr1).
+rewrite int_log2_eq_1; smt(expr1).                  
+(* n =2 *)
+rewrite eq2_n //=.
+have -> : fact 3 = 2 * 3 by smt(factS fact1 fact0 expr1).
+have int_log2_3_eq_1 : 1 = int_log 2 3 by rewrite (int_logPuniq 2 3 1) //=; smt(expr1 exprS).
+smt(int_log_distr_mul_lb int_log2_eq_1 expr1).
+qed.
+
 lemma log2_fact_aux (n : int) :
    1 <= n => n * int_log 2 n <= int_log 2 (fact n) * 2 + 1.
 proof.
-have helper :
-  0 <= n => 1 <= n =>
-  n * (int_log 2 n +2) <= (int_log 2 (fact n)  + 2 ^ int_log 2 n) * 2 + 1.
-  elim n => [| n ge0_n ih ]. 
-  smt( fact0 int_log_ge0  expr0).    
-  move : ge0_n.  
-  case (2 < n) => [ gt2_n _ _ | leq2_n ge0_n _].
-  (*2 < n*)
-  have :
-    int_log 2 (n+1) = int_log 2 n \/
-    int_log 2 (n+1) = (int_log 2 n) + 1 /\ 2 ^(int_log 2 (n+1)) = n + 1.
-    have e1: 2 ^(int_log 2 n) <= n by rewrite int_log_lb_le //#.
-    have e2: n < 2^((int_log 2 n) +1 ) by rewrite int_log_ub_lt //#. 
-    have e3: 2 ^(int_log 2 (n+1)) <= n+1 by rewrite int_log_lb_le //#.
-    have e4: (int_log 2 (n+1)) <= (int_log 2 n ) +1
-    by rewrite (ge2_exp_le_equiv 2 ( int_log 2 (n+1) ) ((int_log 2 n ) +1 ) ) //= ; smt(int_log_ge0).
-    rewrite lez_eqVlt in e4.
-    elim e4 => [ e5 //= | //=].
-    right ; split => //#.
-    rewrite ltzS lez_eqVlt => [#]  [eq_log | neq_log ].  
-    by left.
-    have neq_log2: (int_log 2 (n+1)) + 1 <= int_log 2 n by  smt().  
-      rewrite (ge2_exp_le_equiv 2 ( (int_log 2 (n+1)) +1 ) (int_log 2 n)  ) // in neq_log2.
-      smt(int_log_ge0). smt(int_log_ge0).
-    (*contradiction: n +1 < n*)
-    smt(int_log_ub_lt).
-  have lb1: 2 <= int_log 2 (n+1) by  rewrite int_log_geq //=  1:/# ;   smt( ltzS  expr1 exprS).
-  have lb2: (int_log 2 (n+1))  + (int_log 2 (fact n) ) <= int_log 2 (fact (n+1))
-    by rewrite factS // 1:/#  (int_log_distr_mul_lb) // 1: /# ; smt(ge1_fact).
-  case => [ e | [ e1 e2 ] ].
-  have lb3: int_log 2 n + 2 <= (int_log 2 n ) * 2 by rewrite mul2r 1: /#. 
-  rewrite e  mulzDl.
-  have lb4 :  n * (int_log 2 n + 2) + (int_log 2 n + 2) <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n * 2)
-    by rewrite ler_add 1:ih /#.
-  rewrite (lez_trans  ( (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + int_log 2 n * 2  )) //= addzC.
-  have -> //= //# : int_log 2 n * 2 + ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1)
-                      = (int_log 2 n + int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 by smt().
-  rewrite e1  mulzDl.   
-  have -> : n * (int_log 2 n + 1 + 2) + 1 * (int_log 2 n + 1 + 2) =  n * (int_log 2 n  + 2) + (int_log 2 n + 3 + n) by smt().
-  have lb5 : n * (int_log 2 n + 2) +  (int_log 2 n + 3 + n)
-                <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 +  (int_log 2 n + 3 + n)by smt(ler_add).
-  rewrite (lez_trans  ( (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n + 3 + n)  ) )  // -e1 e2 mulzDl.
-  have -> :  2 ^ (int_log 2 n) * 2 = 2 ^ (int_log 2 n + 1) by  rewrite exprS 1:int_log_ge0 //= 1:/# /#.
-  smt().
-  (* n <=2  *)  
-  have range_n: n =0 \/ n =1 \/ n =2  by smt().
-  elim range_n  => [ eq0_n //= |[ eq1_n | eq2_n] ].
-  (* n =0 *)
-  rewrite eq0_n (fact1 0) //=. 
-  have -> //=: int_log 2 1 = 0 by smt( int_log1_eq0 ).  
-  smt(expr0).
-  (* n =1 *)                  
-  rewrite eq1_n //=.
-  have -> : fact 2 = 2 by smt(factS fact1 fact0 expr1).
-  rewrite int_log2_eq_1; smt(expr1).                  
-  (* n =2 *)
-  rewrite eq2_n //=.
-  have -> : fact 3 = 2*3 by smt(factS fact1 fact0 expr1).
-  have int_log2_3_eq_1 : 1 = int_log 2 3 by rewrite (int_logPuniq 2 3 1) //=; smt(expr1 exprS).
-  smt(int_log_distr_mul_lb int_log2_eq_1 expr1).   
-smt(int_log_lb_le).
+smt(int_log_lb_le log_fact_helper).
 qed.
 
-lemma log2_fact (n: int) :
-  1 <= n => (n * (int_log 2 n )) %/ 2 <= int_log 2 (fact n). 
+lemma log2_fact (n : int) :
+  1 <= n => (n * (int_log 2 n)) %/ 2 <= int_log 2 (fact n). 
 proof.
 move => ge1_n.
 by rewrite div2_le_if_le_tim2_plus1 log2_fact_aux.
 qed.
 
-lemma int_log_leq_plus1 (b n: int) :
-  1 <= n => 2 <= b =>  int_log b (n+1) <= (int_log b n) +1.
+lemma int_log_leq_plus1 (b n : int) :
+  1 <= n => 2 <= b =>  int_log b (n + 1) <= (int_log b n) + 1.
 proof.
 move => ge1_n ge2_b.    
-case (int_log b (n +1) = int_log b n) => [ //# | not_eq ].
-rewrite (ge2_exp_le_equiv b ( int_log b (n+1)  ) ((int_log b n) +1)  ) //=.
-smt(int_log_ge0). smt(int_log_ge0).
-smt(int_log_lb_le int_log_ub_lt).
+case (int_log b (n + 1) = int_log b n) => [//# | not_eq].
+rewrite (ge2_exp_le_equiv b (int_log b (n + 1)) ((int_log b n) + 1)) //=;
+smt(int_log_ge0 int_log_lb_le int_log_ub_lt).
 qed.
 
 lemma log2_fact_precise (n : int) :
-     0<=n => 1<=n => n* (int_log 2 n) - 2*2^(int_log 2 n) <= int_log 2 (fact n).
+     0 <= n => 1 <= n => n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n) <= int_log 2 (fact n).
 proof.
-  elim n. rewrite fact0 //=. 
-move => i ge0_i  ih _.
-case (0= i) => [ //= |neq0_i ]. progress; smt(fact1 int_log1_eq0 expr0).
-have ge1_i : 1 <= i  by smt().
-have e: int_log 2 i <= int_log 2 (i+1) by rewrite int_log_le //#.
+elim n => [ | i ge0_i  ih _].
+rewrite fact0 //=. 
+case (0 = i) => [//= | neq0_i]. progress; smt(fact1 int_log1_eq0 expr0).
+have ge1_i : 1 <= i by smt().
 have e1 : int_log 2 (i+1) <= (int_log 2 i) + 1 by smt(int_log_leq_plus1).
-have e2: (i + 1) * int_log 2 (i + 1)  <= (i + 1) * ( (int_log 2 i) + 1) by rewrite ler_wpmul2l; smt(). 
-(* search (_ <=_ => _*_<=_*_ )%Int .  *)
-have e3: (i + 1) * int_log 2 (i + 1) - (i+1)  <= (i + 1) * ( (int_log 2 i) ) by smt().
-have e5: fact(i+1) = fact i * (i+1) by smt(factS).
-have e4:   int_log 2 (fact (i )) + int_log 2 (i+1)<= int_log 2 (fact (i + 1)) by
-  smt(factS int_log_distr_mul_lb addzC fact0 ge1_fact).
-case (int_log 2 i = int_log 2 (i+1)) => [ eq_log | not_eq //].
+have e2: (i + 1) * int_log 2 (i + 1) <= (i + 1) * ((int_log 2 i) + 1) by rewrite ler_wpmul2l /#. 
+have e3: int_log 2 (fact i) + int_log 2 (i + 1)<= int_log 2 (fact (i + 1))
+  by rewrite factS //; smt(int_log_distr_mul_lb ge1_fact).
+case (int_log 2 i = int_log 2 (i + 1)) => [eq_log | not_eq //].
 (* int_log 2 i = int_log 2 (i+1) *)
 rewrite -eq_log. 
 smt(lez_trans).
 (* 1 + int_log 2 i = int_log 2 (i+1) *)
-have e6:  i * int_log 2 i - 2 * 2 ^ int_log 2 i <= int_log 2 (fact i) by smt().
-rewrite (lez_trans ( (int_log 2 (fact i)) + ( int_log 2 (i + 1)) ) ) //= .
-have <- :(int_log 2 i)+1 = int_log 2 (i+1) by smt(int_log_leq_plus1).
-have -> : (i + 1) * (int_log 2 i + 1) = i*(int_log 2 i) + (int_log 2 i)+ i + 1 by smt().
-  (* have e8 : i <=  2 ^ (int_log 2 i + 1) by smt(int_log_ub_lt). *)
-  (*  have e9: 2 * 2 ^ (int_log 2 i + 1) *)
-  (*  - 2 * 2 ^ (int_log 2 i ) =  2 ^ (int_log 2 i + 1) by smt(exprS int_log_ge0). *)
+rewrite (lez_trans ((int_log 2 (fact i)) + (int_log 2 (i + 1)))) //=.
+have <- :(int_log 2 i) + 1 = int_log 2 (i + 1) by smt(int_log_leq_plus1 int_log_le).
+have -> : (i + 1) * (int_log 2 i + 1) = i * (int_log 2 i) + (int_log 2 i) + i + 1 by smt().
 smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt ). 
 qed. 
 
