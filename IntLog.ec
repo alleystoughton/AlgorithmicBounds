@@ -9,7 +9,7 @@
 
 prover [""].  (* no use of SMT provers *)
 
-require import AllCore StdOrder IntDiv.
+require import AllCore StdOrder IntDiv RealExp.
 import IntOrder.
 
 (* multiplication by 2 *)
@@ -698,6 +698,17 @@ case (b ^ int_log b n = n) => [// | _].
 by rewrite ler_paddr.
 qed.
 
+lemma int_log_int_log_up_eq_iff (b n : int) :
+  2 <= b => 1 <= n =>
+  int_log b n = int_log_up b n <=> b ^ int_log b n = n.
+proof.
+move => ge2_b ge1_n.
+rewrite /int_log_up.
+case (b ^ int_log b n = n) => [// | _ /=].
+case (int_log b n = int_log b n + 1) => [| //].
+by rewrite addrC -subr_eq.
+qed.
+
 lemma int_log_upP (b n : int) :
   2 <= b => 1 <= n =>
   (int_log_up b n = 0 /\ n = 1 \/
@@ -898,6 +909,147 @@ move : b2ilu_b2i_min1_lt_b2i.
 by rewrite -(ge2_exp_lt_equiv b (int_log_up b (b ^ i) - 1) i) //
            1:ler_subr_addr // ltr_subl_addl addrC ltzS.
 by rewrite (ge2_exp_le_equiv b i (int_log_up b (b ^ i))) // int_log_up_ge0.
+qed.
+
+lemma real_log_bounds (b n : int) :
+  2 <= b => 1 <= n =>
+  (int_log b n)%r <= log b%r n%r <= (int_log_up b n)%r.
+proof.
+move => ge2_b ge1_n.
+have gt0_n : 0 < n by rewrite (ltr_le_trans 1).
+have zr_lt_nr : 0%r < n%r by rewrite lt_fromint.
+have ge0_b : 0 <= b by rewrite (ler_trans 2).
+have zr_le_br : 0%r <= b%r by rewrite le_fromint.
+have gt0_b : 0 < b by rewrite (ltr_le_trans 2).
+have zr_lt_br : 0%r < b%r by rewrite lt_fromint.
+have gt1_b : 1 < b by rewrite (ltr_le_trans 2).
+have or_lt_br : 1%r < b%r by rewrite lt_fromint.
+split => [| _].
+have -> :
+  (int_log b n)%r = log b%r (b %r ^ (int_log b n)%r).
+  by rewrite logK // eq_fromint gtr_eqF.
+rewrite log_mono // 1:rpow_gt0 // 1:rpow_nat // 1:int_log_ge0 //.
+rewrite RField.fromintXn 1:int_log_ge0 // 1:le_fromint //.
+by rewrite int_log_lb_le.
+case (n = 1) => [-> | ne1_n].
+have -> : int_log_up b 1 = 0 by rewrite int_log_up_zero_iff.
+have -> : 1%r = b%r ^ 0 by rewrite RField.expr0.
+rewrite -rpow_nat // logK // eq_fromint gtr_eqF //.
+have ge2_n : 2 <= n.
+  have -> : 2 = 1 + 1 by trivial.
+  by rewrite -ltzE ltz_def.
+have -> :
+  (int_log_up b n)%r = log b%r (b %r ^ (int_log_up b n)%r).
+  by rewrite logK // eq_fromint gtr_eqF.
+rewrite log_mono // 1:rpow_gt0 // 1:rpow_nat // 1:int_log_up_ge0 //.
+rewrite RField.fromintXn 1:int_log_up_ge0 // 1:le_fromint //.
+by rewrite int_log_up_ge2_ub_le.
+qed.
+
+lemma real_log_ub_lt (b n : int) :
+  2 <= b => 1 <= n => b ^ (int_log b n) <> n =>
+  log b%r n%r < (int_log_up b n)%r.
+proof.
+move => ge2_b ge1_n b2il_bn_ne_n.
+have [_] := real_log_bounds b n _ _ => //.
+rewrite /int_log_up b2il_bn_ne_n /= => log_bn_le_il_bn_plus1.
+rewrite RealOrder.ltr_def log_bn_le_il_bn_plus1 /=.
+case ((int_log b n + 1)%r <> log b%r n%r) => [// | contrad].
+rewrite /= in contrad.
+have n_eq_b2_il_bn_plus1 : n = b ^ (int_log b n + 1).
+  rewrite -eq_fromint -RField.fromintXn.
+  rewrite addz_ge0 1:int_log_ge0 //.
+  rewrite -rpow_nat 1:addz_ge0 1:int_log_ge0 //.
+  rewrite le_fromint 1:(ler_trans 2) //.
+  rewrite contrad rpowK //.
+  rewrite lt_fromint (ltr_le_trans 2) //.
+  rewrite eq_fromint gtr_eqF 1:(ltr_le_trans 2) //.
+  rewrite lt_fromint (ltr_le_trans 1) //.
+have := int_log_ub_lt b n _ _ => //.
+by rewrite {1}n_eq_b2_il_bn_plus1.
+qed.
+
+lemma floor_eq (n : int, x : real) :
+  n%r <= x < (n + 1)%r => floor x = n.
+proof.
+move => [n_le_x x_lt_n_plus1].
+have [x_lt_floor_x_plus1 floor_x_le_x] := floor_bound x.
+rewrite RealOrder.ltr_subl_addr -fromintD in x_lt_floor_x_plus1.
+case (floor x = n) => [// |].
+rewrite neq_ltz => [[floor_x_lt_n | n_lt_floor_x]].
+have le_n_floor_x : n <= floor x.
+  by rewrite -ltzS -lt_fromint (RealOrder.ler_lt_trans x).
+have // : n < n by rewrite (ler_lt_trans (floor x)).
+have floor_x_le_n : floor x <= n.
+  by rewrite -ltzS -lt_fromint (RealOrder.ler_lt_trans x).
+have // : floor x < floor x by rewrite (ler_lt_trans n).
+qed.
+
+lemma ceil_eq (n : int, x : real) :
+  (n - 1)%r < x <= n%r => ceil x = n.
+proof.
+move => [n_lt_x_plus1 x_le_n].
+rewrite fromintD fromintN RealOrder.ltr_subl_addr in n_lt_x_plus1.
+have [x_le_ceil_x ceil_x_lt_x_plus1] := ceil_bound x.
+case (ceil x = n) => [// |].
+rewrite neq_ltz => [[ceil_x_lt_n | n_lt_ceil_x]].
+have n_le_ceil_x : n <= ceil x.
+  rewrite -ltzS -lt_fromint 1:(RealOrder.ltr_le_trans (x + 1%r)) //.
+  by rewrite fromintD RealOrder.ler_add2r.
+have // : n < n by rewrite (ler_lt_trans (ceil x)).
+have ceil_x_le_n : ceil x <= n.
+  rewrite -ltzS -lt_fromint (RealOrder.ltr_le_trans (x + 1%r)) //.
+  by rewrite fromintD RealOrder.ler_add2r.
+have // : ceil x < ceil x by rewrite (ler_lt_trans n).
+qed.
+
+lemma floor_real_log (b n : int) :
+  2 <= b => 1 <= n =>
+  floor (log b%r n%r) = int_log b n.
+proof.
+move => ge2_b ge1_n.
+have [low_le high_le] := real_log_bounds b n _ _ => //.
+case (b ^ int_log b n = n) => [b2ilbn_eq_n | b2ilbn_ne_n].
+have ilu_eq_il_bn : int_log_up b n = int_log b n.
+  by rewrite eq_sym int_log_int_log_up_eq_iff.
+have -> : log b%r n%r = (int_log b n)%r.
+  apply RealOrder.ler_anti.
+  split => [| _ //]; by rewrite -ilu_eq_il_bn.
+by rewrite from_int_floor.
+rewrite (floor_eq (int_log b n)) //.
+split => [// | _].
+have -> : int_log b n + 1 = int_log_up b n.
+  by rewrite /int_log_up b2ilbn_ne_n.
+by rewrite real_log_ub_lt.
+qed.
+
+lemma ceil_real_log (b n : int) :
+  2 <= b => 1 <= n =>
+  ceil (log b%r n%r) = int_log_up b n.
+proof.
+move => ge2_b ge1_n.
+have [low_le high_le] := real_log_bounds b n _ _ => //.
+case (b ^ int_log b n = n) => [b2ilbn_eq_n | b2ilbn_ne_n].
+have ilu_eq_il_bn : int_log_up b n = int_log b n.
+  by rewrite eq_sym int_log_int_log_up_eq_iff.
+have -> : log b%r n%r = (int_log b n)%r.
+  apply RealOrder.ler_anti.
+  split => [| _ //]; by rewrite -ilu_eq_il_bn.
+by rewrite from_int_ceil ilu_eq_il_bn.
+rewrite (ceil_eq (int_log b n + 1)) //.
+split => [/= | _].
+rewrite RealOrder.ltr_def low_le /=.
+case (log b%r n%r = (int_log b n)%r) => [contrad | //].
+have // : b ^ (int_log b n) = n.
+  rewrite -eq_fromint -RField.fromintXn 1:int_log_ge0 //.
+  rewrite -rpow_nat 1:int_log_ge0 //.
+  by rewrite le_fromint (ler_trans 2) //.
+  rewrite -contrad rpowK 1:lt_fromint 1:(ltr_le_trans 2) //.
+  rewrite eq_fromint gtr_eqF 1:ltzE //.
+  by rewrite lt_fromint (ltr_le_trans 1).
+have -> // : int_log b n + 1 = int_log_up b n.
+  by rewrite /int_log_up b2ilbn_ne_n.
+by rewrite /int_log_up b2ilbn_ne_n.
 qed.
 
 lemma int_log_up_distr_mul (b n m : int) :
