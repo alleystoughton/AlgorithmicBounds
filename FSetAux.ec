@@ -40,13 +40,15 @@ by rewrite H1.
 by rewrite H2.
 qed.
 
+abbrev disjoint (xs ys : 'a fset) = xs `&` ys = fset0.
+
 lemma disjointP (xs ys : 'a fset) :
-  xs `&` ys = fset0 <=> forall (x : 'a), x \in xs => ! x \in ys.
+  disjoint xs ys <=> forall (x : 'a), x \in xs => ! x \in ys.
 proof.
 split => [disj_xs_ys x x_in_xs | all_xs_not_in_ys].
 case (x \in ys) => [x_in_ys | //].
 have x_in_inter_xs_ys : x \in (xs `&` ys) by rewrite in_fsetI.
-have // : false by rewrite -(in_fset0 x) -disj_xs_ys.
+by rewrite /= -(in_fset0 x) -disj_xs_ys.
 rewrite fsetP => x.
 rewrite in_fsetI in_fset0 /= negb_and.
 case (x \in xs) => [x_in_xs | //].

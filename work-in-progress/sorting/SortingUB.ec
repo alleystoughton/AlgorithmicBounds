@@ -540,7 +540,7 @@ op proper (t : term) : bool =
     mem range_len i /\ proper u /\ ! mem (elems u) i
   with t = Merge u v      =>
     proper u /\ proper v /\ (! is_sort v => is_list u) /\
-    elems u `&` elems v = fset0 /\ elems u `|` elems v <> fset0
+    disjoint (elems u) (elems v) /\ elems u `|` elems v <> fset0
   with t = Cond i j us vs =>
     proper_list0 (i :: us) /\ proper_list0 (j :: vs) /\
     ! has (mem (i :: us)) (j :: vs).
@@ -1372,7 +1372,7 @@ qed.
 
 lemma mem_poten_cmps_disjoint (t u : term, p q : int * int) :
   p \in poten_cmps t => q \in poten_cmps u =>
-  elems t `&` elems u = fset0 => p <> q.
+  disjoint (elems t) (elems u) => p <> q.
 proof.
 move => p_in_pcs_t q_in_pcs_u disj_t_u.
 case (p = q) => [eq_p_q | //].
@@ -1382,7 +1382,7 @@ by rewrite /= -(in_fset0 (p.`1)) -disj_t_u in_fsetI.
 qed.
 
 lemma mem_poten_cmps_disjoint_not_elems1 (t u : term, c d : int) :
-  (c, d) \in poten_cmps t => elems t `&` elems u = fset0 =>
+  (c, d) \in poten_cmps t => disjoint (elems t) (elems u) =>
   ! c \in elems u.
 proof.
 move => c_d_in_pcs_t disj_t_u.
@@ -1392,7 +1392,7 @@ by rewrite /= -(in_fset0 c) -disj_t_u in_fsetI.
 qed.
 
 lemma mem_poten_cmps_disjoint_not_elems2 (t u : term, c d : int) :
-  (c, d) \in poten_cmps t => elems t `&` elems u = fset0 =>
+  (c, d) \in poten_cmps t => disjoint (elems t) (elems u) =>
   ! d \in elems u.
 proof.
 move => c_d_in_pcs_t disj_t_u.
@@ -1497,7 +1497,7 @@ qed.
    queries (encodings of comparison requests) *)
 
 op poten_cmps_invar (t : term, qs : int fset) : bool =
-  poten_cmps t `&` image dec qs = fset0.
+  disjoint (poten_cmps t) (image dec qs).
 
 lemma poten_cmps_invar_start :
   poten_cmps_invar (Sort range_len) fset0.
@@ -1598,7 +1598,7 @@ by rewrite -(proper_answer_elems_eq u b) // -is_compare_step_iff_good_answer.
 case ((c, d) = of_compare (step u)) => [c_d_eq_of_cmp_step_u | //].
 have c_d_in_pcs_u : (c, d) \in poten_cmps u.
  by rewrite c_d_eq_of_cmp_step_u is_compare_poten_cmps_step.
-have disj_u_t : elems u `&` elems t = fset0 by rewrite fsetIC.
+have disj_u_t : disjoint (elems u) (elems t) by rewrite fsetIC.
 smt(mem_poten_cmps_disjoint_not_elems1).
 case (of_list t = []) => [// | not_of_list_t_eq_nil].
 by case (of_list u = []).
