@@ -445,7 +445,7 @@ smt(int_log_lb_le log_fact_helper).
 qed.
 
 lemma log2_fact (n : int) :
-  1 <= n => (n * (int_log 2 n)) %/ 2 <= int_log 2 (fact n). 
+  1 <= n => (n * int_log 2 n) %/ 2 <= int_log 2 (fact n). 
 proof.
 move => ge1_n.
 by rewrite div2_le_if_le_tim2_plus1 log2_fact_aux.
@@ -486,18 +486,19 @@ have -> :
 smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt). 
 qed. 
 
-
 lemma int_log16_eq_4 : int_log 2 16 = 4.
 proof.
 rewrite eq_sym (int_logPuniq 2 16 4) //.
-smt(expr2 exprS).
+smt(expr1 expr2 exprS).
 qed.
 
-lemma conditional_precise (n: int) :
-  16 <= n => (n * (int_log 2 n)) %/ 2 <= n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n).
+lemma conditional_precise_ge16 (n : int) :
+  16 <= n =>
+  (n * int_log 2 n) %/ 2 <= n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n).
 proof.
 move => ge16_n.
-have /# : 2 * 2 ^ (int_log 2 n) <= n * (int_log 2 n) - n * (int_log 2 n) %/ 2.
+have /# :
+  2 * 2 ^ (int_log 2 n) <= n * (int_log 2 n) - n * (int_log 2 n) %/ 2.
   rewrite (lez_trans (n * int_log 2 n %/ 2)) 2:/#.
   have e : 2 ^ int_log 2 n <= n by smt(int_log_lb_le).
   rewrite (lez_trans (2 * n)) 1:/#. 
@@ -505,9 +506,20 @@ have /# : 2 * 2 ^ (int_log 2 n) <= n * (int_log 2 n) - n * (int_log 2 n) %/ 2.
   rewrite -(ler_pmul2l n) in bound; smt(). 
 qed.
 
-(* here our main theorem: *)
+lemma conditional_precise_ge11 (n : int) :
+  11 <= n =>
+  (n * int_log 2 n) %/ 2 <= n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n).
+proof.
+admit.
+qed.
 
-lemma lower_bound &m :
+(* below are several versions of our main theorem, for two
+   lower-approximations of our target (int_log_up (fact len)),
+   plus our target itself *)
+
+(* first approximation: (len * int_log 2 len %/ 2) *)
+
+lemma lower_bound_approx &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
   forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
@@ -527,3 +539,80 @@ rewrite (ler_trans (int_log 2 (fact len))).
 rewrite log2_fact ge1_len.
 rewrite int_log_int_log_up_le.
 qed.
+
+(* second approximation: len * (int_log 2 len) - 2 * 2 ^ (int_log 2 len)
+
+   as proved above, as long as 11 <= len, the second approximation
+   is >= the first one *)
+
+lemma lower_bound_precise_approx &m :
+  exists (Adv <: ADV),
+  islossless Adv.init /\ islossless Adv.ans_query /\
+  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  Pr[G(Alg, Adv).main() @ &m :
+       res.`1 \/
+       len * (int_log 2 len) - 2 * 2 ^ (int_log 2 len) <= res.`2] = 1%r.
+proof.
+apply
+  (lower_bound_gen
+   (len * (int_log 2 len) - 2 * 2 ^ (int_log 2 len))
+   &m _).
+rewrite (ler_trans (int_log 2 (fact len))).
+by rewrite log2_fact_precise 1:ge0_len ge1_len.
+rewrite int_log_int_log_up_le.
+qed.
+
+(* target : int_log_up 2 (fact len) *)
+
+lemma lower_bound_target &m :
+  exists (Adv <: ADV),
+  islossless Adv.init /\ islossless Adv.ans_query /\
+  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  Pr[G(Alg, Adv).main() @ &m :
+       res.`1 \/ int_log_up 2 (fact len) <= res.`2] = 1%r.
+proof.
+by apply (lower_bound_gen (int_log_up 2 (fact len)) &m _).
+qed.
+
+(* for comparison, here is a table showing the exact values of the two
+   lower-approximations and the target as len ranges from 1 to 19:
+
+   len  first  second  target
+   --------------------------
+     1      0      -2       0
+     2      1      -2       1
+     3      1      -1       2
+     4      4       0       4
+     5      5       2       6
+     6      6       4       9
+     7      7       6      12
+     8     12       8      15
+     9     13      11      18
+    10     15      14      21
+   --------------------------  point where second >= first
+    11     16      17      25
+    12     18      20      28
+    13     19      23      32
+    14     21      26      36
+    15     22      29      40
+    16     32      32      44
+    17     34      36      48
+    18     36      40      52
+    19     38      44      56
+*)

@@ -39,4 +39,8 @@ We have applied these frameworks to
    given element is located, as well as proving an upper bound for
    the binary search algorithm for this problem](../main/searching)
 
-We also have some [work-in-progress](../main/work-in-progress).
+ * [proving a lower bound for determining how a list of distinct
+    element must be permuted in order to be sorted, as well as proving
+    an upper bound for the merge sort algorithm, where an algorithm
+    may only query how elements are related, but not the elements'
+    values themselves](../main/sorting)
