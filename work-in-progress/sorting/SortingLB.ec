@@ -486,6 +486,25 @@ have -> :
 smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt). 
 qed. 
 
+
+lemma int_log16_eq_4 : int_log 2 16 = 4.
+proof.
+rewrite eq_sym (int_logPuniq 2 16 4) //.
+smt(expr2 exprS).
+qed.
+
+lemma conditional_precise (n: int) :
+  16 <= n => (n * (int_log 2 n)) %/ 2 <= n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n).
+proof.
+move => ge16_n.
+have /# : 2 * 2 ^ (int_log 2 n) <= n * (int_log 2 n) - n * (int_log 2 n) %/ 2.
+  rewrite (lez_trans (n * int_log 2 n %/ 2)) 2:/#.
+  have e : 2 ^ int_log 2 n <= n by smt(int_log_lb_le).
+  rewrite (lez_trans (2 * n)) 1:/#. 
+  have bound : 2 <= (int_log 2 n) %/ 2 by smt(int_log_le int_log16_eq_4).
+  rewrite -(ler_pmul2l n) in bound; smt(). 
+qed.
+
 (* here our main theorem: *)
 
 lemma lower_bound &m :
