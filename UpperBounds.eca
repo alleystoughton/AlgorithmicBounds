@@ -6,7 +6,7 @@
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
 
-(* general framework for proving upper bounds results *)
+(* general framework for proving worst case upper bounds results *)
 
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
