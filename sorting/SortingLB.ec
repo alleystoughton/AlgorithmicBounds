@@ -703,4 +703,7 @@ And here are the results for three larger values of len:
       1000:      4500        7976        8530
      10000:     65000      113616      118459
      20000:    140000      247232      256909
-*)
+
+For comparison, our len * int_log 2 len upper bound for merge sort
+(see SortingUB.ec) is 280,000, when len = 20,000, a gap of 23,091
+between the target lower bound of 256909 and the upper bound. *)
