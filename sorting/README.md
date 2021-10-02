@@ -12,4 +12,4 @@ values themselves.
 * [`SortingUB.ec` - upper bound proof for binary search algorithm](SortingUB.ec)
 * [`lower-bounds` - OCaml program for generating and printing out two
    lower-approximations to the target sorting lower bound, plus the
-   target itself, for a range of values of list lengths](lower-bounds)
+   target itself, for a range of list lengths](lower-bounds)
