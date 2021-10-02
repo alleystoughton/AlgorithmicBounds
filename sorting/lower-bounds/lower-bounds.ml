@@ -86,4 +86,4 @@ let pr ((n, (i, j, k)) : int * (int * int * int)) : unit =
 (* run g on a range and print the results *)
 
 let run (n : int) : unit =
-  (List.iter pr (g n))
+  List.iter pr (g n)
