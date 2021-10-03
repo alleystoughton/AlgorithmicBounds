@@ -9,7 +9,7 @@ values themselves.
 
 * [`SortingProb.ec` - definition of sorting problem](SortingProb.ec)
 * [`SortingLB.ec` - lower bound proof](SortingLB.ec)
-* [`SortingUB.ec` - upper bound proof for binary search algorithm](SortingUB.ec)
+* [`SortingUB.ec` - upper bound proof for merge sort algorithm](SortingUB.ec)
 * [`lower-bounds` - OCaml program for generating and printing out two
    lower-approximations to the target sorting lower bound, plus the
    target itself, for a range of list lengths](lower-bounds)
