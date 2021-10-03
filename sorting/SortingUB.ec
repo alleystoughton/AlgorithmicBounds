@@ -1808,14 +1808,16 @@ by rewrite ltr_add2r wc_term_answer 1:/# -is_compare_step_iff_good_answer.
 by rewrite poten_cmps_invar_is_compare_answer.
 qed.
 
-(* the main lemma: *)
+(* here is our main lemma, parameterized by an upper bound: *)
 
-lemma G_main (inps' : inp list) :
+lemma G_main (bound: int, inps' : inp list) :
+  wc len <= bound =>
   hoare
   [G(Alg).main :
    inps = inps' /\ total_ordering inps ==>
-   res.`1 = f () inps' /\ res.`2 <= len * int_log 2 len].
+   res.`1 = f () inps' /\ res.`2 <= bound].
 proof.
+move => wc_len_le_bound.
 proc => /=.
 seq 5 :
   (inps = inps' /\ total_ordering inps /\
@@ -1879,14 +1881,68 @@ rewrite /f to_inps' /= /total_ordering_to_perm_len /tsort.
 by rewrite -(repr_done (cmp_of_rel inps')) //
            (invar_impl_repr_eq inps' queries).
 have eq0_wc_term_term : wc_term term = 0 by rewrite is_list.
-rewrite (ler_trans (wc len)).
+rewrite (ler_trans (wc len)) //.
 smt(invar_impl_wc_le).
-rewrite wc_le ge1_len.
 qed.
 
-(* here is our main theorem: *)
+(* here is the generalized version of our main theorem: *)
 
-lemma upper_bound &m :
+lemma upper_bound_gen (bound : int) &m :
+  wc len <= bound =>
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
+  phoare
+  [Alg.make_query_or_report_output :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+  (forall (inps : inp list),  (* so all (mem univ) inps *)
+   total_ordering inps =>  (* so size inps = arity and good () inps *)
+   Pr[G(Alg).main((), inps) @ &m :
+      res.`1 = f () inps /\ res.`2 <= bound] = 1%r).
+proof.
+move => wc_len_le_bound.
+split; first apply Alg_init_term.
+split; first apply Alg_make_query_or_report_output_term.
+split; first apply Alg_query_result_term.
+move => inps' to_inps'.
+byphoare
+  (_ :
+   inps = inps' /\ total_ordering inps ==>
+   res.`1 = f () inps' /\ res.`2 <= bound) => //.
+conseq
+  (_ : true ==> true)
+  (_ :
+   inps = inps' /\ total_ordering inps ==>
+   res.`1 = f () inps' /\ res.`2 <= bound) => //.
+by conseq (G_main bound inps' _).
+rewrite (G_ll Alg alg_term_invar) 1:Alg_init_term
+        1:Alg_make_query_or_report_output_term Alg_query_result_term.
+qed.
+
+(* and below are two instantiations of our general theorem,
+   first for the bound wc len, and second for the bound
+   len * int_log 2 len *)
+
+lemma upper_bound_wc &m :
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
+  phoare
+  [Alg.make_query_or_report_output :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+  (forall (inps : inp list),  (* so all (mem univ) inps *)
+   total_ordering inps =>  (* so size inps = arity and good () inps *)
+   Pr[G(Alg).main((), inps) @ &m :
+      res.`1 = f () inps /\ res.`2 <= wc len] = 1%r).
+proof.
+by apply upper_bound_gen.
+qed.
+
+lemma upper_bound_len_int_log2_len &m :
   phoare
   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
   phoare
@@ -1900,20 +1956,6 @@ lemma upper_bound &m :
    Pr[G(Alg).main((), inps) @ &m :
       res.`1 = f () inps /\ res.`2 <= len * int_log 2 len] = 1%r).
 proof.
-split; first apply Alg_init_term.
-split; first apply Alg_make_query_or_report_output_term.
-split; first apply Alg_query_result_term.
-move => inps' to_inps'.
-byphoare
-  (_ :
-   inps = inps' /\ total_ordering inps ==>
-   res.`1 = f () inps' /\ res.`2 <= len * int_log 2 len) => //.
-conseq
-  (_ : true ==> true)
-  (_ :
-   inps = inps' /\ total_ordering inps ==>
-   res.`1 = f () inps' /\ res.`2 <= len * int_log 2 len) => //.
-by conseq (G_main inps').
-rewrite (G_ll Alg alg_term_invar) 1:Alg_init_term
-        1:Alg_make_query_or_report_output_term Alg_query_result_term.
+apply upper_bound_gen.
+rewrite wc_le ge1_len.
 qed.
