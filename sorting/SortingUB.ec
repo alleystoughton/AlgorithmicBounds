@@ -63,8 +63,12 @@ qed.
 (* end of realization *)
 
 (* wc : int -> int recursively calculates an upper bound on the worst
-   case number of comparisons used by merge sort when given a list of
-   size n *)
+   case number of comparisons used by merge sort (see below) when
+   given a list of size n
+
+   there exist lists of distinct elements us and total orderings where
+   the actual number of comparisions used by merge sort equals wc
+   (size us), but this is not always true *)
 
 op wc_wf_rec_def : (int, int) wf_rec_def =
   fun (n : int,            (* input *)
@@ -179,6 +183,13 @@ rewrite subr_eq /= int_div_up2_odd 1:eq /=.
 by rewrite odd_iff_plus1_even /= exprS 1:int_log_ge0 // dvdz_mulr.
 by rewrite {1}eq /= exprS 1:int_log_ge0 // mulKz.
 qed.
+
+(* for some values of n, e.g., n = 7, wc n = n * int_log 2 n,
+   but for others, wc n < n * int_log 2 n
+
+   for n = 7, there are some lists us of distinct elements of size
+   7 and total orderings where the actual number of comparisons
+   used by merge sort is equal to wc n = n * int_log 2 n *)
 
 lemma wc_le (n : int) :
   1 <= n => wc n <= n * int_log 2 n.
