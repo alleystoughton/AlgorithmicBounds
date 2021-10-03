@@ -3,7 +3,7 @@
    target itself, for a range of values of len *)
 
 open Batteries
-open Big_int
+open Big_int  (* arbitrary precision integers *)
 open Printf
 
 (* exponentiation *)
@@ -35,12 +35,12 @@ let (two : big_int) = of_int 2
 (* factorial *)
 
 let rec fact (n : int) : big_int =
-  if n = 0 then one else (of_int n) * (fact (Int.(-) n 1))
+  if n = 0 then one else of_int n * fact (Int.(-) n 1)
 
 (* il is int_log 2 *)
 
 let rec il_find (n : big_int) (i : int) (p : big_int) : int =
-  if le p n && lt n (p * two)
+  if le p n && lt n (p * two)  (* p is two to the power i *)
   then i
   else il_find n (Int.(+) i 1) (p * two)
 
@@ -52,7 +52,7 @@ let il (n : big_int) : int =
 (* ilu is int_log_up 2 *)
 
 let rec ilu_find (n : big_int) (i : int) (p : big_int) : int =
-  if lt p n && le n (p * two)
+  if lt p n && le n (p * two)  (* p is two to the power i *)
   then Int.(+) i 1
   else ilu_find n (Int.(+) i 1) (p * two)
 
@@ -63,7 +63,12 @@ let ilu (n : big_int) : int =
     then 0
   else ilu_find n 0 one
 
-(* return the two lower-approximations plus the target *)
+(* return the two lower-approximations plus the target;
+   mathematically:
+
+   n * int_log n %/ 2,
+   n * int_log n - 2 * 2 ^ int_log 2 n,
+   int_log_up 2 (fact n) *)
 
 let f (n : int) : int * int * int =
   let il_n = il (of_int n) in
@@ -71,7 +76,7 @@ let f (n : int) : int * int * int =
    Int.(-) (Int.( * ) n il_n) ((Int.( * ) 2 (pow 2 il_n))),
    ilu (fact n))
 
-(* fun f on a range, collecting the results *)
+(* run f on a range, from 1 to n, collecting the results *)
 
 let rec g (n : int) : (int * (int * int * int)) list =
   if n = 0
@@ -83,7 +88,7 @@ let rec g (n : int) : (int * (int * int * int)) list =
 let pr ((n, (i, j, k)) : int * (int * int * int)) : unit =
   printf "%3d:   %5d    %5d    %5d\n" n i j k
 
-(* run g on a range and print the results *)
+(* run g on a range, from 1 to n, and print the results *)
 
 let run (n : int) : unit =
   List.iter pr (g n)

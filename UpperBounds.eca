@@ -6,7 +6,12 @@
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
 
-(* general framework for proving worst case upper bounds results *)
+(* general framework for proving worst case upper bounds results
+
+   when using the framework, we formalize an algorithm and prove that
+   for all valid inputs, the algorithm both produces the correct
+   result and doesn't use more queries than the desired upper bound to
+   compute that result *)
 
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 

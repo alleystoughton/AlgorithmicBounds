@@ -123,7 +123,17 @@ by rewrite -divz_eq.
 qed.
 
 (* we can represent a total ordering on list indices between 0 and len
-   - 1 as a list of booleans of size arity *)
+   - 1 as a list of booleans of size arity
+
+   this is a proxy for a total ordering on an imaginary list of
+   distinct elements of size len (a given element is less than another
+   one iff the first element's index is less than the second element's
+   index)
+
+   we can imagine the algorithm is trying to figure out how the list
+   of distinct elements should be permuted in order to be sorted, but
+   equivalently its trying to figure out how the list of indices
+   should be permuted so as to be sorted *)
 
 type inp = bool.
 
@@ -621,6 +631,11 @@ op f (aux : aux, xs : inp list) : out option =
   if total_ordering xs
   then Some (total_ordering_to_perm_len xs)
   else None.
+
+(* the algorithm tries to compute f () xs, i.e., the result
+   of sorting the list 0 .. len - 1 using cmp_of_rel xs,
+   though making queries about how indices are related by
+   cmp_of_rel xs *)
 
 lemma f_prop (xs : inp list) :
   total_ordering xs =>
