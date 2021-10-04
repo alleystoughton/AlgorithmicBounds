@@ -393,24 +393,16 @@ move => [Adv adv_term_invar] [#] Adv_init_term Adv_ans_query_term Conclu.
 exists Adv adv_term_invar.
 split; first trivial.
 split; first trivial.
-have -> Alg :
-  (! exists (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
-     phoare[Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
-     phoare[Alg.make_query :
-            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-     phoare[Alg.query_result :
-            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-     Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] = 1%r) =
-  (forall (Alg <: ALG{Adv}),
-   ! exists (alg_term_invar : (glob Alg) -> bool),
-     phoare[Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
-     phoare[Alg.make_query :
-            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-     phoare[Alg.query_result :
-            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-     Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] = 1%r).
-  admit.
-rewrite negb_exists => alg_term_invar /=.
+case
+  (exists (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+   phoare[Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
+   phoare[Alg.make_query :
+          alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+   phoare[Alg.query_result :
+          alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+   Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] = 1%r) =>
+  [[Alg alg_term_invar] | //].
+rewrite /=.
 have not_and_iff_imply_not :
   forall (a b : bool), ! (a /\ b) <=> (a => !b).
   move => a b; by rewrite negb_and implybE.
