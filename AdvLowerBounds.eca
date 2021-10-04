@@ -345,3 +345,86 @@ rewrite queries_in_range0.
 by rewrite fcards0.
 smt(queries_in_range_card_le_arity).
 qed.
+
+(* the following lemma shows how we can interpret the standard
+   form of lower bound result *)
+
+lemma lower_bound_consequence (bound : int) &m :
+  (exists (Adv <: ADV) (adv_term_invar : glob Adv -> bool),
+   phoare
+   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r /\
+   phoare
+   [Adv.ans_query :
+    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r /\
+   forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+   phoare
+   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+   phoare
+   [Alg.make_query :
+    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+   phoare
+   [Alg.query_result :
+    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+   Pr[G(Alg, Adv).main() @ &m :  (* if we run G(Alg, Adv).main() @ &m, *)
+          res.`1 \/              (* either Alg commits an error, or *)
+          bound <= res.`2        (* the game terminates in no fewer than *)
+     ] = 1%r) =>                 (* bound steps, with propbability 1 *)
+  (exists (Adv <: ADV) (adv_term_invar : glob Adv -> bool),
+   phoare
+   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r /\
+   phoare
+   [Adv.ans_query :
+    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r /\
+   ! exists (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+   phoare
+   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
+   phoare
+   [Alg.make_query :
+    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+   phoare
+   [Alg.query_result :
+    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+   Pr[G(Alg, Adv).main() @ &m :  (* if we run G(Alg, Adv).main() @ &m, *)
+        ! res.`1 /\              (* Alg does not commit an error, and *)
+        res.`2 < bound           (* the game terminates in strictly less than *)
+     ] = 1%r).                   (* bound steps, with probability 1 *)
+proof.
+move => [Adv adv_term_invar] [#] Adv_init_term Adv_ans_query_term Conclu.
+exists Adv adv_term_invar.
+split; first trivial.
+split; first trivial.
+have -> Alg :
+  (! exists (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+     phoare[Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
+     phoare[Alg.make_query :
+            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+     phoare[Alg.query_result :
+            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+     Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] = 1%r) =
+  (forall (Alg <: ALG{Adv}),
+   ! exists (alg_term_invar : (glob Alg) -> bool),
+     phoare[Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
+     phoare[Alg.make_query :
+            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+     phoare[Alg.query_result :
+            alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
+     Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] = 1%r).
+  admit.
+rewrite negb_exists => alg_term_invar /=.
+have not_and_iff_imply_not :
+  forall (a b : bool), ! (a /\ b) <=> (a => !b).
+  move => a b; by rewrite negb_and implybE.
+rewrite not_and_iff_imply_not => Alg_init_term.
+rewrite not_and_iff_imply_not => Alg_make_query_term.
+rewrite not_and_iff_imply_not => Alg_query_result_term.
+have C := Conclu Alg alg_term_invar _ _ _ => //.
+have /# : Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] = 0%r.
+  have -> :
+    Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] =
+    Pr[G(Alg, Adv).main() @ &m : ! (res.`1 \/ bound <= res.`2)].
+    rewrite Pr [mu_eq] /#.
+  rewrite Pr [mu_not].
+have -> /# : Pr[G(Alg, Adv).main() @ &m : true] = 1%r.  
+  byphoare => //.
+  by rewrite (G_ll Alg Adv alg_term_invar adv_term_invar).
+qed.
