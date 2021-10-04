@@ -346,13 +346,18 @@ rewrite (G_ll Alg Adv alg_term_invar predT)
         1:Adv_init_ll Adv_ans_query_ll.
 qed.
 
+(* now we establish two lower-approximations to int_log 2 (fact n),
+   as a function of n *)
+
+(* helper lemmas for the first lower-approximation: *)
+
 lemma int_log2_eq_1 : int_log 2 2 = 1.
 proof.
 by rewrite eq_sym (int_logPuniq 2 2 1) // expr1 /= expr2.
 qed.
 
-lemma int_log_geq (x b n : int) :
-  0 <= x => 2 <= b => 1 <= n =>  b ^ x <= n => x <= int_log b n.
+lemma int_log_ge_pow (x b n : int) :
+  0 <= x => 2 <= b => 1 <= n => b ^ x <= n => x <= int_log b n.
 proof.
 move => ge0_x ge2_b ge1_n le_pow_b_x_n.
 rewrite -(int_log_pow_b b x) //= int_log_le //= exprn_ege1 //= 1:/#.
@@ -375,7 +380,7 @@ elim n => [le1_0 /# | n ge0_n ih].
 move : ge0_n.  
 case (2 < n) => [gt2_n _ _ | le2_n ge0_n _].
 (* 2 < n *)
-have lb1 : 2 <= int_log 2 (n + 1) by rewrite int_log_geq // 1:/# expr2 /#.
+have lb1 : 2 <= int_log 2 (n + 1) by rewrite int_log_ge_pow // 1:/# expr2 /#.
 have lb2 : int_log 2 (n + 1) + int_log 2 (fact n) <= int_log 2 (fact(n + 1))
   by rewrite factS // 1:/# int_log_distr_mul_lb // 1:/#; smt(ge1_fact).       
 have [e | [e1 e2]] :
@@ -444,12 +449,16 @@ proof.
 smt(int_log_lb_le log_fact_helper).
 qed.
 
+(* first lower-approximation: *)
+
 lemma log2_fact (n : int) :
   1 <= n => (n * int_log 2 n) %/ 2 <= int_log 2 (fact n). 
 proof.
 move => ge1_n.
 by rewrite div2_le_if_le_tim2_plus1 log2_fact_aux.
 qed.
+
+(* helper lemmas for second lower-approximation: *)
 
 lemma int_log_leq_plus1 (b n : int) :
   1 <= n => 2 <= b => int_log b (n + 1) <= int_log b n + 1.
@@ -460,7 +469,7 @@ rewrite (ge2_exp_le_equiv b (int_log b (n + 1)) ((int_log b n) + 1)) //=;
 smt(int_log_ge0 int_log_lb_le int_log_ub_lt).
 qed.
 
-lemma log2_fact_precise (n : int) :
+lemma log2_fact_precise_aux (n : int) :
   0 <= n => 1 <= n =>
   n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n) <= int_log 2 (fact n).
 proof.
@@ -486,6 +495,28 @@ have -> :
 smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt). 
 qed. 
 
+(* second lower-approximation: *)
+
+lemma log2_fact_precise (n : int) :
+  1 <= n =>
+  n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n) <= int_log 2 (fact n).
+proof.
+move => ge1_n.
+by rewrite log2_fact_precise_aux // (ler_trans 1).
+qed.
+
+(* now we show when the second lower-approximation is at least
+   as good as the first one *)
+
+lemma int_log9_to_15_eq_3 (n : int) :
+  9 <= n <= 15 => int_log 2 n = 3.
+proof.
+move => [ge9_n le15_n].
+rewrite eq_sym (int_logPuniq 2 n 3) //.
+have -> : 3 = 1 + 1 + 1 by trivial.
+rewrite !exprS // expr1 /= /#.
+qed.
+
 lemma int_log16_eq_4 : int_log 2 16 = 4.
 proof.
 rewrite eq_sym (int_logPuniq 2 16 4) //.
@@ -510,12 +541,18 @@ lemma conditional_precise_ge11 (n : int) :
   11 <= n =>
   (n * int_log 2 n) %/ 2 <= n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n).
 proof.
-admit.
+move => ge11_n.
+case (16 <= n) => [ge16_n | lt16_n].
+by rewrite conditional_precise_ge16.
+rewrite lerNgt /= in lt16_n.
+rewrite int_log9_to_15_eq_3 // 1:/#.
+have {3}-> : 3 = 1 + 1 + 1 by trivial.
+rewrite !exprS // expr1 /= /#.
 qed.
 
-(* below are several versions of our main theorem, for two
-   lower-approximations of our target (int_log_up (fact len)),
-   plus our target itself *)
+(* below are several versions of our main theorem, for the two
+   lower-approximations of our target (int_log_up (fact len)), plus
+   our target itself *)
 
 (* first approximation: (len * int_log 2 len %/ 2) *)
 
@@ -566,7 +603,7 @@ apply
    (len * (int_log 2 len) - 2 * 2 ^ (int_log 2 len))
    &m _).
 rewrite (ler_trans (int_log 2 (fact len))).
-by rewrite log2_fact_precise 1:ge0_len ge1_len.
+by rewrite log2_fact_precise ge1_len.
 rewrite int_log_int_log_up_le.
 qed.
 
@@ -741,4 +778,3 @@ len ranges from 1 to 19:
    19:     57      64
 
 Note that they are equal for the first four values of len. *)
-
