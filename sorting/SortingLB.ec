@@ -627,7 +627,9 @@ proof.
 by apply (lower_bound_gen (int_log_up 2 (fact len)) &m _).
 qed.
 
-(* for comparison, here is a table showing the exact values of the two
+(* experimental results
+
+   for comparison, here is a table showing the exact values of the two
    lower-approximations and the target as len ranges from 1 to 100:
 
    len   first   second   target
@@ -642,6 +644,7 @@ qed.
     8:      12        8       16
     9:      13       11       19
    10:      15       14       22
+   ----------------------------- point after first <= second
    11:      16       17       26
    12:      18       20       29
    13:      19       23       33
@@ -752,8 +755,9 @@ with the least upper bound
 
 (2) wc len
 
-Below is a table showing how these values are related as
-len ranges from 1 to 100:
+Below is a table showing how these values are related as len ranges
+from 1 to 100 (note that they are equal for the first four values of
+len):
 
    len      (1)     (2)
    --------------------
@@ -858,8 +862,6 @@ len ranges from 1 to 100:
    99:     519      566
   100:     525      573
 
-Note that they are equal for the first four values of len.
-
 And here are the results for three larger values of len:
 
        len        (1)       (2)
@@ -867,4 +869,13 @@ And here are the results for three larger values of len:
      1000:       8530      8977
     10000:     118459    123617
     20000:     256909    267233
-*)
+
+For len <= 5, int_log_up 2 (fact len) is equal to the minimum number
+of steps that our lower bound game runs, where the adversarial
+strategy is that of our definition of Adv, and we look at all possible
+orders of query choices.  We don't know if this pattern holds for
+all len.
+
+For len <= 10, wc len is equal to the worst case number of
+comparisons actually used by merge sort. We don't know if this
+pattern holds for all len. *)
