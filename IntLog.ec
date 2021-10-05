@@ -182,21 +182,21 @@ move => ge2_m.
 by rewrite int_div_ge_b_implies_ge1.
 qed.
 
-lemma int_div_lt_self_if_ge_b (b m : int) :
-  2 <= b => b <= m => m %/ b < m.
+lemma int_div_lt_self_if_ge1 (b m : int) :
+  2 <= b => 1 <= m => m %/ b < m.
 proof.
-move => ge2_b le_b_m.
+move => ge2_b ge1_m.
 have gt0_b : 0 < b by rewrite (ltr_le_trans 2).
 have gt1_b : 1 < b by rewrite (ltr_le_trans 2).
-have gt0_m : 0 < m by rewrite (ltr_le_trans b).
+have gt0_m : 0 < m by rewrite ltzE.
 by rewrite (ltz_divLR m m b) // ltr_pmulr.
 qed.
 
-lemma int_div2_lt_self_if_ge2 (m : int) :
-  2 <= m => m %/ 2 < m.
+lemma int_div2_lt_self_if_ge1 (m : int) :
+  1 <= m => m %/ 2 < m.
 proof.
-move => ge2_m.
-by rewrite int_div_lt_self_if_ge_b.
+move => ge1_m.
+by rewrite int_div_lt_self_if_ge1.
 qed.
 
 lemma div_nb_eq_div_n_div_b (b m n : int) :
@@ -348,7 +348,7 @@ lemma int_div_up_lt_self_if_ge_b (b m : int) :
 proof.
 move => ge2_b le_b_m; rewrite /(%%/).
 case (b %| m) => [b_dvdz_m /= | not_b_dvdz_m].
-by rewrite int_div_lt_self_if_ge_b.
+by rewrite int_div_lt_self_if_ge1 // (ler_trans 2) // (ler_trans b).
 have m_eq := divz_eq m b.
 rewrite -ltr_subr_addr ltz_divLR 1:(ltr_le_trans 2) //.
 have -> : (m - 1) * b = m * b - b by algebra.
@@ -429,6 +429,41 @@ lemma divru_2n_eq_divru_n_divru_2 (m n : int) :
 proof.
 move => ge0_m gt0_n.
 by rewrite divru_nb_eq_divru_n_divru_b.
+qed.
+
+lemma div2_sum_le_bigger_or_eq (m n : int) :
+  m <= n => (n + m) %/ 2 <= n.
+proof.
+move => ge_m_n.
+have -> : n = (n - m) + m by algebra.
+rewrite -{1}addrA -mul2r divzMDr //.
+have -> : n - m + m = m + n - m by algebra.
+by rewrite -addrA lez_add2l // leq_div 1:subr_ge0.
+qed.
+
+lemma div2_sum_lt_bigger (m n : int) :
+  m < n => (n + m) %/ 2 < n.
+proof.
+move => lt_m_n.
+have -> : n = (n - m) + m by algebra.
+rewrite -{1}addrA -mul2r divzMDr //.
+have -> : n - m + m = m + n - m by algebra.
+rewrite -addrA ltr_add2l.
+rewrite int_div2_lt_self_if_ge1.
+rewrite ltzE -ler_subr_addl // in lt_m_n.
+qed.
+
+lemma divru2_sum_le_bigger_or_eq (m n : int) :
+  m <= n => (n + m) %%/ 2 <= n.
+proof.
+move => ge_m_n.
+case (m = n) => [-> | ne_m_n].
+by rewrite -mul2r int_div_up2_even 1:dvdz_mull // mulzK.
+have lt_m_n : m < n by rewrite ltr_def eq_sym.
+rewrite /(%%/).
+case (2 %| (n + m)) => [even_n_plus_m | odd_n_plus_m] /=.
+by rewrite div2_sum_le_bigger_or_eq.
+by rewrite -ltzE div2_sum_lt_bigger.
 qed.
 
 (* rounding down integer logarithm (default) *)
@@ -1262,7 +1297,7 @@ case (n %/ 2 ^ k = 1) => [-> // | ne1_n_div_two2k].
 have ge2_n_div_two2k : 2 <= n %/ 2 ^ k.
 have {1}-> : 2 = 1 + 1 by trivial.
 by rewrite -ltzE ltz_def.
-by rewrite int_div2_lt_self_if_ge2.
+by rewrite int_div2_lt_self_if_ge1.
 qed.
 
 lemma divpow2_le1_next_eq0 (n k : int) :
