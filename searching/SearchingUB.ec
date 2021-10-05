@@ -63,6 +63,7 @@ module Alg : ALG = {
     aux <- aux';
     low <- 0;
     high <- arity - 1;
+    mid <- 0;  (* value doesn't matter, but must initialize *)
   }
 
   proc make_query_or_report_output() : response = {

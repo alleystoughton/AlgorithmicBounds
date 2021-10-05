@@ -114,8 +114,9 @@ qed.
 (* an algorithm *)
 
 module type ALG = {
-  (* tell algorithm to initialize itself, giving it aux *)
-  proc init(aux : aux) : unit
+  (* tell algorithm to initialize itself, giving it aux;
+     must initialize global variables *)
+  proc *init(aux : aux) : unit
 
   (* ask algorithm to either: make an input query, choosing an input
      list index i such that 0 <= i < arity; or report its output *)
@@ -125,7 +126,11 @@ module type ALG = {
   proc query_result(x : inp) : unit
 }.
 
-(* game parameterized by algorithm *)
+(* game parameterized by algorithm
+
+   it has no global variables, and, since Alg.init initializes the
+   global variables of Alg, running G won't depend on the initial
+   memory *)
 
 module G(Alg : ALG) = {
   (* precondition: size inps = arity /\ all (mem univ) inps /\
