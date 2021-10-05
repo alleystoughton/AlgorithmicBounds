@@ -40,21 +40,6 @@ by rewrite H1.
 by rewrite H2.
 qed.
 
-abbrev disjoint (xs ys : 'a fset) = xs `&` ys = fset0.
-
-lemma disjointP (xs ys : 'a fset) :
-  disjoint xs ys <=> forall (x : 'a), x \in xs => ! x \in ys.
-proof.
-split => [disj_xs_ys x x_in_xs | all_xs_not_in_ys].
-case (x \in ys) => [x_in_ys | //].
-have x_in_inter_xs_ys : x \in (xs `&` ys) by rewrite in_fsetI.
-by rewrite /= -(in_fset0 x) -disj_xs_ys.
-rewrite fsetP => x.
-rewrite in_fsetI in_fset0 /= negb_and.
-case (x \in xs) => [x_in_xs | //].
-right; by rewrite all_xs_not_in_ys.
-qed.
-
 lemma fset1_ne_fset0 (x : 'a) :
   fset1 x <> fset0.
 proof.
