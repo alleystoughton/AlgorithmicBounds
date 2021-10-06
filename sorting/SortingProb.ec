@@ -16,7 +16,24 @@ timeout 2.  (* can increase *)
    it can ask queries of the form (i, j), for 0 <= i, j < len,
    asking whether the ith element of the list is less-than-or-equal-to
    the jth element (the answer is true or false); it can't ask
-   questions about the values of the list elements themselves *)
+   questions about the values of the list elements themselves
+
+   formally, the algorithm is trying to figure out how the list 0
+   .. len - 1 should be permuted so as to be sorted according to a
+   given total ordering
+
+   but this is equivalent to figuring out how a list of distinct
+   elements of size len should be permuted so as to be sorted
+   according to some total ordering
+
+   this is because given a list xs of distinct element of size len, we
+   can go back and forth between total orderings on 0 .. len - 1 and
+   total orderings on xs (if rel is a total ordering on 0 .. len - 1,
+   we can make it into a total ordering rel' on xs by: a <= b iff
+   the index i of a in xs is <= the index j of b in xs; if rel' is
+   a total ordering on xs, we can make it into a total ordering on
+   0 .. len - 1 by: i <= j iff the ith element of xs is <= the jth
+   element of xs *)
 
 require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial.
 import IntOrder.
@@ -123,25 +140,7 @@ by rewrite -divz_eq.
 qed.
 
 (* we can represent a total ordering on the numbers between
-   0 .. len - 1 as a list of booleans of size arity (see below)
-
-   formally, the algorithm is trying to figure out how the
-   list 0 .. len - 1 should be permuted so as to be sorted
-   according to a given total ordering, which it doesn't have
-   direct access to, but may only ask queries about
-
-   but this is equivalent to figuring out how a list of distinct
-   elements of size len should be permuted so as to be sorted
-   according to some total ordering
-
-   this is because given a list xs of distinct element of size len, we
-   can go back and forth between total orderings on 0 .. len - 1 and
-   total orderings on xs (if rel is a total ordering on 0 .. len - 1,
-   we can make it into a total ordering rel' on xs by: a <= b iff
-   the index i of a in xs is <= the index j of b in xs; if rel' is
-   a total ordering on xs, we can make it into a total ordering on
-   0 .. len - 1 by: i <= j iff the ith element of xs is <= the jth
-   element of xs *)
+   0 .. len - 1 as a list of booleans of size arity *)
 
 type inp = bool.
 
