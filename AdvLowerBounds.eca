@@ -18,7 +18,12 @@
    an adversary whose job is to answer queries by the algorithm in a
    way that delays the stage at which the remaining possible inputs
    (the ones consistent with the queries/answer made so far) all have
-   a unique answer, at which point the game ends *)
+   a unique answer, at which point the game ends
+
+   a lower bounds proof exhibits an adversary, and proves that it is
+   guaranteed to make the game run a number of stages (each
+   corresponding to a query/answer) that is >= the desired bound, as a
+   function of the size of the input *)
 
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
