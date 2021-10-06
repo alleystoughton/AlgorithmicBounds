@@ -873,13 +873,13 @@ And here are the results for three larger values of len:
     10000:     118459    123617
     20000:     256909    267233
 
-For len <= 5, int_log_up 2 (fact len) is equal to the minimum number
-of steps that our lower bound game makes, where the adversarial
-strategy is that of our definition of Adv, and we look at all possible
-orders of query choices, but restricted to queries (i, j), where 0 <=
-i < j < len. We conjecture that this restriction doesn't affect the
-results, but we haven't proved this.  We don't know if this pattern
-holds for all len.
+For len <= 5, int_log_up 2 (fact len) is equal to (not just a lower
+bound of) the minimum number of steps that our lower bound game makes,
+where the adversarial strategy is that of our definition of Adv, and
+we look at all possible orders of query choices, but restricted to
+queries (i, j), where 0 <= i < j < len. We conjecture that this
+restriction doesn't affect the results, but we haven't proved this.
+We don't know if this pattern holds for all len.
 
 For len <= 11, wc len is equal to (not just an upper bound of) the
 worst case number of comparisons actually used by merge sort. We don't

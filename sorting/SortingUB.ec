@@ -68,7 +68,7 @@ qed.
 
    in our proofs, we don't need that wc n is *equal* to the worst case
    number of comparisions actually used by merge sort, although we
-   were able to experimentally check that this is true for n <= 10 *)
+   were able to experimentally check that this is true for n <= 11 *)
 
 op wc_wf_rec_def : (int, int) wf_rec_def =
   fun (n : int,            (* input *)
