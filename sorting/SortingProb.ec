@@ -122,18 +122,26 @@ move => [ge0_m lt_m_arity].
 by rewrite -divz_eq.
 qed.
 
-(* we can represent a total ordering on list indices between 0 and len
-   - 1 as a list of booleans of size arity
+(* we can represent a total ordering on the numbers between
+   0 .. len - 1 as a list of booleans of size arity (see below)
 
-   this is a proxy for a total ordering on an imaginary list of
-   distinct elements of size len (a given element is less than another
-   one iff the first element's index is less than the second element's
-   index)
+   formally, the algorithm is trying to figure out how the
+   list 0 .. len - 1 should be permuted so as to be sorted
+   according to a given total ordering, which it doesn't have
+   direct access to, but may only ask queries about
 
-   we can imagine the algorithm is trying to figure out how the list
-   of distinct elements should be permuted in order to be sorted, but
-   equivalently its trying to figure out how the list of indices
-   should be permuted so as to be sorted *)
+   but this is equivalent to figuring out how a list of distinct
+   elements of size len should be permuted so as to be sorted
+   according to some total ordering
+
+   this is because given a list xs of distinct element of size len, we
+   can go back and forth between total orderings on 0 .. len - 1 and
+   total orderings on xs (if rel is a total ordering on 0 .. len - 1,
+   we can make it into a total ordering rel' on xs by: a <= b iff
+   the index i of a in xs is <= the index j of b in xs; if rel' is
+   a total ordering on xs, we can make it into a total ordering on
+   0 .. len - 1 by: i <= j iff the ith element of xs is <= the jth
+   element of xs *)
 
 type inp = bool.
 

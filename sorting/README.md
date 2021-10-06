@@ -10,5 +10,5 @@ values themselves.
 * [`SortingProb.ec` - definition of sorting problem](SortingProb.ec)
 * [`SortingLB.ec` - lower bound proof](SortingLB.ec)
 * [`SortingUB.ec` - upper bound proof for merge sort algorithm](SortingUB.ec)
-* [`bounds-compare` - OCaml program for comparing bounds
-   over a range of values of len](bounds-compare)
+* [`ocaml-code` - OCaml programs for carrying out various
+   comparisons and other experiments regarding the above](ocaml-code)

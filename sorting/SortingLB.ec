@@ -70,25 +70,28 @@ module Adv : ADV = {
     return ();       
   }
 
-  proc ans_query(i: int) : inp = {
+  proc ans_query(q : int) : inp = {
+    (* q will be the encoding of a pair (i, j), where 0 <= i, j < len;
+       inpss will always be nonempty *)
+
     (* two possible inpss when the adversary answers true or false *) 
     var inpss_t, inpss_f : inp list list; 
     var ret : inp;  (* return value *)
   
-    inpss_t <- (filter_nth inpss i true);
-    inpss_f <- (filter_nth inpss i false);
+    inpss_t <- filter_nth inpss q true;
+    inpss_f <- filter_nth inpss q false;
 
     if (size inpss_t <= size inpss_f) {   (* answering false keeps as least *)
-      inpss <- filter_nth inpss i false;  (* as many inputs lists as *)
+      inpss <- inpss_f;                   (* as many inputs lists as *)
       ret <- false;                       (* answering true *)
     }
     else {
        (* this also covers:
             1. the algorithm asks the rel of (i, i);
             2. (i, j) is asked before and this time (j, i);
-            3. (i, j) = true, (j, k) = true, this time asks (i,k), etc. *)
-      inpss <- filter_nth inpss i true;  
-      ret <- true ;  
+            3. (i, j) = true, (j, k) = true, this time asks (i, k), etc. *)
+      inpss <- inpss_t;
+      ret <- true;  
     }
     return ret;   
   }
@@ -871,11 +874,13 @@ And here are the results for three larger values of len:
     20000:     256909    267233
 
 For len <= 5, int_log_up 2 (fact len) is equal to the minimum number
-of steps that our lower bound game runs, where the adversarial
+of steps that our lower bound game makes, where the adversarial
 strategy is that of our definition of Adv, and we look at all possible
-orders of query choices.  We don't know if this pattern holds for
-all len.
+orders of query choices, but restricted to queries (i, j), where 0 <=
+i < j < len. We conjecture that this restriction doesn't affect the
+results, but we haven't proved this.  We don't know if this pattern
+holds for all len.
 
-For len <= 10, wc len is equal to the worst case number of
-comparisons actually used by merge sort. We don't know if this
-pattern holds for all len. *)
+For len <= 11, wc len is equal to (not just an upper bound of) the
+worst case number of comparisons actually used by merge sort. We don't
+know if this pattern holds for all len, but we conjecture it is. *)
