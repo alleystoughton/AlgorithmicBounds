@@ -7,7 +7,18 @@
  * -------------------------------------------------------------------- *)
 
 (* general framework for proving worst case lower bounds results using
-   the adversarial method *)
+   the adversarial method
+
+   in this model, the algorithm makes queries about an input that it
+   doesn't have direct access to; it is trying to learn enough about
+   the input so that the answer is unambiguous (but it doesn't have
+   to actually produce this answer)
+
+   this is formalized using a lower bounds game, which also features
+   an adversary whose job is to answer queries by the algorithm in a
+   way that delays the stage at which the remaining possible inputs
+   (the ones consistent with the queries/answer made so far) all have
+   a unique answer, at which point the game ends *)
 
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
