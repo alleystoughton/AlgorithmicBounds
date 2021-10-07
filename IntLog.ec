@@ -9,7 +9,7 @@
 
 prover [""].  (* no use of SMT provers *)
 
-require import AllCore StdOrder IntDiv RealExp.
+require import AllCore StdOrder IntDiv RealExp FloorCeil.
 import IntOrder.
 
 (* multiplication by 2 *)
@@ -1004,40 +1004,6 @@ have := int_log_ub_lt b n _ _ => //.
 by rewrite {1}n_eq_b2_il_bn_plus1.
 qed.
 
-lemma floor_eq (n : int, x : real) :
-  n%r <= x < (n + 1)%r => floor x = n.
-proof.
-move => [n_le_x x_lt_n_plus1].
-have [x_lt_floor_x_plus1 floor_x_le_x] := floor_bound x.
-rewrite RealOrder.ltr_subl_addr -fromintD in x_lt_floor_x_plus1.
-case (floor x = n) => [// |].
-rewrite neq_ltz => [[floor_x_lt_n | n_lt_floor_x]].
-have le_n_floor_x : n <= floor x.
-  by rewrite -ltzS -lt_fromint (RealOrder.ler_lt_trans x).
-have // : n < n by rewrite (ler_lt_trans (floor x)).
-have floor_x_le_n : floor x <= n.
-  by rewrite -ltzS -lt_fromint (RealOrder.ler_lt_trans x).
-have // : floor x < floor x by rewrite (ler_lt_trans n).
-qed.
-
-lemma ceil_eq (n : int, x : real) :
-  (n - 1)%r < x <= n%r => ceil x = n.
-proof.
-move => [n_lt_x_plus1 x_le_n].
-rewrite fromintD fromintN RealOrder.ltr_subl_addr in n_lt_x_plus1.
-have [x_le_ceil_x ceil_x_lt_x_plus1] := ceil_bound x.
-case (ceil x = n) => [// |].
-rewrite neq_ltz => [[ceil_x_lt_n | n_lt_ceil_x]].
-have n_le_ceil_x : n <= ceil x.
-  rewrite -ltzS -lt_fromint 1:(RealOrder.ltr_le_trans (x + 1%r)) //.
-  by rewrite fromintD RealOrder.ler_add2r.
-have // : n < n by rewrite (ler_lt_trans (ceil x)).
-have ceil_x_le_n : ceil x <= n.
-  rewrite -ltzS -lt_fromint (RealOrder.ltr_le_trans (x + 1%r)) //.
-  by rewrite fromintD RealOrder.ler_add2r.
-have // : ceil x < ceil x by rewrite (ler_lt_trans n).
-qed.
-
 lemma floor_real_log (b n : int) :
   2 <= b => 1 <= n =>
   floor (log b%r n%r) = int_log b n.
@@ -1051,7 +1017,7 @@ have -> : log b%r n%r = (int_log b n)%r.
   apply RealOrder.ler_anti.
   split => [| _ //]; by rewrite -ilu_eq_il_bn.
 by rewrite from_int_floor.
-rewrite (floor_eq (int_log b n)) //.
+rewrite (floorE (int_log b n)) //.
 split => [// | _].
 have -> : int_log b n + 1 = int_log_up b n.
   by rewrite /int_log_up b2ilbn_ne_n.
@@ -1071,7 +1037,7 @@ have -> : log b%r n%r = (int_log b n)%r.
   apply RealOrder.ler_anti.
   split => [| _ //]; by rewrite -ilu_eq_il_bn.
 by rewrite from_int_ceil ilu_eq_il_bn.
-rewrite (ceil_eq (int_log b n + 1)) //.
+rewrite (ceilE (int_log b n + 1)) //.
 split => [/= | _].
 rewrite RealOrder.ltr_def low_le /=.
 case (log b%r n%r = (int_log b n)%r) => [contrad | //].
