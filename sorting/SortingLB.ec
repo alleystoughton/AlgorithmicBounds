@@ -883,4 +883,10 @@ We don't know if this pattern holds for all len.
 
 For len <= 11, wc len is equal to (not just an upper bound of) the
 worst case number of comparisons actually used by merge sort. We don't
-know if this pattern holds for all len, but we conjecture it is. *)
+know if this pattern holds for all len, but we conjecture it is.
+
+So in particular, when len = 5, there is a gap of 1 between the
+minimum number of stages our lower bound game runs for our concrete
+adversary, as we range over all sequences of queries (restricted to
+queries (i, j), where 0 <= i < j < len) -- 7 -- and the worst case
+number of comparisons actually used by merge sort -- 8. *)
