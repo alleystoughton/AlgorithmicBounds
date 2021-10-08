@@ -167,7 +167,7 @@ module Adv : ADV = {
 }.
 
 lemma Adv_ans_query_false :
-  hoare[Adv.ans_query : true ==> !res].
+  hoare [Adv.ans_query : true ==> !res].
 proof.
 proc; auto.
 qed.
