@@ -385,86 +385,6 @@ by rewrite fcards0.
 smt(queries_in_range_card_le_arity).
 qed.
 
-(* the following lemma shows how we can interpret the standard
-   form of lower bound result *)
-
-lemma lower_bound_consequence (bound : int) &m :
-  (exists (Adv <: ADV) (adv_term_invar : glob Adv -> bool),
-   phoare
-   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r /\
-   phoare
-   [Adv.ans_query :
-    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r /\
-   forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
-   phoare
-   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
-   phoare
-   [Alg.make_query :
-    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
-   phoare
-   [Alg.query_result :
-    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
-   (* if we run G(Alg, Adv).main on &m (which is guaranteed to not
-      depend on &m), then, with probability 1%r, G will terminate with
-      either Alg having committed an error (by making the same query
-      twice) or the game having run at least bound steps *)
-   Pr[G(Alg, Adv).main() @ &m :
-        res.`1 \/ bound <= res.`2
-     ] = 1%r) =>
-  (exists (Adv <: ADV) (adv_term_invar : glob Adv -> bool),
-   phoare
-   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r /\
-   phoare
-   [Adv.ans_query :
-    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r /\
-   (* note the negation: *)
-   ! exists (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
-   phoare
-   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
-   phoare
-   [Alg.make_query :
-    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-   phoare
-   [Alg.query_result :
-    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-   (* if we run G(Alg, Adv).main on &m there is a nonzero probability
-      that G will terminate without Alg having committed an error
-      and in strictly fewer steps than bound *)
-   Pr[G(Alg, Adv).main() @ &m :
-        ! res.`1 /\ res.`2 < bound
-     ] <> 0%r).
-proof.
-move => [Adv adv_term_invar] [#] Adv_init_term Adv_ans_query_term Conclu.
-exists Adv adv_term_invar.
-split; first trivial.
-split; first trivial.
-case
-  (exists (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
-   phoare [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r /\
-   phoare [Alg.make_query :
-           alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-   phoare [Alg.query_result :
-           alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-   Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] <> 0%r) =>
-  [[Alg alg_term_invar] | //].
-rewrite /=.
-have not_and_iff_imply_not :
-  forall (a b : bool), ! (a /\ b) <=> (a => !b).
-  move => a b; by rewrite negb_and implybE.
-rewrite not_and_iff_imply_not => Alg_init_term.
-rewrite not_and_iff_imply_not => Alg_make_query_term.
-rewrite not_and_iff_imply_not => Alg_query_result_term /=.
-have C := Conclu Alg alg_term_invar _ _ _ => //.
-have -> :
-  Pr[G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 < bound] =
-  Pr[G(Alg, Adv).main() @ &m : ! (res.`1 \/ bound <= res.`2)].
-  rewrite Pr [mu_eq] /#.
-rewrite Pr [mu_not] (Conclu Alg alg_term_invar _ _ _) //.
-have -> // : Pr[G(Alg, Adv).main() @ &m : true] = 1%r.  
-  byphoare => //.
-  by rewrite (G_ll Alg Adv alg_term_invar adv_term_invar).
-qed.
-
 end LB.
 
 theory UB.  (* upper bounds framework *)
@@ -982,18 +902,18 @@ have contrad_lb_eq0 :
     rewrite lb_prob1 => ge1_term.
     apply RealOrder.ler_anti.
     split => [| //]; by rewrite Pr [mu_le1].
-  have :
-    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
-         res.`1 \/ lb <= res.`2] <=
-    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
-         res.`1 \/ ! res.`2 <= ub].
-    rewrite Pr [mu_sub] /#.
-  rewrite lb_prob1 => ge1_lb_contrad.
   have -> // :
     Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
          res.`1 \/ ! res.`2 <= ub] = 1%r.
     apply RealOrder.ler_anti.
-    split => [| //]; rewrite Pr [mu_le1] //.
+    split => [| _]; first by rewrite Pr [mu_le1].
+    have :
+      Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+           res.`1 \/ lb <= res.`2] <=
+      Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+           res.`1 \/ ! res.`2 <= ub].
+      by rewrite Pr [mu_sub] 1:/#.
+    by rewrite lb_prob1.
 move : contrad_lb_gt0.
 by rewrite contrad_lb_eq0.
 qed.

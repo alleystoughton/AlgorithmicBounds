@@ -18,7 +18,7 @@ timeout 2.  (* can increase *)
 
 require import AllCore List FSetAux.
 
-require AdvLowerBounds.   (* adversarial lower bounds framework *)
+require Bounds.   (* upper and lower bounds abstract theory *)
 
 type inp = bool.
 
@@ -111,7 +111,7 @@ rewrite /univ /=.
 by case x.
 qed.
 
-clone import AdvLowerBounds as LB with
+clone import Bounds as B with
   type inp <- inp,
   op univ  <- univ,
   op def   <- true,
@@ -140,6 +140,8 @@ by have := all_mem_univ xs.
 by rewrite /good.
 qed.
 (* end of realization *)
+
+import LB.  (* lower bounds theory *)
 
 lemma init_inpss_all :
   init_inpss () = AllLists.all_lists univ arity.
@@ -335,6 +337,8 @@ have : f () xs = f () ys.
   apply done_filtering; by rewrite (map_f (f tt)).
 by rewrite f_xs_false f_ys_true.
 qed.
+
+(* here is our main lemma: *)
 
 lemma G_Adv_main (Alg <: ALG{Adv}) :
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ res.`2 = arity].
