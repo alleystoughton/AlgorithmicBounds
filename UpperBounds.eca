@@ -23,6 +23,7 @@ timeout 2.  (* can increase *)
 
 require import AllCore List FSetAux.
 require import FRange.    (* finite ranges as sets *)
+require import AllLists.  (* generating all lists of length over universe *)
 
 (* theory parameters *)
 
@@ -115,6 +116,17 @@ rewrite /is_response_query /is_response_report /=.
 by rewrite dec_response_report_none_equiv.
 qed.
 
+(* an adversary *)
+
+module type ADV = {
+  (* tell adversary to initialize itself and choose aux;
+     must initialize its global variables *)
+  proc *init() : aux
+
+  (* ask adversary to answer query of what the ith input is *)
+  proc ans_query(i : int) : inp
+}.  
+
 (* an algorithm *)
 
 module type ALG = {
@@ -130,30 +142,32 @@ module type ALG = {
   proc query_result(x : inp) : unit
 }.
 
-(* game parameterized by algorithm
+(* game connecting algorithm and adversary
 
-   it has no global variables, and, since Alg.init initializes the
-   global variables of Alg, running G won't depend on the initial
-   memory *)
+   it has no global variables, and, since Alg.init and Adv.init
+   initialize the global variables of Alg and Adb, running G won't
+   depend on the initial memory *)
 
-module G(Alg : ALG) = {
-  (* precondition: size inps = arity /\ all (mem univ) inps /\
-     good aux inps *)
-  proc main(aux  : aux,        (* auxiliary value *)
-            inps : inp list)   (* input list *)
-         : out option *        (* None if error occurred, else Some of
-                                  Alg's output *)
-           int = {             (* stage at termination *)
-    var out_opt : out option;  (* optionally algorithm's output *)
-    var stage   : int;         (* stage of game *)
-    var queries : int fset;    (* valid queries made by algorithm *)
-    var error   : bool;        (* has algorithm made illegal query? *)
+module G(Alg : ALG, Adv : ADV) = {
+  proc main()
+         : out option *         (* None if error occurred, else Some of
+                                   Alg's output *)
+           int = {              (* stage at termination *)
+    var inpss : inp list list;  (* current possible lists of inputs *)
+    var aux : aux;              (* auxiliary value chosen by adversary *)
+    var out_opt : out option;   (* optionally algorithm's output *)
+    var stage   : int;          (* stage of game *)
+    var queries : int fset;     (* valid queries made by algorithm *)
+    var error   : bool;         (* has algorithm made illegal query? *)
 
     var resp : response;
     var i    : int;
     var out  : out;
 
-    Alg.init(aux);     (* initialize Alg, giving it aux *)
+    aux <- Adv.init();  (* initialize Adv, letting it choose aux *)
+    Alg.init(aux);  (* initialize Alg, giving it aux *)
+    inpss <- init_inpss aux;  (* start with all good lists of inputs *)
+    (* by lemma inpss_invar_init, the invariant is established *)
     out_opt <- None;   (* no reported output, yet *)
     stage <- 0;        (* stage counts number of queries *)
     queries <- fset0;  (* no queries initially *)
