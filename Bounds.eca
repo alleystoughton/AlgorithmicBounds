@@ -29,7 +29,7 @@ prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)
 
-require import AllCore List FSetAux.
+require import AllCore List FSetAux StdOrder.
 require import FRange.    (* finite ranges as sets *)
 require import AllLists.  (* generating all lists of length over universe *)
 
@@ -913,4 +913,87 @@ move =>
 by byequiv
    (prob_le_ub_lb_succ_equiv
     ub Alg Adv alg_term_invar adv_term_invar _ _ _ _ _).
+qed.
+
+lemma lb_conseq_for_ub
+      (lb ub : int)
+      (Alg <: UB.ALG) (Adv <: ADV{Alg})
+      (alg_term_invar : glob Alg -> bool)
+      (adv_term_invar : glob Adv -> bool)
+      &m :
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query_or_report_output :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
+  phoare
+  [Adv.ans_query :
+   adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r =>
+  (* assuming a lower bound result for bound lb, applied to
+     LB.G(UBAlg_to_LBAlg(Alg) and Adv : *)
+  Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+       res.`1 \/ lb <= res.`2] = 1%r =>
+  (* assuming ub < lb: *)
+  ub < lb =>
+  (* there is zero probability that UB.G(Alg, Adv).main() succeeds
+     with a final stage that is no more than ub *)
+  Pr[UB.G(Alg, Adv).main() @ &m :
+       ! res.`1 /\ res.`2 <= ub] = 0%r.
+proof.
+move =>
+  Alg_init_term Alg_make_query_or_report_output_term Alg_query_result_term
+  Adv_init_term Adv_ans_query_term lb_prob1 lt_ub_lb.
+case
+  (Pr[UB.G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub] = 0%r)
+  => [// | contrad_ub_ne0].
+have contrad_ub_gt0 :
+  0%r < Pr[UB.G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub].
+  have /# :
+    0%r <= Pr[UB.G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub].
+    by rewrite Pr [mu_ge0].
+have contrad_lb_gt0 :
+  0%r < Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub].
+  rewrite
+    (RealOrder.ltr_le_trans
+     Pr[UB.G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub]) //.
+  by rewrite (Prob_LE_UB_LB_Succ ub Alg Adv alg_term_invar adv_term_invar).
+have contrad_lb_eq0 :
+  Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+       ! res.`1 /\ res.`2 <= ub] = 0%r.
+  have -> :
+    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+         ! res.`1 /\ res.`2 <= ub] =
+    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+         ! (res.`1 \/ ! res.`2 <= ub)].
+    rewrite Pr [mu_eq] /#.
+  rewrite Pr [mu_not].
+  have -> :
+    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m : true] = 1%r.
+    have :
+      Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+           res.`1 \/ lb <= res.`2] <=
+      Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m : true].
+      by rewrite Pr [mu_sub].
+    rewrite lb_prob1 => ge1_term.
+    apply RealOrder.ler_anti.
+    split => [| //]; by rewrite Pr [mu_le1].
+  have :
+    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+         res.`1 \/ lb <= res.`2] <=
+    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+         res.`1 \/ ! res.`2 <= ub].
+    rewrite Pr [mu_sub] /#.
+  rewrite lb_prob1 => ge1_lb_contrad.
+  have -> // :
+    Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+         res.`1 \/ ! res.`2 <= ub] = 1%r.
+    apply RealOrder.ler_anti.
+    split => [| //]; rewrite Pr [mu_le1] //.
+move : contrad_lb_gt0.
+by rewrite contrad_lb_eq0.
 qed.
