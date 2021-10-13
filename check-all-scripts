@@ -23,8 +23,8 @@ check FSetAux.ec
 check FRange.ec
 check AllLists.ec
 
-check AdvLowerBounds.eca
-check UpperBounds.eca
+check Bounds.eca
+
 check OrFunctionLB.ec
 
 cd searching

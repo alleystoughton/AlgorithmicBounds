@@ -38,6 +38,8 @@ timeout 2.  (* can increase *)
 require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial.
 import IntOrder.
 
+require Bounds.   (* upper and lower bounds abstract theory *)
+
 op len : int.  (* size of list of distinct elements *)
 
 axiom ge1_len : 1 <= len.
@@ -681,3 +683,34 @@ qed.
 lemma f_bad (xs : inp list) :
   ! total_ordering xs => f () xs = None.
 proof. smt(). qed.
+
+clone export Bounds as B with
+  type inp <- inp,
+  op univ  <- univ,
+  op def   <- true,
+  type out <- out,
+  op arity <- arity,
+  type aux <- aux,
+  op good  <- good,
+  op f     <- f
+proof *.
+(* beginning of realization *)
+realize ge0_arity.
+rewrite (lez_trans 1) // ge1_arity.
+qed.
+
+realize univ_uniq. by rewrite /univ. qed.
+
+realize univ_def. by rewrite /univ. qed.
+
+realize good. smt(f_is_some). qed.
+
+realize bad.
+move => aux xs H.
+have not_tot_ord_xs : ! total_ordering xs.
+  elim H; first smt(total_ordering_size).
+  elim; first smt(allP).
+  smt().
+by rewrite f_bad.
+qed.
+(* end of realization *)

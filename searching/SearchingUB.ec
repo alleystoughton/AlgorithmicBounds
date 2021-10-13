@@ -12,43 +12,14 @@ prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)
 
-(* given a list of size arity at least one element of which is equal
-   to k, the algorithm is trying to find the least list index such
-   that the list has k at that position
-
-   it can query the values of elements of the list *)
-
 require import AllCore List FSetAux StdOrder IntDiv.
 import IntOrder.
 
-require UpperBounds.     (* upper bounds framework *)
-require import IntLog.   (* integer logarithms *)
+require import IntLog.  (* integer logarithms *)
 
-require import SearchingProb.  (* searching in ordered lists problem *)
-
-clone import UpperBounds as UB with
-  type inp <- inp,
-  op univ  <- univ,
-  op def   <- min_inp,
-  type out <- out,
-  op arity <- arity,
-  type aux <- aux,
-  op good  <- good,
-  op f     <- f
-proof *.
-(* beginning of realization *)
-realize ge0_arity.
-rewrite (lez_trans 1) // ge1_arity.
-qed.
-
-realize univ_uniq. rewrite range_uniq. qed.
-
-realize univ_def. rewrite min_inp_univ. qed.
-
-realize good. smt(). qed.
-
-realize bad. smt(). qed.
-(* end of realization *)
+(* searching in ordered lists problem, including bounds frameworks *)
+require import SearchingProb.  
+import UB.  (* upper bounds framework *)
 
 (* here is our algorithm: *)
 

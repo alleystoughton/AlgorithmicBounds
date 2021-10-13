@@ -6,32 +6,14 @@
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
 
-(* general framework for proving worst case lower bounds results using
-   the adversarial method
-
-   in this model, the algorithm makes queries about an input that it
-   doesn't have direct access to; it is trying to learn enough about
-   the input so that the answer is unambiguous (but it doesn't have
-   to actually produce this answer)
-
-   this is formalized using a lower bounds game, which also features
-   an adversary whose job is to answer queries by the algorithm in a
-   way that delays the stage at which the remaining possible inputs
-   (the ones consistent with the queries/answer made so far) all have
-   a unique answer, at which point the game ends
-
-   a lower bounds proof exhibits an adversary, and proves that it is
-   guaranteed to make the game run a number of stages (each
-   corresponding to a query/answer) that is >= the desired bound, as a
-   function of the size of the input *)
-
 prover quorum=2 ["Z3" "Alt-Ergo"].  (* both provers must succeed on goals *)
 
 timeout 2.  (* can increase *)
 
 require import AllCore List FSetAux StdOrder.
-require import FRange.    (* finite ranges as sets *)
-require import AllLists.  (* generating all lists of length over universe *)
+
+require export FRange.    (* finite ranges as sets *)
+require export AllLists.  (* generating all lists of length over universe *)
 
 (* theory parameters *)
 
@@ -170,13 +152,16 @@ move => invar_aux_inpss.
 by rewrite /filter_nth inpss_invar_filter.
 qed.
 
-(* the game is done when (f aux) agrees on all possible input lists
+(* test whether (f aux) agrees on all possible input lists
 
    note that this could be true because inpss is empty *)
 
 op inpss_done (aux : aux, inpss : inp list list) : bool =
   forall (x y : out option),
   x \in map (f aux) inpss => y \in map (f aux) inpss => x = y.
+
+(* test whether all elements of map (f aux) inpss are equal to
+   Some out *)
 
 op inpss_answer (aux : aux, inpss : inp list list, out : out) : bool =
   forall (x : out option),
@@ -191,6 +176,8 @@ rewrite /inpss_done =>
   /inpss_ans_aux_inpss_out => ->
   /inpss_ans_aux_inpss_out => -> //.
 qed.
+
+(* operator and lemmas about queries *)
 
 op queries_in_range (queries : int fset) : bool =
   forall (i : int), i \in queries => 0 <= i < arity.
@@ -250,7 +237,7 @@ rewrite all_elemsP => H x x_in_queries.
 by rewrite H qir_queries.
 qed.
 
-(* an adversary *)
+(* an adversary - used for both the lower and upper bounds games *)
 
 module type ADV = {
   (* tell adversary to initialize itself and choose aux;
@@ -261,7 +248,34 @@ module type ADV = {
   proc ans_query(i : int) : inp
 }.  
 
-theory LB.  (* lower bounds framework *)
+(* framework for proving worst case lower bounds results using the
+   adversarial method
+
+   in this model, the algorithm makes queries about an input that it
+   doesn't have direct access to; it is trying to learn enough about
+   the input so that the answer is unambiguous (but it doesn't have
+   to actually produce this answer)
+
+   this is formalized using a lower bounds game, which also features
+   an adversary whose job is to answer queries by the algorithm
+
+   the game keeps track of the inputs that are consistent with the
+   queries/answers of the algorithm/adversary; this is initialized
+   to be init_inpss aux, where aux is chosen by the adversary
+
+   the job of the adversary is choose aux and answer the queries of
+   the algorithm in a way that delays the stage at which the remaining
+   possible inputs (the ones consistent with the queries/answer made
+   so far) all have a unique answer, at which point the game ends
+
+   in the proof of a lower bounds theorem, we exhibit an adversary,
+   and prove that, for all algorithms, it is guaranteed to make the
+   game run a number of stages (each corresponding to a query/answer)
+   that is >= the desired bound, as a function of the size of the
+   input, or to terminate because the algorithm committed an error (by
+   asking an illegal query, including the same query twice) *)
+
+theory LB.
 
 (* an algorithm *)
 
@@ -285,7 +299,8 @@ module type ALG = {
    running G won't depend on the initial memory *)
 
 module G(Alg : ALG, Adv : ADV) = {
-  proc main() : bool * int = {
+  proc main() : bool *          (* error? *)
+                int = {         (* final stage *)
     var inpss : inp list list;  (* current possible lists of inputs *)
     var don : bool;             (* is game done? *)
     var error : bool;           (* has game made illegal query? *)
@@ -298,7 +313,7 @@ module G(Alg : ALG, Adv : ADV) = {
 
     aux <- Adv.init();  (* initialize Adv, letting it choose aux *)
     Alg.init(aux);  (* initialize Alg, giving it aux *)
-    inpss <- init_inpss aux;  (* start with all good lists of inputs *)
+    inpss <- init_inpss aux;  (* start with all good aux lists of inputs *)
     (* by lemma inpss_invar_init, the invariant is established *)
     error <- false;  (* no error so far *)
     don <- inpss_done aux inpss;  (* are we already done? *)
@@ -324,6 +339,12 @@ module G(Alg : ALG, Adv : ADV) = {
     return (error, stage);
   }
 }.
+
+(* lemma for showing G(Alg, Adv).main terminates with probability 1%r,
+   under assumption that the procedures of Alg and Adv establish (in
+   the case of the init procedures) or preserve (in the case of the
+   other operators) invariants on the states of Alg/Adv, also with
+   probability 1%r *)
 
 lemma G_ll (Alg <: ALG) (Adv <: ADV{Alg})
            (alg_term_invar : glob Alg -> bool)
@@ -386,6 +407,39 @@ smt(queries_in_range_card_le_arity).
 qed.
 
 end LB.
+
+(* framework for proving worst case upper bounds results
+
+   in this model, the algorithm makes queries about an input that it
+   doesn't have direct access to; it is trying to learn enough about
+   the input so that it can determine and report the corresponding
+   output
+
+   this is formalized using an upper bounds game, which also features
+   an adversary whose job is to answer queries by the algorithm; the
+   adversary could implement a fixed, non-probabilistic procedure,
+   or it could be (probabilistically) adaptive
+
+   the game keeps track of the inputs that are consistent with the
+   queries/answers of the algorithm/adversary; this is initialized
+   to be init_inpss aux, where aux is chosen by the adversary
+
+   if the algorithm reports an output, and that output is indeed
+   the unique output of the remaining inputs, then the algorithm
+   has succeeded; reporting an incorrect output (for any of
+   the remaining inputs) is an error
+
+   if the adversary chooses aux or answers a query in such a way that
+   the remaining possible inputs becomes empty, then the algorithm is
+   considered to have succeeded, and the game ends with no error
+
+   if the algorithm makes an illegal query, it has committed an error,
+   and the game ends
+
+   in the proof of an upper bounds theorem, we attempt to prove that,
+   for all adversaries, the game terminates without error and in
+   no more than an upper bound number of steps, as a function of
+   the size of an input *)
 
 theory UB.  (* upper bounds framework *)
 
@@ -457,10 +511,8 @@ module type ALG = {
 
 module G(Alg : ALG, Adv : ADV) = {
   proc main()
-         : bool *                 (* error - bad query or incorrect output
-                                     reported; will be false if Adv makes
-                                     inpss be [] *)
-           int = {                (* stage at termination *)
+         : bool *                 (* error? *)
+           int = {                (* final stage *)
     var inpss   : inp list list;  (* current possible lists of inputs *)
     var aux     : aux;            (* auxiliary value chosen by adversary *)
     var error   : bool;           (* has algorithm made illegal query or
@@ -476,7 +528,7 @@ module G(Alg : ALG, Adv : ADV) = {
 
     aux <- Adv.init();  (* initialize Adv, letting it choose aux *)
     Alg.init(aux);  (* initialize Alg, giving it aux *)
-    inpss <- init_inpss aux;  (* start with all good lists of inputs *)
+    inpss <- init_inpss aux;  (* start with all good aux lists of inputs *)
     (* by lemma inpss_invar_init, the invariant is established *)
     error <- false;    (* no error so far *)
     don <- inpss = [];  (* algorithm succeeds if no good aux inputs *)
@@ -519,6 +571,12 @@ module G(Alg : ALG, Adv : ADV) = {
     return (error, stage);
   }
 }.
+
+(* lemma for showing G(Alg, Adv).main terminates with probability 1%r,
+   under assumption that the procedures of Alg and Adv establish (in
+   the case of the init procedures) or preserve (in the case of the
+   other operators) invariants on the states of Alg/Adv, also with
+   probability 1%r *)
 
 lemma G_ll (Alg <: ALG) (Adv <: ADV{Alg})
            (alg_term_invar : glob Alg -> bool)
@@ -588,6 +646,8 @@ qed.
 
 end UB.
 
+(* convert an upper bound algorithm to a lower bound one *)
+
 module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
   proc init(aux : aux) : unit = {
     UBAlg.init(aux);
@@ -601,7 +661,8 @@ module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
       i <- oget (UB.dec_response_query resp);
     }
     else {  (* is_response_report resp *)
-      i <- -1;  (* must be an error *)
+      i <- -1;  (* must be an error, as if game has not
+                   ended, there is no unambiguous answer *)
     }
     return i;
   }
@@ -610,6 +671,16 @@ module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
     UBAlg.query_result(x);
   }
 }.
+
+(* we will show that, from the application of the conclusion of a
+   lower bound theorem for adversary Adv and bound lb, applied to
+   lower bound algorithm UBAlg_to_LBAlg(Alg), for an upper bound
+   algorithm Alg, and for any ub < lb, we can conclude that the
+   probability that the upper bound game G(Alg, Adv).main() returns
+   without error and with the final stage being <= ub is 0%r
+
+   to prove this, we need two helper lemmas, where the first is used
+   to prove the second *)
 
 lemma prob_le_ub_lb_succ_equiv
       (ub : int)
@@ -664,8 +735,7 @@ trivial.
 conseq Adv_init_term.
 conseq Adv_init_term.
 by proc (true).
-auto.
-progress.
+auto; progress [-delta].
 rewrite queries_in_range0. 
 by rewrite fcards0.
 splitwhile{1} 1 : (! (inpss_done aux inpss)).
@@ -736,8 +806,7 @@ by proc (true).
 auto; progress [-delta].
 by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
-smt().
-smt().
+smt(). smt().
 by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
 smt().
@@ -754,7 +823,6 @@ rcondf{1} 1; first auto; progress; smt().
 rcondf{2} 1; first auto; progress; smt().
 auto; smt().
 rcondf{2} 1; first auto; progress; smt().
-simplify.
 exists* stage{1}; elim* => ub'.
 seq 1 0 : (!error{2} /\ stage{2} = ub' /\ ub' <= stage{1}).
 while{1}
@@ -780,18 +848,17 @@ wp.
 call Alg_query_result_term.
 wp.
 call Adv_ans_query_term.
-auto; progress.
+auto; progress [-delta].
 by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
 smt().
 smt(queries_in_range_card_le_arity).
 by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
-smt().
-smt().
+smt(). smt().
 auto; smt(queries_in_range_card_le_arity).
 auto; smt(UB.not_is_response_query queries_in_range_card_le_arity).
-auto; progress.
+auto; progress [-delta].
 hoare.
 conseq (_ : _ ==> _ : = 1%r).
 call Alg_make_query_or_report_output_term.
@@ -854,8 +921,8 @@ lemma lb_conseq_for_ub
   phoare
   [Adv.ans_query :
    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r =>
-  (* assuming a lower bound result for bound lb, applied to
-     LB.G(UBAlg_to_LBAlg(Alg) and Adv : *)
+  (* assuming a lower bound result for bound lb and Adv, applied to
+     LB.G(UBAlg_to_LBAlg(Alg) : *)
   Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
        res.`1 \/ lb <= res.`2] = 1%r =>
   (* assuming ub < lb: *)

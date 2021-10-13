@@ -21,13 +21,10 @@ and Stuyvesant High School student and BU RISE program intern
 
 * Carol Chen (cchen20@stuy.edu)
 
-We have a general EasyCrypt framework for expressing lower bounds problems
+We have general EasyCrypt frameworks for expressing lower and
+upper bounds problems
 
- * [`AdvLowerBounds.eca` - general adversarial lower bounds framework](../main/AdvLowerBounds.eca)
-
-as well as a general EasyCrypt framework for expressing upper bounds problems
-
- * [`UpperBounds.eca` - general upper bounds framework](../main/UpperBounds.eca)
+ * [`Bounds.eca` - lower and upper bounds framework](../main/Bounds.eca)
 
 We have applied these frameworks to
 

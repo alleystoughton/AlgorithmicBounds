@@ -11,56 +11,14 @@ prover quorum=2 ["Alt-Ergo" "Z3"].
 
 timeout 2.  (* can increase *)
 
-(* the algorithm is trying to figure out how a list of distinct
-   elements of size len should be permuted in order to be sorted
-
-   it can ask queries of the form (i, j), for 0 <= i, j < len,
-   asking whether the ith element of the list is less-than-or-equal-to
-   the jth element (the answer is true or false); it can't ask
-   questions about the values of the list elements themselves
-
-   we prove a len * int_log 2 len upper bound on the worst case number
-   of comparisons needed to find the correct permuation of the list 0
-   .. len - 1 *)
-
 require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial WF.
 import IntOrder.
 
-require UpperBounds.    (* upper bounds framework *)
 require import IntLog.  (* integer logarithms *)
 
-require import SortingProb.  (* comparison-based sorting problem *)
-
-clone import UpperBounds as UB with
-  type inp <- inp,
-  op univ  <- univ,
-  op def   <- true,
-  type out <- out,
-  op arity <- arity,
-  type aux <- aux,
-  op good  <- good,
-  op f     <- f
-proof *.
-(* beginning of realization *)
-realize ge0_arity.
-rewrite (lez_trans 1) // ge1_arity.
-qed.
-
-realize univ_uniq. by rewrite /univ. qed.
-
-realize univ_def. by rewrite /univ. qed.
-
-realize good. smt(f_is_some). qed.
-
-realize bad.
-move => aux xs H.
-have not_tot_ord_xs : ! total_ordering xs.
-  elim H; first smt(total_ordering_size).
-  elim; first smt(allP).
-  smt().
-by rewrite f_bad.
-qed.
-(* end of realization *)
+(* comparison-based sorting problem, plus bounds frameworks *)
+require import SortingProb.  
+import UB.
 
 (* wc n recursively calculates an upper bound on the worst case number
    of comparisons actually used by merge sort (see below) when given

@@ -23,6 +23,8 @@ timeout 2.  (* can increase *)
 require import AllCore List FSetAux StdOrder IntDiv.
 import IntOrder.
 
+require Bounds.   (* upper and lower bounds abstract theory *)
+
 type inp = int.
 
 (* univ consists of min_inp ... max_inp, and there are
@@ -189,3 +191,27 @@ move =>
 have [#] _ _ _ H := f_goodP aux xs _ _ _ => //.
 by rewrite H.
 qed.
+
+clone export Bounds as B with
+  type inp <- inp,
+  op univ  <- univ,
+  op def   <- min_inp,
+  type out <- out,
+  op arity <- arity,
+  type aux <- aux,
+  op good  <- good,
+  op f     <- f
+proof *.
+(* beginning of realization *)
+realize ge0_arity.
+rewrite (lez_trans 1) // ge1_arity.
+qed.
+
+realize univ_uniq. rewrite range_uniq. qed.
+
+realize univ_def. rewrite min_inp_univ. qed.
+
+realize good. smt(). qed.
+
+realize bad. smt(). qed.
+(* end of realization *)
