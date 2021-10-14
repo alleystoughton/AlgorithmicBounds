@@ -84,128 +84,183 @@ op mem_in_range (xs : 'a list, y : 'a, i j : int) : bool =
   exists (k : int), i <= k <= j /\ nth witness xs k = y.
 
 op nosmt correct_invar
-   (inps : inp list, aux : aux, out_opt : out option,
+   (inpss : inp list list, aux : aux, out_opt : out option,
     queries : int fset, low high : int) : bool =
   0 <= low <= high < arity /\
-  mem_in_range inps aux low high /\
-  ! mem_in_range inps aux 0 (low - 1) /\
+  all
+  (fun inps =>
+     mem_in_range inps aux low high /\
+     ! mem_in_range inps aux 0 (low - 1))
+  inpss /\
   (forall (k : int), low <= k < high => ! k \in queries) /\
   (low < high => out_opt = None) /\
   (out_opt <> None => out_opt = Some low).
 
 lemma correct_invar_range
-      (inps : inp list, aux : aux, out_opt : out option,
+      (inpss : inp list list, aux : aux, out_opt : out option,
        queries : int fset, low high : int) :
-  correct_invar inps aux out_opt queries low high =>
+  correct_invar inpss aux out_opt queries low high =>
   0 <= low <= high < arity.
 proof.
 by rewrite /correct_invar.
 qed.
 
 lemma correct_invar_ge0_low
-      (inps : inp list, aux : aux, out_opt : out option,
+      (inpss : inp list list, aux : aux, out_opt : out option,
        queries : int fset, low high : int) :
-  correct_invar inps aux out_opt queries low high =>
+  correct_invar inpss aux out_opt queries low high =>
   0 <= low.
 proof.
 by rewrite /correct_invar.
 qed.
 
 lemma correct_invar_le_low_high
-      (inps : inp list, aux : aux, out_opt : out option,
+      (inpss : inp list list, aux : aux, out_opt : out option,
        queries : int fset, low high : int) :
-  correct_invar inps aux out_opt queries low high =>
+  correct_invar inpss aux out_opt queries low high =>
   low <= high.
 proof.
 by rewrite /correct_invar.
 qed.
 
 lemma correct_invar_lt_high_arity
-      (inps : inp list, aux : aux, out_opt : out option,
+      (inpss : inp list list, aux : aux, out_opt : out option,
        queries : int fset, low high : int) :
-  correct_invar inps aux out_opt queries low high =>
+  correct_invar inpss aux out_opt queries low high =>
   high < arity.
 proof.
 by rewrite /correct_invar.
 qed.
 
+lemma correct_invar_all_have_aux_in_window
+      (inpss : inp list list, aux : aux, out_opt : out option,
+       queries : int fset, low high : int) :
+  correct_invar inpss aux out_opt queries low high =>
+  all (fun inps => mem_in_range inps aux low high) inpss.
+proof.
+rewrite /correct_invar; smt(allP).
+qed.
+
+lemma correct_invar_all_below_window_no_aux
+      (inpss : inp list list, aux : aux, out_opt : out option,
+       queries : int fset, low high : int) :
+  correct_invar inpss aux out_opt queries low high =>
+  all (fun inps => ! mem_in_range inps aux 0 (low - 1)) inpss.
+proof.
+rewrite /correct_invar; smt(allP).
+qed.
+
 lemma correct_invar_window_not_queries
-      (inps : inp list, aux : aux, out_opt : out option,
+      (inpss : inp list list, aux : aux, out_opt : out option,
        queries : int fset, low high k : int) :
-  correct_invar inps aux out_opt queries low high =>
+  correct_invar inpss aux out_opt queries low high =>
   low <= k < high => ! k \in queries.
 proof.
 rewrite /correct_invar /#.
 qed.
 
-lemma correct_invar_start (inps : inp list, aux : aux) :
-  size inps = arity => all (mem univ) inps => good aux inps =>
-  correct_invar inps aux None fset0 0 (arity - 1).
+lemma correct_invar_start (aux : aux) :
+  correct_invar (init_inpss aux) aux None fset0 0 (arity - 1).
 proof.
-move => correct_size all_in_univ is_good.
 rewrite /correct_invar.
 split; first smt(ge1_arity).
-split.
+split; first rewrite allP => inps mem_inps_init_inpss_aux /=.
+have aux_in_inps : aux \in inps.
+  smt(inpss_invar_init allP inpss_invar_all_good_aux).
+have size_inps_eq_arity : size inps = arity.
+  smt(inpss_invar_init allP inpss_invar_all_size_arity).
+split => [| /#].
 rewrite /mem_in_range.
 exists (index aux inps).
-smt(index_ge0 index_mem nth_index).
-split => /=; first smt().
+split.
+split => [| _].
+rewrite index_ge0.
+by rewrite ler_subr_addr -ltzE -size_inps_eq_arity index_mem.
+by rewrite nth_index.
 smt(in_fset0).
 qed.
 
 lemma correct_invar_report
-      (inps : inp list, aux : aux, queries : int fset, low : int) :
-  size inps = arity => all (mem univ) inps => good aux inps =>
-  correct_invar inps aux None queries low low =>
-  correct_invar inps aux (Some low) queries low low.
+      (inpss : inp list list, aux : aux, queries : int fset, low : int) :
+  inpss_invar aux inpss =>
+  correct_invar inpss aux None queries low low =>
+  correct_invar inpss aux (Some low) queries low low.
 proof.
 by rewrite /correct_invar.
 qed.
 
 lemma correct_invar_new_window_strictly_up
-      (inps : inp list, aux : aux, queries : int fset, low high : int) :
-  size inps = arity => all (mem univ) inps => good aux inps =>
-  low < high => nth witness inps ((low + high) %/ 2) < aux =>
-  correct_invar inps aux None queries low high =>
-  correct_invar inps aux None
+      (inpss : inp list list, aux : aux, queries : int fset,
+       low high : int, inp : inp) :
+  inpss_invar aux inpss => low < high => inp < aux =>
+  all
+  (fun (inps : inp list) => nth witness inps ((low + high) %/ 2) = inp)
+  inpss =>
+  correct_invar inpss aux None queries low high =>
+  correct_invar inpss aux None
   (queries `|` fset1 ((low + high) %/ 2)) ((low + high) %/ 2 + 1) high.
 proof.
-rewrite /correct_invar.
-move => correct_size all_in_univ is_good lt_low_high lt_nth_inps_mid_aux.
-progress; first 4 smt().
+rewrite /correct_invar =>
+  inpss_invar_aux_inpss lt_low_high lt_inp_aux
+  all_inpss_eq_inp_at_index [#] ci1 ci2 ci3 ci4 ci5 ci6 ci7.
+progress [-delta].
+smt(). smt().
+rewrite allP => inps inps_in_inpss /=.
+rewrite allP in ci4.
+have nth_inps_ind_lt_aux : nth witness inps ((low + high) %/ 2) < aux.
+  rewrite allP in all_inpss_eq_inp_at_index.
+  by rewrite all_inpss_eq_inp_at_index.
+have [mir_aux_win not_mir_aux_below_win] := ci4 inps _ => //=.
+smt(inpss_invar_all_good_aux allP).
 smt(in_fsetU1).
 qed.
 
 lemma correct_invar_new_window_down
-      (inps : inp list, aux : aux, queries : int fset, low high : int) :
-  size inps = arity => all (mem univ) inps => good aux inps =>
-  low < high => aux <= nth witness inps ((low + high) %/ 2) =>
-  correct_invar inps aux None queries low high =>
-  correct_invar inps aux None
+      (inpss : inp list list, aux : aux, queries : int fset,
+       low high : int, inp : inp) :
+  inpss_invar aux inpss => low < high => aux <= inp =>
+  all
+  (fun (inps : inp list) => nth witness inps ((low + high) %/ 2) = inp)
+  inpss =>
+  correct_invar inpss aux None queries low high =>
+  correct_invar inpss aux None
   (queries `|` fset1 ((low + high) %/ 2)) low ((low + high) %/ 2).
 proof.
-move => correct_size all_in_univ is_good lt_low_high le_aux_nth_inps_mid.
-rewrite /correct_invar.
-progress; first 3 smt().
+rewrite /correct_invar =>
+  inpss_invar_aux_inpss lt_low_high ge_aux_inp
+  all_inpss_eq_inp_at_index [#] ci1 ci2 ci3 ci4 ci5 ci6 ci7.
+progress [-delta].
+smt(). smt().
+rewrite allP => inps inps_in_inpss /=.
+rewrite allP in ci4.
+have nth_inps_ind_lt_aux : aux <= nth witness inps ((low + high) %/ 2).
+  rewrite allP in all_inpss_eq_inp_at_index.
+  by rewrite all_inpss_eq_inp_at_index.
+have [mir_aux_win not_mir_aux_below_win] := ci4 inps _ => //=.
+smt(inpss_invar_all_good_aux allP).
 smt(in_fsetU1).
 qed.
 
 lemma correct_invar_answer
-      (inps : inp list, aux : aux, queries : int fset, low high : int,
+      (inpss : inp list list, aux : aux, queries : int fset, low high : int,
        out_opt : out option) :
-  size inps = arity => all (mem univ) inps => good aux inps =>
-  out_opt <> None => correct_invar inps aux out_opt queries low high => 
-  out_opt = f aux inps.
+  inpss_invar aux inpss => out_opt <> None =>
+  correct_invar inpss aux out_opt queries low high => 
+  inpss_answer aux inpss (oget out_opt).
 proof.
-move => correct_size all_in_univ is_good out_opt_ne_none.
 rewrite /correct_invar =>
-  /> ge0_low le_low_high lt_high_arity k le_low_k le_k_high
-  nth_inps_k_eq_aux no_aux_lt_low _ lt_low_high_impl_out_opt_eq_none
+  inpss_invar_aux_inpss out_opt_ne_none [#] ge0_low le_low_high
+  lt_high_arity all_inpss_range _ lt_low_high_impl_out_opt_eq_none
   out_opt_ne_none_impl_out_opt_eq_some_low.
+rewrite /inpss_answer => x.
+rewrite mapP => [[inps [inps_in_inpss ->]]].
+rewrite out_opt_ne_none_impl_out_opt_eq_some_low // oget_some.
 have eq_low_high : low = high by smt().
-have eq_k_low : k = low by smt().
-rewrite out_opt_ne_none_impl_out_opt_eq_some_low // nth_inps_k_eq_aux.
-rewrite (f_ans _ _ low) // /#.
+rewrite (f_ans _ _ low) //.
+smt(inpss_invar_all_size_arity allP).
+smt(inpss_invar_all_all_mem_univ allP).
+smt(inpss_invar_all_good_aux allP).
+smt(). smt(allP). smt(allP).
 qed.
 
 (* bound part of loop invariant *)

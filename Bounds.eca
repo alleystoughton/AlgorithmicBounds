@@ -86,6 +86,45 @@ proof.
 by rewrite /inpss_invar.
 qed.
 
+lemma inpss_invar_all_size_arity (aux : aux, inpss : inp list list) :
+  inpss_invar aux inpss =>
+  all (fun inps => size inps = arity) inpss.
+proof.
+rewrite /inpss_invar => [[_ all_is_some_map_f_aux_inpss]].
+rewrite allP => inps inps_in_inpss /=.
+have : is_some (f aux inps).
+  rewrite allP in all_is_some_map_f_aux_inpss.
+  rewrite all_is_some_map_f_aux_inpss mapP.
+  by exists inps.
+smt(bad negb_or).
+qed.
+
+lemma inpss_invar_all_all_mem_univ (aux : aux, inpss : inp list list) :
+  inpss_invar aux inpss =>
+  all (fun inps => (all (mem univ) inps)) inpss.
+proof.
+rewrite /inpss_invar => [[_ all_is_some_map_f_aux_inpss]].
+rewrite allP => inps inps_in_inpss /=.
+have : is_some (f aux inps).
+  rewrite allP in all_is_some_map_f_aux_inpss.
+  rewrite all_is_some_map_f_aux_inpss mapP.
+  by exists inps.
+smt(bad negb_or).
+qed.
+
+lemma inpss_invar_all_good_aux (aux : aux, inpss : inp list list) :
+  inpss_invar aux inpss =>
+  all (good aux) inpss.
+proof.
+rewrite /inpss_invar => [[_ all_is_some_map_f_aux_inpss]].
+rewrite allP => inps inps_in_inpss /=.
+have : is_some (f aux inps).
+  rewrite allP in all_is_some_map_f_aux_inpss.
+  rewrite all_is_some_map_f_aux_inpss mapP.
+  by exists inps.
+smt(bad negb_or).
+qed.
+
 lemma inpss_invar_init (aux : aux) : 
   inpss_invar aux (init_inpss aux).
 proof.
