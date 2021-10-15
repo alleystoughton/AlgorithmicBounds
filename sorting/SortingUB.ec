@@ -263,18 +263,16 @@ qed.
 (* the state of the merge sort algorithm is a term in a simple
    functional programming language
 
-   below we will specify, as a function of a comparison
-   operation, the list of integers that is represented
-   by a term (i.e., the meaning of the term)
+   below we will specify, as a function of a comparison operation, the
+   list of integers that is represented by a term (i.e., the meaning
+   of the term)
 
-   we will also give a single-step operational semantics
-   for terms, which periodically blocks, waiting for
-   the result of a comparision
+   we will also give a single-step operational semantics for terms,
+   which periodically blocks, waiting for the result of a comparision
 
-   in the operational semantics, we'll start with
-   Sort range_len, and end with List xs where xs
-   is the permutation of range_len consistent with
-   the comparison operation *)
+   in the operational semantics, we'll start with Sort range_len, and
+   end with List xs where xs is the permutation of range_len
+   consistent with the comparison operation *)
 
 type term = [
   | Sort  of int list
@@ -1697,64 +1695,106 @@ qed.
 
 (* here is the invariant for the proof of our main lemma *)
 
-op nosmt invar (inps : bool list, qs : int fset, t : term) : bool =
+op nosmt invar (inpss : bool list list, qs : int fset, t : term) : bool =
+  inpss_invar () inpss /\
+  all
+  (fun inps =>
+     repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len)
+  inpss /\
   proper t /\
-  repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len /\
   wc_term t + card qs <= wc len /\
   poten_cmps_invar t qs.
 
-lemma invar_impl_proper_term (inps : bool list, qs : int fset, t : term) :
-  invar inps qs t => proper t.
+lemma invar_impl_inpss_invar (inpss : bool list list, qs : int fset, t : term) :
+  invar inpss qs t => inpss_invar () inpss.
 proof. by rewrite /invar. qed.
 
-lemma invar_impl_repr_eq (inps : bool list, qs : int fset, t : term) :
-  invar inps qs t =>
-  repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len.
+lemma invar_impl_all_inpss_total_ordering
+      (inpss : bool list list, qs : int fset, t : term) :
+  invar inpss qs t => all total_ordering inpss.
+proof.
+rewrite /invar => [[inpss_invar_inpss _]].
+smt(inpss_invar_all_good_aux allP).
+qed.
+
+lemma invar_impl_all_repr_eq (inpss : bool list list, qs : int fset, t : term) :
+  invar inpss qs t =>
+  all  
+  (fun inps =>
+     repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len)
+  inpss.
 proof. by rewrite /invar. qed.
 
-lemma invar_impl_wc_le (inps : bool list, qs : int fset, t : term) :
-  invar inps qs t => wc_term t + card qs <= wc len.
+lemma invar_impl_proper_term (inpss : bool list list, qs : int fset, t : term) :
+  invar inpss qs t => proper t.
 proof. by rewrite /invar. qed.
 
-lemma invar_impl_poten_cmps_invar (inps : bool list, qs : int fset, t : term) :
-  invar inps qs t => poten_cmps_invar t qs.
+lemma invar_impl_wc_le (inpss : bool list list, qs : int fset, t : term) :
+  invar inpss qs t => wc_term t + card qs <= wc len.
 proof. by rewrite /invar. qed.
 
-lemma invar_start (inps : bool list) :
-  invar inps fset0 (Sort range_len).
+lemma invar_impl_poten_cmps_invar
+      (inpss : bool list list, qs : int fset, t : term) :
+  invar inpss qs t => poten_cmps_invar t qs.
+proof. by rewrite /invar. qed.
+
+lemma invar_start :
+  invar (init_inpss ()) fset0 (Sort range_len).
 proof.
 rewrite /invar /=.
+split; first rewrite inpss_invar_init.
+split; first by rewrite allP.
 split; first rewrite proper_list_range_len.
 split; first by rewrite fcards0 /= size_range_len.
 rewrite poten_cmps_invar_start.
 qed.
 
-lemma invar_is_worked_step (inps : inp list, qs : int fset, t : term) :
-  total_ordering inps => is_worked (step t) =>
-  invar inps qs t =>
-  invar inps qs (of_worked (step t)).
+lemma invar_is_worked_step
+      (inpss : inp list list, qs : int fset, t : term) :
+  invar inpss qs t => is_worked (step t) => 
+  invar inpss qs (of_worked (step t)).
 proof.
-move => tot_inps is_wkd_step_t.
-rewrite /invar.
-progress.
-by rewrite is_worked_proper_step.
-by rewrite is_worked_repr_step_cmp_of_rel.
-smt(wc_term_step).
+rewrite /invar =>
+  [#] inpss_invar_inpss all_inpss_repr prop_t wc_term_ineq
+  pci_t_qs is_wkd_step_t.
+split; first trivial.
+split.
+rewrite allP => inps inps_in_inpss /=.
+rewrite is_worked_repr_step_cmp_of_rel //.
+smt(inpss_invar_all_good_aux allP).
+rewrite allP in all_inpss_repr.
+by rewrite all_inpss_repr.
+split; first by rewrite is_worked_proper_step.
+split; first smt(wc_term_step).
 by rewrite poten_cms_invar_is_worked.
 qed.
 
-lemma invar_is_compare_answer (inps : inp list, qs : int fset, t : term) :
-  is_compare (step t) =>
-  invar inps qs t =>
-  invar inps (qs `|` fset1 (enc (of_compare (step t))))
-  (oget
-   (answer t
-    (cmp_of_rel inps (of_compare (step t)).`1 (of_compare (step t)).`2))).
+lemma invar_is_compare_answer
+      (inpss : inp list list, qs : int fset, t : term, b : bool) :
+  invar inpss qs t => is_compare (step t) =>
+  invar
+  (filter_nth inpss (enc (of_compare (step t))) b)
+  (qs `|` fset1 (enc (of_compare (step t))))
+  (oget (answer t b)).
 proof.
-move => is_cmp_step_t.
-rewrite /invar => [#] prop_t repr_eq wc_le pcs_invar.
+rewrite /invar =>
+  [#] inpss_invar_inpss all_inpss_repr prop_t wc_term_ineq
+  pci_t_qs is_cmp_step_t.
+split; first by rewrite inpss_invar_filter_nth.
+split.
+rewrite allP => inps inps_in_filter_nth_inpss_enc_of_cmp_stp_t_b /=.
+rewrite mem_filter /= in inps_in_filter_nth_inpss_enc_of_cmp_stp_t_b.
+elim inps_in_filter_nth_inpss_enc_of_cmp_stp_t_b => [<- inps_in_inpss].
+have -> :
+  nth witness inps (enc (of_compare (step t))) =
+  cmp_of_rel inps (of_compare (step t)).`1 (of_compare (step t)).`2.
+  rewrite cmp_of_rel_pair_eq //.
+  smt(inpss_invar_all_good_aux allP).
+  by rewrite is_compare_proper_step_range1.
+  by rewrite is_compare_proper_step_range2.
+rewrite allP in all_inpss_repr.
+by rewrite is_compare_step_answer_repr // all_inpss_repr.
 split; first by rewrite proper_answer // -is_compare_step_iff_good_answer.
-split; first by rewrite is_compare_step_answer_repr.
 split.
 rewrite fcardUindep1 1:is_compare_poten_cmps_invar_not_query // !addrA -ltzE.
 rewrite (ltr_le_trans (wc_term t + card qs)) //.
@@ -1762,81 +1802,100 @@ by rewrite ltr_add2r wc_term_answer 1:/# -is_compare_step_iff_good_answer.
 by rewrite poten_cmps_invar_is_compare_answer.
 qed.
 
+lemma invar_inpss_is_list_answer
+      (inpss : inp list list, qs : int fset, t : term) :
+  invar inpss qs t => inpss <> [] => is_list t =>
+  inpss_answer () inpss (of_list t).
+proof.
+move => invar_inpss_qs_t inpss_ne_nil is_list_t.
+rewrite /inpss_answer.
+split; first trivial.
+move => out_opt.
+rewrite mapP => [[inps [inps_in_inpss ->]]].
+rewrite /f.
+have -> /= : total_ordering inps.
+  smt(invar_impl_all_inpss_total_ordering allP).
+rewrite /total_ordering_to_perm_len /tsort.
+rewrite -(repr_done (cmp_of_rel inps)) //.
+smt(invar_impl_all_repr_eq allP).
+qed.
+
 (* here is our main lemma, parameterized by an upper bound: *)
 
-lemma G_main (bound: int, inps' : inp list) :
+lemma G_main (bound : int) (Adv <: ADV{Alg}) :
   wc len <= bound =>
   hoare
-  [G(Alg).main :
-   inps = inps' /\ total_ordering inps ==>
-   res.`1 = f () inps' /\ res.`2 <= bound].
+  [G(Alg, Adv).main :
+   true ==> ! res.`1 /\ res.`2 <= bound].
 proof.
 move => wc_len_le_bound.
-proc => /=.
-seq 5 :
-  (inps = inps' /\ total_ordering inps /\
-   out_opt = None /\ stage = 0 /\ queries = fset0 /\
-   ! error /\ Alg.term = Sort range_len).
-inline Alg.init; auto; smt().
+proc.
+seq 7 :
+  (inpss = init_inpss () /\ !error /\ don = (inpss = []) /\
+   stage = 0 /\ queries = fset0 /\ Alg.term = Sort range_len).
+inline Alg.init; wp.
+call (_ : true); first auto.
 while
-  (inps = inps' /\ total_ordering inps /\ stage = card queries /\
-   !error /\ invar inps queries Alg.term /\
-   (out_opt <> None =>
-    out_opt = Some (of_list Alg.term) /\ is_list Alg.term)).
+  (stage = card queries /\ !error /\ (!don => inpss <> []) /\
+   invar inpss queries Alg.term).
 inline Alg.make_query_or_report_output.
 seq 2 :
-  (inps = inps' /\ total_ordering inps /\ stage = card queries /\
-   !error /\ out_opt = None /\ invar inps queries Alg.term /\
+  (stage = card queries /\ !error /\ inpss <> [] /\
+   invar inpss queries Alg.term /\
    stp = step Alg.term /\ (stp = Done \/ is_compare stp)).
-while
-  (total_ordering inps /\ stp = step Alg.term /\
-   invar inps queries Alg.term).
+while (stp = step Alg.term /\ invar inpss queries Alg.term).
 auto; progress [-delta].
 by rewrite invar_is_worked_step // is_worked_iff.
 auto; smt().
 if.
 sp.
 rcondf 1; first auto; smt().
-auto; progress [-delta]; by rewrite -step_done_iff.
-sp.
+sp 1.
+rcondt 1; first auto; progress [-delta].
+rewrite (invar_inpss_is_list_answer inpss{hr} queries{hr}) //.
+by rewrite -step_done_iff.
+auto.
+sp 2.
 rcondt 1; first auto.
 sp.
-rcondt 1; first auto => |> &hr to_inps' _ inv [// | is_cmp_step_term _].
+rcondt 1; first auto => |> &hr _ _ inv [// | is_cmp_step_term _].
 have prop_term : proper Alg.term{hr}.
-  by rewrite (invar_impl_proper_term inps' queries{hr}).
+  by rewrite (invar_impl_proper_term inpss{hr} queries{hr}).
 rewrite enc_bounds_ge0 1:is_compare_proper_step_range1 //
         1:is_compare_proper_step_range2 //=.
 rewrite enc_bounds_lt_arity 1:is_compare_proper_step_range1 //
         1:is_compare_proper_step_range2 //=.
 by rewrite is_compare_poten_cmps_invar_not_query //
-           (invar_impl_poten_cmps_invar inps' queries{hr}).
-sp; elim* => stage' queries'.
+           (invar_impl_poten_cmps_invar inpss{hr} queries{hr}).
+sp 2; elim* => stage' queries'.
+seq 1 :
+  (queries = queries' `|` fset1 i /\
+   stage = stage' + 1 /\
+   i = oget (dec_response_query resp) /\
+   resp = Response_Query (enc (of_compare stp)) /\
+   stage' = card queries' /\ !error /\ inpss <> [] /\
+   invar inpss queries' Alg.term /\
+   stp = step Alg.term /\ is_compare stp).
+call (_ : true); first auto; progress [-delta]; smt().
 inline Alg.query_result.
-sp 2.
-rcondf 1; first auto => |> &hr to_inps' _ inv [// | is_cmp_step_term _].
+sp 3; elim* => inp'.
+rcondf 1; first auto => |> &hr _ inpss_ne_nil inv is_cmp_step_term.
 have prop_term : proper Alg.term{hr}.
-  by rewrite (invar_impl_proper_term inps' queries').
-rewrite -is_compare_step_iff_good_answer //.
-auto => |> &hr to_inps' _ inv [// | is_cmp_step_term _].
+  by rewrite (invar_impl_proper_term inpss{hr} queries').
+by rewrite -is_compare_step_iff_good_answer.
+auto => |> &hr _ inps_ne_nil inv is_cmp_step_term.
 have prop_term : proper Alg.term{hr}.
-  by rewrite (invar_impl_proper_term inps' queries').
-split.
-by rewrite fcardUindep1 // 1:is_compare_poten_cmps_invar_not_query //
-           1:(invar_impl_poten_cmps_invar inps').
-by rewrite -cmp_of_rel_pair_eq // 1:is_compare_proper_step_range1 //
-           1:is_compare_proper_step_range2 // invar_is_compare_answer.
-auto => |> &hr to_inps' _.
-split => [| term error out_opt queries].
-rewrite fcards0 /= invar_start.
-rewrite negb_and => [[out_opt_ne_none _ inv out_opt_impl | //]].
-have [-> is_list_term] := out_opt_impl _ => //.
-split.
-rewrite /f to_inps' /= /total_ordering_to_perm_len /tsort.
-by rewrite -(repr_done (cmp_of_rel inps')) //
-           (invar_impl_repr_eq inps' queries).
-have eq0_wc_term_term : wc_term term = 0 by rewrite is_list.
+  by rewrite (invar_impl_proper_term inpss{hr} queries').
+split => _;
+  (split;
+   [by rewrite fcardUindep1 // 1:is_compare_poten_cmps_invar_not_query //
+               1:(invar_impl_poten_cmps_invar inpss{hr}) |
+    by rewrite invar_is_compare_answer]).
+auto; progress [-delta].
+by rewrite fcards0.
+rewrite invar_start.
 rewrite (ler_trans (wc len)) //.
-smt(invar_impl_wc_le).
+smt(invar_impl_wc_le wc_term_ge0 invar_impl_proper_term).
 qed.
 
 (* here is the generalized version of our main theorem: *)
@@ -1851,28 +1910,29 @@ lemma upper_bound_gen (bound : int) &m :
   phoare
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-  (forall (inps : inp list),  (* so all (mem univ) inps *)
-   total_ordering inps =>  (* so size inps = arity and good () inps *)
-   Pr[G(Alg).main((), inps) @ &m :
-      res.`1 = f () inps /\ res.`2 <= bound] = 1%r).
+  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+   phoare
+   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
+   phoare
+   [Adv.ans_query :
+    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r =>
+   Pr[G(Alg, Adv).main() @ &m :
+        ! res.`1 /\ res.`2 <= bound] = 1%r).
 proof.
 move => wc_len_le_bound.
 split; first apply Alg_init_term.
 split; first apply Alg_make_query_or_report_output_term.
 split; first apply Alg_query_result_term.
-move => inps' to_inps'.
+move => Adv adv_term_invar Adv_init_term Adv_ans_query_term.
 byphoare
-  (_ :
-   inps = inps' /\ total_ordering inps ==>
-   res.`1 = f () inps' /\ res.`2 <= bound) => //.
+  (_ : true ==> ! res.`1 /\ res.`2 <= bound) => //.
 conseq
   (_ : true ==> true)
-  (_ :
-   inps = inps' /\ total_ordering inps ==>
-   res.`1 = f () inps' /\ res.`2 <= bound) => //.
-by conseq (G_main bound inps' _).
-rewrite (G_ll Alg alg_term_invar) 1:Alg_init_term
-        1:Alg_make_query_or_report_output_term Alg_query_result_term.
+  (_ : true ==> ! res.`1 /\ res.`2 <= bound) => //.
+by conseq (G_main bound Adv _).
+rewrite (G_ll Alg Adv alg_term_invar adv_term_invar) 1:Alg_init_term
+        1:Alg_make_query_or_report_output_term 1:Alg_query_result_term
+        1:Adv_init_term Adv_ans_query_term.
 qed.
 
 (* and below are two instantiations of our general theorem,
@@ -1888,12 +1948,16 @@ lemma upper_bound_wc &m :
   phoare
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-  (forall (inps : inp list),  (* so all (mem univ) inps *)
-   total_ordering inps =>  (* so size inps = arity and good () inps *)
-   Pr[G(Alg).main((), inps) @ &m :
-      res.`1 = f () inps /\ res.`2 <= wc len] = 1%r).
+  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+   phoare
+   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
+   phoare
+   [Adv.ans_query :
+    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r =>
+   Pr[G(Alg, Adv).main() @ &m :
+        ! res.`1 /\ res.`2 <= wc len] = 1%r).
 proof.
-by apply upper_bound_gen.
+by apply (upper_bound_gen (wc len) &m).
 qed.
 
 lemma upper_bound_len_int_log2_len &m :
@@ -1905,11 +1969,15 @@ lemma upper_bound_len_int_log2_len &m :
   phoare
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-  (forall (inps : inp list),  (* so all (mem univ) inps *)
-   total_ordering inps =>  (* so size inps = arity and good () inps *)
-   Pr[G(Alg).main((), inps) @ &m :
-      res.`1 = f () inps /\ res.`2 <= len * int_log 2 len] = 1%r).
+  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+   phoare
+   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
+   phoare
+   [Adv.ans_query :
+    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r =>
+   Pr[G(Alg, Adv).main() @ &m :
+        ! res.`1 /\ res.`2 <= len * int_log 2 len] = 1%r).
 proof.
-apply upper_bound_gen.
+apply (upper_bound_gen (len * int_log 2 len) &m).
 rewrite wc_le ge1_len.
 qed.
