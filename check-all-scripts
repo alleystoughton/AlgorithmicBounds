@@ -36,6 +36,15 @@ check-all-scripts
 echo cd to ..
 cd ..
 
+cd sorting
+echo cd to sorting
+echo ""
+
+check-all-scripts
+
+echo cd to ..
+cd ..
+
 # success!
 
 exit 0
