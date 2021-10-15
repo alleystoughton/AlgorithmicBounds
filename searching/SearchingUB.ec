@@ -182,24 +182,21 @@ lemma correct_invar_new_window_strictly_up
       (inpss : inp list list, aux : aux, queries : int fset,
        low high : int, inp : inp) :
   inpss_invar aux inpss => low < high => inp < aux =>
-  all
-  (fun (inps : inp list) => nth witness inps ((low + high) %/ 2) = inp)
-  inpss =>
   correct_invar inpss aux queries low high =>
-  correct_invar inpss aux
+  correct_invar (filter_nth inpss ((low + high) %/ 2) inp) aux
   (queries `|` fset1 ((low + high) %/ 2)) ((low + high) %/ 2 + 1) high.
 proof.
+move => inpss_invar_aux_inpss lt_low_high lt_inp_aux.
 rewrite /correct_invar =>
-  inpss_invar_aux_inpss lt_low_high lt_inp_aux
-  all_inpss_eq_inp_at_index [#] ci1 ci2 ci3 ci4 ci5.
-progress [-delta].
-smt(). smt().
-rewrite allP => inps inps_in_inpss /=.
-rewrite allP in ci4.
-have nth_inps_ind_lt_aux : nth witness inps ((low + high) %/ 2) < aux.
-  rewrite allP in all_inpss_eq_inp_at_index.
-  by rewrite all_inpss_eq_inp_at_index.
-have [mir_aux_win not_mir_aux_below_win] := ci4 inps _ => //=.
+  [#] ge0_low le_low_high lt_high_arity all_inpss_range_cond
+  queries_cond.
+split; first smt().
+split.
+rewrite allP => inps.
+rewrite mem_filter /= => [[nth_inps_ind_eq_inp inps_in_inpss]].
+rewrite allP in all_inpss_range_cond.
+have [aux_in_range aux_not_below_range]
+     := all_inpss_range_cond inps _ => //=.
 smt(inpss_invar_all_good_aux allP).
 smt(in_fsetU1).
 qed.
@@ -208,39 +205,36 @@ lemma correct_invar_new_window_down
       (inpss : inp list list, aux : aux, queries : int fset,
        low high : int, inp : inp) :
   inpss_invar aux inpss => low < high => aux <= inp =>
-  all
-  (fun (inps : inp list) => nth witness inps ((low + high) %/ 2) = inp)
-  inpss =>
   correct_invar inpss aux queries low high =>
-  correct_invar inpss aux
+  correct_invar (filter_nth inpss ((low + high) %/ 2) inp) aux
   (queries `|` fset1 ((low + high) %/ 2)) low ((low + high) %/ 2).
 proof.
+move => inpss_invar_aux_inpss lt_low_high le_aux_inp.
 rewrite /correct_invar =>
-  inpss_invar_aux_inpss lt_low_high ge_aux_inp
-  all_inpss_eq_inp_at_index [#] ci1 ci2 ci3 ci4 ci5.
-progress [-delta].
-smt(). smt().
-rewrite allP => inps inps_in_inpss /=.
-rewrite allP in ci4.
-have nth_inps_ind_lt_aux : aux <= nth witness inps ((low + high) %/ 2).
-  rewrite allP in all_inpss_eq_inp_at_index.
-  by rewrite all_inpss_eq_inp_at_index.
-have [mir_aux_win not_mir_aux_below_win] := ci4 inps _ => //=.
+  [#] ge0_low le_low_high lt_high_arity all_inpss_range_cond
+  queries_cond.
+split; first smt().
+split.
+rewrite allP => inps.
+rewrite mem_filter /= => [[nth_inps_ind_eq_inp inps_in_inpss]].
+rewrite allP in all_inpss_range_cond.
+have [aux_in_range aux_not_below_range]
+     := all_inpss_range_cond inps _ => //=.
 smt(inpss_invar_all_good_aux allP).
 smt(in_fsetU1).
 qed.
 
 lemma correct_invar_answer
-      (inpss : inp list list, aux : aux, queries : int fset, low high : int,
-       out_opt : out option) :
-  inpss_invar aux inpss => low = high =>
+      (inpss : inp list list, aux : aux, queries : int fset, low high : int) :
+  inpss_invar aux inpss => inpss <> [] => low = high =>
   correct_invar inpss aux queries low high => 
   inpss_answer aux inpss low.
 proof.
+move => inpss_invar_aux_inpss inpss_nonnil eq_low_high.
 rewrite /correct_invar =>
-  inpss_invar_aux_inpss out_opt_ne_none [#] ge0_low le_low_high
-  lt_high_arity all_inpss_range _.
-rewrite /inpss_answer => x.
+  [#] ge0_low le_low_high lt_high_arity all_inpss_range _.
+rewrite /inpss_answer.
+split => [// | x].
 rewrite mapP => [[inps [inps_in_inpss ->]]].
 rewrite (f_ans _ _ low) //.
 smt(inpss_invar_all_size_arity allP).
@@ -328,36 +322,20 @@ seq 7 :
    !error /\ don = (inpss = []) /\ stage = 0 /\ queries = fset0 /\
    Alg.low = 0 /\ Alg.high = arity - 1).
 inline Alg.init; wp.
-call (_ : true).
-auto; progress [-delta].
+call (_ : true); first auto.
 while
   (aux = Alg.aux /\ stage = card queries /\ inpss_invar aux inpss /\
-   !error /\ correct_invar inpss aux queries Alg.low Alg.high /\
+   (!don => inpss <> []) /\ !error /\
+   correct_invar inpss aux queries Alg.low Alg.high /\
    bound_invar Alg.low Alg.high stage).
-admit.
-auto; progress [-delta].
-smt(fcards0).
-rewrite inpss_invar_init.
-rewrite correct_invar_start.
-rewrite bound_invar_start.
-smt(bound_invar_le_stage_int_log_up_arity).
-qed.
-
-
-rewrite H7 /=.
-have out_opt0_ne_none : out_opt0 <> None.
-  move : H3; by rewrite negb_and /= H7.
-by rewrite (correct_invar_answer inps{hr} Alg.aux{hr} queries0 low high).
-smt(bound_invar_le_stage_int_log_up_arity).
-
-
-
 inline Alg.make_query_or_report_output.
 if.
 sp.
 rcondf 1; first auto.
-auto; progress [-delta].
-by apply correct_invar_report.
+sp 1.
+rcondt 1; first auto; progress [-delta].
+smt(correct_invar_answer).
+auto.
 sp.
 rcondt 1; first auto.
 sp.
@@ -367,30 +345,53 @@ smt(correct_invar_range).
 smt(correct_invar_window_not_queries correct_invar_range).
 sp.
 elim* => stage' queries'.
+seq 1 :
+  (aux = Alg.aux /\ stage' = card queries' /\
+   inpss_invar aux inpss /\ inpss <> [] /\ !error /\ !don /\
+   correct_invar inpss aux queries' Alg.low Alg.high /\
+   Alg.low <> Alg.high /\
+   bound_invar Alg.low Alg.high stage' /\
+   Alg.mid = (Alg.low + Alg.high) %/ 2 /\
+   resp = Response_Query Alg.mid /\
+   i = oget (dec_response_query resp) /\
+   queries = queries' `|` fset1 i /\ stage = stage' + 1).
+call (_ : true).
+auto; progress [-delta]; smt().
+wp.
 inline Alg.query_result.
-sp 1.
+sp 2; elim* => inp.
 if.
 auto; progress [-delta].
 smt(fcardUindep1 correct_invar_window_not_queries correct_invar_range).
+by rewrite inpss_invar_filter.
+rewrite correct_invar_new_window_strictly_up //.
+smt(correct_invar_range).
+rewrite bound_invar_new_window_strictly_up //.
+smt(correct_invar_range).
+smt(fcardUindep1 correct_invar_window_not_queries correct_invar_range).
+by rewrite inpss_invar_filter.
 rewrite correct_invar_new_window_strictly_up //.
 smt(correct_invar_range).
 rewrite bound_invar_new_window_strictly_up //.
 smt(correct_invar_range).
 auto; progress [-delta].
 smt(fcardUindep1 correct_invar_window_not_queries correct_invar_range).
+by rewrite inpss_invar_filter.
 rewrite correct_invar_new_window_down //.
+smt(correct_invar_range). smt().
+rewrite bound_invar_new_window_down //.
 smt(correct_invar_range).
-by rewrite lerNgt.
+smt(fcardUindep1 correct_invar_window_not_queries correct_invar_range).
+by rewrite inpss_invar_filter.
+rewrite correct_invar_new_window_down //.
+smt(correct_invar_range). smt().
 rewrite bound_invar_new_window_down //.
 smt(correct_invar_range).
 auto; progress [-delta].
 smt(fcards0).
-by rewrite correct_invar_start.
+rewrite inpss_invar_init.
+rewrite correct_invar_start.
 rewrite bound_invar_start.
-rewrite H7 /=.
-have out_opt0_ne_none : out_opt0 <> None.
-  move : H3; by rewrite negb_and /= H7.
-by rewrite (correct_invar_answer inps{hr} Alg.aux{hr} queries0 low high).
 smt(bound_invar_le_stage_int_log_up_arity).
 qed.
 
@@ -399,27 +400,27 @@ qed.
 lemma upper_bound &m :
   islossless Alg.init /\ islossless Alg.make_query_or_report_output /\
   islossless Alg.query_result /\
-  (forall (aux : aux, inps : inp list),
-   size inps = arity => all (mem univ) inps => good aux inps =>
-   Pr[G(Alg).main(aux, inps) @ &m :
-      res.`1 = f aux inps /\ res.`2 <= int_log_up 2 arity] = 1%r).
+  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+   phoare
+   [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
+   phoare
+   [Adv.ans_query :
+    adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r =>
+   Pr[G(Alg, Adv).main() @ &m :
+        ! res.`1 /\ res.`2 <= int_log_up 2 arity] = 1%r).
 proof.
 split; first apply Alg_init_ll.
 split; first apply Alg_make_query_or_report_output_ll.
 split; first apply Alg_query_result_ll.
-move => aux' inps' size_inps'_eq_arity all_inps'_in_univ good_aux'_inps'.
+move => Adv adv_term_invar adv_init_term adv_ans_query_term.
 byphoare
-  (_ :
-   aux = aux' /\ inps = inps' /\ size inps = arity /\
-   all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity) => //.
+  (_ : true ==> ! res.`1 /\ res.`2 <= int_log_up 2 arity) => //.
 conseq
   (_ : true ==> true)
   (_ :
-   aux = aux' /\ inps = inps' /\ size inps = arity /\
-   all (mem univ) inps /\ good aux inps ==>
-   res.`1 = f aux' inps' /\ res.`2 <= int_log_up 2 arity) => //.
-by conseq (G_main aux' inps').
-rewrite (G_ll Alg predT) 1:Alg_init_ll 1:Alg_make_query_or_report_output_ll
-        Alg_query_result_ll.
+   true ==> ! res.`1 /\ res.`2 <= int_log_up 2 arity) => //.
+apply (G_main Adv).
+rewrite (G_ll Alg Adv predT adv_term_invar)
+        1:Alg_init_ll 1:Alg_make_query_or_report_output_ll
+        1:Alg_query_result_ll 1:adv_init_term adv_ans_query_term.
 qed.

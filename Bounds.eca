@@ -199,21 +199,22 @@ op inpss_done (aux : aux, inpss : inp list list) : bool =
   forall (x y : out option),
   x \in map (f aux) inpss => y \in map (f aux) inpss => x = y.
 
-(* test whether all elements of map (f aux) inpss are equal to
-   Some out *)
+(* test whether inpss has at least one element and
+   every element of map (f aux) inps is Some out *)
 
 op inpss_answer (aux : aux, inpss : inp list list, out : out) : bool =
+  inpss <> [] /\
   forall (x : out option),
   x \in map (f aux) inpss => x = Some out.
 
 lemma inpss_answer_implies_done (aux : aux, inpss : inp list list, out : out) :
   inpss_answer aux inpss out => inpss_done aux inpss.
 proof.
-move => inpss_ans_aux_inpss_out.
-rewrite /inpss_done =>
-  x y
-  /inpss_ans_aux_inpss_out => ->
-  /inpss_ans_aux_inpss_out => -> //.
+move => [_ inpss_ans_aux_inpss_out].
+by rewrite /inpss_done =>
+     x y
+     /inpss_ans_aux_inpss_out => ->
+     /inpss_ans_aux_inpss_out => ->.
 qed.
 
 (* operator and lemmas about queries *)
@@ -574,6 +575,7 @@ module G(Alg : ALG, Adv : ADV) = {
     stage <- 0;        (* stage counts number of queries *)
     queries <- fset0;  (* no queries initially *)
     while (!don /\ !error) {
+      (* we have: inpss <> [] *)
       (* let Alg make query or report output *)
       resp <@ Alg.make_query_or_report_output();
       if (is_response_query resp) {
