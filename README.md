@@ -24,7 +24,7 @@ and Stuyvesant High School student and BU RISE program intern
 We have general EasyCrypt frameworks for expressing lower and
 upper bounds problems
 
- * [`Bounds.eca` - lower and upper bounds framework](../main/Bounds.eca)
+ * [`Bounds.eca` - lower and upper bounds frameworks](../main/Bounds.eca)
 
 We have applied these frameworks to
 
