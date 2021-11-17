@@ -483,8 +483,10 @@ qed.
 
 lemma int_log16_eq_4 : int_log 2 16 = 4.
 proof.
-rewrite eq_sym (int_logPuniq 2 16 4) //.
-smt(expr1 expr2 exprS).
+rewrite eq_sym (int_logPuniq 2 16 4) //=.
+have -> : 4 = 1 + 1 + 1 + 1 by trivial.
+have -> : 5 = 1 + 1 + 1 + 1 + 1 by trivial.
+by rewrite !exprS // expr1.
 qed.
 
 lemma conditional_precise_ge16 (n : int) :

@@ -798,9 +798,13 @@ smt(bound_invar_next_new_beg fcard_ge0).
 auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
-smt(win_invar_nonempty_query_ge_mid).
-smt(inpss_win_invar_filter_mid_high_b b_in_univ).
-smt(bound_invar_next_new_end fcard_ge0).
+have -> : Adv.win_empty{hr} = false by smt().
+rewrite (win_invar_nonempty_query_ge_mid _ Adv.win_end{hr}) /#.
+have -> : Adv.win_empty{hr} = false by smt().
+have -> : (if b \in univ then b else min_inp) = b by smt(b_in_univ).
+rewrite (inpss_win_invar_filter_mid_high_b _ _ Adv.win_end{hr} i{hr}) /#.
+have -> : Adv.win_empty{hr} = false by smt().
+rewrite (bound_invar_next_new_end _ Adv.win_end{hr}) // 4:fcard_ge0 /#.
 auto.
 auto; progress [-delta].
 smt(fcards0).
