@@ -18,27 +18,27 @@ require import IntLog.     (* integer logarithms *)
 require import ListSizes.  (* showing uniq lists have the same size *)
 
 (* comparison-based sorting problem, plus bounds frameworks *)
-require import SortingProb.  
+require import SortingProb.
 import LB.
 
 (* the adversary *)
 
 module Adv : ADV = {
   var inpss : inp list list  (* current possible lists of inputs *)
-  
+
   proc init() : unit = {
     inpss <- init_inpss ();
-    return ();       
+    return ();
   }
 
   proc ans_query(q : int) : inp = {
     (* q will be the encoding of a pair (i, j), where 0 <= i, j < len;
        inpss will always be nonempty *)
 
-    (* two possible inpss when the adversary answers true or false *) 
-    var inpss_t, inpss_f : inp list list; 
+    (* two possible inpss when the adversary answers true or false *)
+    var inpss_t, inpss_f : inp list list;
     var ret : inp;  (* return value *)
-  
+
     inpss_t <- filter_nth inpss q true;
     inpss_f <- filter_nth inpss q false;
 
@@ -52,21 +52,21 @@ module Adv : ADV = {
             2. (i, j) is asked before and this time (j, i);
             3. (i, j) = true, (j, k) = true, this time asks (i, k), etc. *)
       inpss <- inpss_t;
-      ret <- true;  
+      ret <- true;
     }
-    return ret;   
+    return ret;
   }
 }.
 
 lemma uniq_init_inpss :
   uniq (init_inpss ()).
-proof.    
+proof.
 smt(inpss_invar_init inpss_invar_uniq).
 qed.
 
 lemma total_ordering_to_perm_len_lists_fun :
   lists_fun (init_inpss ()) perms_len total_ordering_to_perm_len.
-proof.   
+proof.
 rewrite /lists_fun /init_inpss /good => xs /=.
 rewrite mem_filter => [[tot_ord_xs _]].
 by rewrite total_ordering_to_perm_len_good.
@@ -93,7 +93,7 @@ rewrite allP => x _; rewrite /univ /#.
 by rewrite perm_len_to_total_orderingK.
 qed.
 
-lemma init_inpss_fact_len  : 
+lemma init_inpss_fact_len  :
   size (init_inpss ()) = fact len.
 proof.
 rewrite (uniq_sets_eq_size_if_injective_surjective (init_inpss ()) perms_len
@@ -201,7 +201,7 @@ move => [ge0_i lt_i_arity].
 rewrite /filter_nth.
 elim inpss => [// | x xs IH /#].
 qed.
- 
+
 lemma divpow2up_next_size_ge2
       (inpss : inp list list, stage i : int, b : bool) :
   0 <= stage => 0 <= i < arity => 2 <= size inpss =>
@@ -218,7 +218,7 @@ qed.
 
 (* here is our main lemma, parameterized by a lower bound: *)
 
-lemma G_Adv_main (bound : int) (Alg <: ALG{Adv}) : 
+lemma G_Adv_main (bound : int) (Alg <: ALG{Adv}) :
   bound <= int_log_up 2 (fact len) =>
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ bound <= res.`2].
 proof.
@@ -229,7 +229,7 @@ seq 7 :
    stage = 0 /\ queries = fset0 /\ Adv.inpss = init_inpss aux /\ aux = ()).
 wp.
 call (_ : true).
-inline Adv.init; auto. 
+inline Adv.init; auto.
 while
   (stage = card queries /\ queries_in_range queries /\ Adv.inpss = inpss /\
    inpss_invar () inpss /\  don = inpss_done aux inpss /\
@@ -246,12 +246,12 @@ sp; elim* => stage' queries'.
 inline Adv.ans_query.
 sp 3.
 if.
-auto; progress [-delta]. 
+auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
 by rewrite inpss_invar_filter_nth.
 by rewrite divpow2up_next_size_ge2 1:fcard_ge0 // 1:-inpss_not_done_iff.
-auto; progress [-delta]. 
+auto; progress [-delta].
 smt(fcardUindep1).
 smt(queries_in_range_add).
 by rewrite inpss_invar_filter_nth.
@@ -265,7 +265,7 @@ by rewrite divpow2up_start init_inpss_fact_len.
 rewrite negb_and /= in H0.
 elim H0 => [inpss_done | error].
 right.
-rewrite (ler_trans (int_log_up 2 (fact len))) //. 
+rewrite (ler_trans (int_log_up 2 (fact len))) //.
 apply divpow2up_eq1_int_log_up_le.
 smt(ge1_fact ge1_len).
 smt(fcard_ge0).
@@ -274,7 +274,7 @@ have ge1_dp2u : 1 <= divpow2up (fact len) (card queries0).
 apply ler_anti.
 rewrite ge1_dp2u /=.
 have /# : size inpss1 = 1 by rewrite -inpss_done_iff //#.
-by left. 
+by left.
 qed.
 
 (* here is the generalized form of our main theorem: *)
@@ -332,21 +332,21 @@ lemma div2_le_if_le_tim2_plus1 (n m : int) :
 proof.
 move => le_n_m_tim2_plus1.
 rewrite (ler_trans ((m * 2 + 1) %/ 2)).
-by rewrite leq_div2r.  
+by rewrite leq_div2r.
 by rewrite div_succ_eq // 1:-even_iff_plus1_odd 1:dvdz_mull // mulzK.
 qed.
 
 lemma log_fact_helper (n : int) :
   0 <= n => 1 <= n =>
   n * (int_log 2 n + 2) <= (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1.
-proof.    
-elim n => [le1_0 /# | n ge0_n ih].   
-move : ge0_n.  
+proof.
+elim n => [le1_0 /# | n ge0_n ih].
+move : ge0_n.
 case (2 < n) => [gt2_n _ _ | le2_n ge0_n _].
 (* 2 < n *)
 have lb1 : 2 <= int_log 2 (n + 1) by rewrite int_log_ge_pow // 1:/# expr2 /#.
 have lb2 : int_log 2 (n + 1) + int_log 2 (fact n) <= int_log 2 (fact(n + 1))
-  by rewrite factS // 1:/# int_log_distr_mul_lb // 1:/#; smt(ge1_fact).       
+  by rewrite factS // 1:/# int_log_distr_mul_lb // 1:/#; smt(ge1_fact).
 have [e | [e1 e2]] :
   int_log 2 (n + 1) = int_log 2 n \/
   int_log 2 (n + 1) = (int_log 2 n) + 1 /\ 2 ^ (int_log 2 (n + 1)) = n + 1.
@@ -355,50 +355,50 @@ have [e | [e1 e2]] :
     smt(int_log_lb_le int_log_ub_lt int_log_ge0).
   rewrite lez_eqVlt in h4.
   elim h4 => [h5 //= | //=].
-  right; split; smt(int_log_lb_le int_log_ub_lt). 
-  rewrite ltzS lez_eqVlt => [#] [eq_log | neq_log].  
+  right; split; smt(int_log_lb_le int_log_ub_lt).
+  rewrite ltzS lez_eqVlt => [#] [eq_log | neq_log].
   by left.
-  have neq_log2: 2 ^ (int_log 2 (n + 1) + 1) <= 2 ^ (int_log 2 n) 
+  have neq_log2: 2 ^ (int_log 2 (n + 1) + 1) <= 2 ^ (int_log 2 n)
     by rewrite -(ge2_exp_le_equiv 2 ((int_log 2 (n + 1)) + 1 ) (int_log 2 n))
                //=; smt(int_log_ge0).
   (* contradiction: n + 1 < n *)
-  smt(int_log_le).   
+  smt(int_log_le).
 rewrite e mulzDl.
 have lb :
   n * (int_log 2 n + 2) + (int_log 2 n + 2) <=
   (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n * 2)
-  by rewrite ler_add 1:ih // 1://# mul2r -e //#. 
+  by rewrite ler_add 1:ih // 1://# mul2r -e //#.
 rewrite
   (lez_trans ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + int_log 2 n * 2))
   // addzC.
 have -> //= /# :
   int_log 2 n * 2 + ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1) =
   (int_log 2 n + int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 by smt().
-rewrite e1 mulzDl.   
+rewrite e1 mulzDl.
 have -> :
   n * (int_log 2 n + 1 + 2) + 1 * (int_log 2 n + 1 + 2) =
   n * (int_log 2 n + 2) + (int_log 2 n + 3 + n) by smt().
 have lb :
   n * (int_log 2 n + 2) +  (int_log 2 n + 3 + n) <=
   (int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 + 1 + (int_log 2 n + 3 + n)
-  by smt(ler_add).     
+  by smt(ler_add).
 rewrite
   (lez_trans ((int_log 2 (fact n) + 2 ^ int_log 2 n) * 2 +
               1 + (int_log 2 n + 3 + n)))
-  // -e1 e2 mulzDl.             
+  // -e1 e2 mulzDl.
 have -> /# : 2 ^ (int_log 2 n) * 2 = 2 ^ (int_log 2 n + 1)
   by rewrite exprS 1:int_log_ge0 //= 1:/# /#.
-(* n <= 2 *)  
+(* n <= 2 *)
 rewrite -lerNgt in le2_n.
 have [eq0_n //= | [eq1_n | eq2_n]] : n = 0 \/ n = 1 \/ n = 2 by smt().
 (* n = 0 *)
-rewrite eq0_n (fact1 0) //=. 
+rewrite eq0_n (fact1 0) //=.
 have -> //= : int_log 2 1 = 0 by smt(int_log1_eq0).
 smt(expr0).
-(* n = 1 *)                  
+(* n = 1 *)
 rewrite eq1_n //=.
 have -> : fact 2 = 2 by smt(factS fact1 fact0 expr1).
-rewrite int_log2_eq_1; smt(expr1).                  
+rewrite int_log2_eq_1; smt(expr1).
 (* n = 2 *)
 rewrite eq2_n //=.
 have -> : fact 3 = 2 * 3 by smt(factS fact1 fact0 expr1).
@@ -416,7 +416,7 @@ qed.
 (* first lower-approximation: *)
 
 lemma log2_fact (n : int) :
-  1 <= n => (n * int_log 2 n) %/ 2 <= int_log 2 (fact n). 
+  1 <= n => (n * int_log 2 n) %/ 2 <= int_log 2 (fact n).
 proof.
 move => ge1_n.
 by rewrite div2_le_if_le_tim2_plus1 log2_fact_aux.
@@ -427,7 +427,7 @@ qed.
 lemma int_log_leq_plus1 (b n : int) :
   1 <= n => 2 <= b => int_log b (n + 1) <= int_log b n + 1.
 proof.
-move => ge1_n ge2_b.    
+move => ge1_n ge2_b.
 case (int_log b (n + 1) = int_log b n) => [//# | not_eq].
 rewrite (ge2_exp_le_equiv b (int_log b (n + 1)) ((int_log b n) + 1)) //=;
 smt(int_log_ge0 int_log_lb_le int_log_ub_lt).
@@ -438,12 +438,12 @@ lemma log2_fact_precise_aux (n : int) :
   n * (int_log 2 n) - 2 * 2 ^ (int_log 2 n) <= int_log 2 (fact n).
 proof.
 elim n => [| i ge0_i ih _].
-rewrite fact0 //=. 
+rewrite fact0 //=.
 case (0 = i) => [//= | neq0_i]; first progress; smt(fact1 int_log1_eq0 expr0).
 have ge1_i : 1 <= i by smt().
 have e1 : int_log 2 (i + 1) <= (int_log 2 i) + 1 by smt(int_log_leq_plus1).
 have e2 : (i + 1) * int_log 2 (i + 1) <= (i + 1) * ((int_log 2 i) + 1)
-  by rewrite ler_wpmul2l /#. 
+  by rewrite ler_wpmul2l /#.
 have e3 : int_log 2 (fact i) + int_log 2 (i + 1) <= int_log 2 (fact (i + 1))
   by rewrite factS //; smt(int_log_distr_mul_lb ge1_fact).
 case (int_log 2 i = int_log 2 (i + 1)) => [eq_log | not_eq //].
@@ -456,8 +456,8 @@ have <- : (int_log 2 i) + 1 = int_log 2 (i + 1)
 have -> :
   (i + 1) * (int_log 2 i + 1) = i * (int_log 2 i) + (int_log 2 i) + i + 1
   by smt().
-smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt). 
-qed. 
+smt(lez_trans int_log_ub_lt exprS int_log_ge0 int_log_ub_lt).
+qed.
 
 (* second lower-approximation: *)
 
@@ -498,9 +498,9 @@ have /# :
   2 * 2 ^ (int_log 2 n) <= n * (int_log 2 n) - n * (int_log 2 n) %/ 2.
   rewrite (lez_trans (n * int_log 2 n %/ 2)) 2:/#.
   have e : 2 ^ int_log 2 n <= n by smt(int_log_lb_le).
-  rewrite (lez_trans (2 * n)) 1:/#. 
+  rewrite (lez_trans (2 * n)) 1:/#.
   have bound : 2 <= (int_log 2 n) %/ 2 by smt(int_log_le int_log16_eq_4).
-  rewrite -(ler_pmul2l n) in bound; smt(). 
+  rewrite -(ler_pmul2l n) in bound; smt().
 qed.
 
 lemma conditional_precise_ge11 (n : int) :

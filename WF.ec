@@ -92,7 +92,7 @@ qed.
 op lt_nat (x y : int) = 0 <= x < y.
 
 lemma wf_lt_nat : wf lt_nat.
-proof.  
+proof.
 move => xs is_ne_xs.
 have H :
   forall n,
@@ -537,7 +537,7 @@ have aux_closed :
                /wfc_least_is_fun_aux => x'' y''.
   have -> /= z' least_x'_z' :
        wfc_least wfr def wfrd x' (wfrd x' (grel_to_fun def grel')).
-    by apply wfc_least_closed.    
+    by apply wfc_least_closed.
   have [grel'' [#] sub_grel''_least is_fun_grel''
         dom_grel''_preds_x' ->]
        := wfc_least_char wfr def wfrd x' z' _.

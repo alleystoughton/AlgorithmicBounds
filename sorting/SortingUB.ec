@@ -17,7 +17,7 @@ import IntOrder.
 require import IntLog.  (* integer logarithms *)
 
 (* comparison-based sorting problem, plus bounds frameworks *)
-require import SortingProb.  
+require import SortingProb.
 import UB.
 
 (* wc n recursively calculates an upper bound on the worst case number
@@ -416,7 +416,7 @@ rewrite /proper_list all_cat cat_uniq has_sym.
 split =>
   [[#] xs_cat_ys_ne_nil -> -> -> -> -> /# |
    [[#] -> /= -> -> -> // |
-    [[#] -> /= xs_ne_nil -> -> | 
+    [[#] -> /= xs_ne_nil -> -> |
      [#] xs_ne_nil -> -> ys_ne_nil -> -> -> /=]
    ]
   ].
@@ -426,7 +426,7 @@ qed.
 
 lemma proper_list_cat_both_ne_iff (xs ys : int list) :
   xs <> [] => ys <> [] =>
-  proper_list (xs ++ ys) <=> 
+  proper_list (xs ++ ys) <=>
   proper_list xs /\ proper_list ys /\ ! has (mem ys) xs.
 proof.
 smt(proper_list_cat_iff).
@@ -1078,7 +1078,7 @@ rewrite (eq_sym j) pl0_us pl0_vs !mem_oflist !negb_or.
 rewrite i_in_range j_in_range i_notin_us j_notin_vs ne_i_j /=.
 have -> /= : ! j \in us by smt(hasPn).
 split.
-split.  
+split.
 rewrite fsetIC disjointP => x.
 rewrite mem_oflist => x_in_vs.
 rewrite in_fsetU in_fset1 mem_oflist negb_or.
@@ -1158,7 +1158,7 @@ lemma is_compare_step_answer_repr (cmp : int -> int -> bool, t : term) :
   repr cmp
   (oget
    (answer t
-    (cmp (of_compare (step t)).`1 (of_compare (step t)).`2))) = 
+    (cmp (of_compare (step t)).`1 (of_compare (step t)).`2))) =
   repr cmp t.
 proof.
 elim t => //.
@@ -1683,7 +1683,7 @@ qed.
 lemma Alg_query_result_term :
   phoare
   [Alg.query_result :
-   alg_term_invar (glob Alg) ==> 
+   alg_term_invar (glob Alg) ==>
    alg_term_invar (glob Alg)] = 1%r.
 proof.
 proc; auto => &hr.
@@ -1719,7 +1719,7 @@ qed.
 
 lemma invar_impl_all_repr_eq (inpss : bool list list, qs : int fset, t : term) :
   invar inpss qs t =>
-  all  
+  all
   (fun inps =>
      repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len)
   inpss.
@@ -1751,7 +1751,7 @@ qed.
 
 lemma invar_is_worked_step
       (inpss : inp list list, qs : int fset, t : term) :
-  invar inpss qs t => is_worked (step t) => 
+  invar inpss qs t => is_worked (step t) =>
   invar inpss qs (of_worked (step t)).
 proof.
 rewrite /invar =>

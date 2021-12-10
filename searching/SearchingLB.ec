@@ -18,7 +18,7 @@ import IntOrder.
 require import IntLog.  (* integer logarithms *)
 
 (* searching in ordered lists problem, including bounds frameworks *)
-require import SearchingProb.  
+require import SearchingProb.
 import LB.  (* lower bounds framework *)
 
 (* our adversary uses two elements of inp: *)

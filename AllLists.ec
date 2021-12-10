@@ -19,15 +19,15 @@ by rewrite flatten_cons all_cat IH.
 qed.
 
 op nosmt next (xs : 'a list, yss : 'a list list) : 'a list list =
-  flatten  
+  flatten
   (map
    (fun x =>
       map (fun ys => x :: ys) yss)
    xs).
 
 lemma next (xs : 'a list, yss : 'a list list) :
-  next xs yss = 
-  flatten  
+  next xs yss =
+  flatten
   (map
    (fun x =>
       map (fun ys => x :: ys) yss)
@@ -63,7 +63,7 @@ proof.
 rewrite next size_flatten /=.
 have -> :
   map size (map (fun (x : 'a) => map ((::) x) yss) xs) =
-  nseq (size xs) (size yss). 
+  nseq (size xs) (size yss).
 elim xs => [/= | x xs IH /=].
 by rewrite nseq0.
 by rewrite addrC nseqS 1:size_ge0 IH /= size_map.
@@ -138,7 +138,7 @@ qed.
 
 lemma all_lists_arity_have (xs ys : 'a list, n : int) :
   0 <= n => size ys = n => (all (mem xs) ys) =>
-  ys \in all_lists xs n.  
+  ys \in all_lists xs n.
 proof.
 move : n.
 elim ys => [n ge0_n /= <- | y ys IH n ge0_n].
@@ -175,7 +175,7 @@ op make_list_either (x1 x2 : 'a, f : int -> bool, n : int) : 'a list =
 
 lemma make_list_either_size (x1 x2 : 'a, f : int -> bool, n : int) :
   0 <= n => size (make_list_either x1 x2 f n) = n.
-proof.  
+proof.
 rewrite lez_eqVlt => ge0_n.
 rewrite /make_list_either size_mkseq /max.
 by elim ge0_n => ->.

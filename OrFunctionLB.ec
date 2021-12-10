@@ -242,7 +242,7 @@ lemma filter_all_queries_false_add
   filter
   (fun inps => nth witness inps i = false)
   (filter (all_queries_false queries) inpss).
-proof.   
+proof.
 rewrite -filter_predI /predI.
 congr.
 apply fun_ext => bs.
@@ -302,7 +302,7 @@ lemma filter_all_queries_init_inpss_false_done (queries : int fset) :
   queries_in_range queries =>
   (card queries = arity <=>
    inpss_done () (filter (all_queries_false queries) (init_inpss ()))).
-proof.    
+proof.
 move => qir_queries.
 split => [cq_eq_arities | done_filtering].
 rewrite all_queries_false_queries_eq_all_range.

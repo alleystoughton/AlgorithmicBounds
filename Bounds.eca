@@ -125,7 +125,7 @@ have : is_some (f aux inps).
 smt(bad negb_or).
 qed.
 
-lemma inpss_invar_init (aux : aux) : 
+lemma inpss_invar_init (aux : aux) :
   inpss_invar aux (init_inpss aux).
 proof.
 rewrite /inpss_invar /init_inpss.
@@ -254,7 +254,7 @@ lemma all_queries_cond (queries : int fset) :
   (card queries = arity <=> all_in_range_queries queries).
 proof.
 move => qir_queries.
-split => [card_queries_eq_arity i i_in_rng | airq_queries]. 
+split => [card_queries_eq_arity i i_in_rng | airq_queries].
 by rewrite (FRange.sub_range_card_max queries arity).
 rewrite (lez_anti (card queries) arity) //.
 split => [| _].
@@ -286,7 +286,7 @@ module type ADV = {
 
   (* ask adversary to answer query of what the ith input is *)
   proc ans_query(i : int) : inp
-}.  
+}.
 
 (* framework for proving worst case lower bounds results using the
    adversarial method
@@ -693,7 +693,7 @@ module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
   proc init(aux : aux) : unit = {
     UBAlg.init(aux);
   }
-  
+
   proc make_query() : int = {
     var resp : UB.response;
     var i : int;
@@ -707,7 +707,7 @@ module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
     }
     return i;
   }
-  
+
   proc query_result(x : inp) : unit = {
     UBAlg.query_result(x);
   }
@@ -753,7 +753,7 @@ move =>
 proc.
 seq 7 7 :
   (={aux, inpss, error, stage, queries, glob Alg, glob Adv} /\
-   alg_term_invar (glob Alg){1} /\ adv_term_invar (glob Adv){1} /\ 
+   alg_term_invar (glob Alg){1} /\ adv_term_invar (glob Adv){1} /\
    queries_in_range queries{1} /\ stage{1} = card queries{1} /\ !error{1} /\
    (don{1} <=> inpss{1} = []) /\ don{2} = inpss_done aux{2} inpss{2}).
 wp; inline*.
@@ -777,7 +777,7 @@ conseq Adv_init_term.
 conseq Adv_init_term.
 by proc (true).
 auto; progress [-delta].
-rewrite queries_in_range0. 
+rewrite queries_in_range0.
 by rewrite fcards0.
 splitwhile{1} 1 : (! (inpss_done aux inpss)).
 splitwhile{2} 1 : true.
@@ -875,7 +875,7 @@ move => &m z.
 seq 1 :
   (queries_in_range queries /\ stage = card queries /\
    alg_term_invar (glob Alg) /\ adv_term_invar (glob Adv) /\ !don /\
-   ub' <= stage /\ !error /\ 
+   ub' <= stage /\ !error /\
    (if don \/ error then 0 else arity - stage + 1) = z).
 conseq (_ : _ ==> _ : = 1%r).
 call Alg_make_query_or_report_output_term.
@@ -985,7 +985,8 @@ have contrad_ub_gt0 :
     0%r <= Pr[UB.G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub].
     by rewrite Pr [mu_ge0].
 have contrad_lb_gt0 :
-  0%r < Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub].
+  0%r <
+  Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub].
   rewrite
     (RealOrder.ltr_le_trans
      Pr[UB.G(Alg, Adv).main() @ &m : ! res.`1 /\ res.`2 <= ub]) //.

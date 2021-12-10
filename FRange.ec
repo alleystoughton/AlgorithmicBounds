@@ -66,7 +66,7 @@ qed.
 
 lemma sub_range_card_leq (xs : int fset, n : int) :
   0 <= n =>
-  (forall (j : int), j \in xs => 0 <= j < n) =>  
+  (forall (j : int), j \in xs => 0 <= j < n) =>
   card xs <= n.
 proof.
 move => ge0_n xs_sub_range.
@@ -76,7 +76,7 @@ qed.
 
 lemma all_range_card_geq (xs : int fset, n : int) :
   0 <= n =>
-  (forall (j : int), 0 <= j < n => j \in xs) =>  
+  (forall (j : int), 0 <= j < n => j \in xs) =>
   n <= card xs.
 proof.
 move => ge0_n sub_xs.

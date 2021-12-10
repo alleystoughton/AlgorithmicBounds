@@ -18,7 +18,7 @@ import IntOrder.
 require import IntLog.  (* integer logarithms *)
 
 (* searching in ordered lists problem, including bounds frameworks *)
-require import SearchingProb.  
+require import SearchingProb.
 import UB.  (* upper bounds framework *)
 
 (* here is our algorithm: *)
@@ -227,7 +227,7 @@ qed.
 lemma correct_invar_answer
       (inpss : inp list list, aux : aux, queries : int fset, low high : int) :
   inpss_invar aux inpss => inpss <> [] => low = high =>
-  correct_invar inpss aux queries low high => 
+  correct_invar inpss aux queries low high =>
   inpss_answer aux inpss low.
 proof.
 move => inpss_invar_aux_inpss inpss_nonnil eq_low_high.
