@@ -1,4 +1,4 @@
-Adversarial Method for Showing Lower Bounds in EasyCrypt
+EasyCrypt Frameworks for Proving Lower and Upper Bounds
 ========================================================
 
 This repository contains a general
