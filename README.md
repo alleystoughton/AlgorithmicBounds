@@ -3,9 +3,10 @@ EasyCrypt Frameworks for Proving Lower and Upper Bounds
 
 This repository contains a general
 [EasyCrypt](https://www.easycrypt.info/trac/) framework for expressing
-worst case lower bounds problems using the adversarial method, a
-general EasyCrypt framework for expressing worst case upper bounds of
-algorithms, and applications of these frameworks.
+worst case lower bounds problems using the adversarial method
+(adversary arguments), a general EasyCrypt framework for expressing
+worst case upper bounds of algorithms, and applications of these
+frameworks.
 
 This is joint work between Boston University faculty
 
