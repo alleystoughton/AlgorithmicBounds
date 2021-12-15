@@ -601,8 +601,8 @@ module G(Alg : ALG, Adv : ADV) = {
       }
       else {  (* is_response_report resp *)
         out <- oget (dec_response_report resp);
-        if (inpss_answer aux inpss out) {
-          don <- true;
+        if (inpss_answer aux inpss out) {  (* is out correct answer *)
+          don <- true;                     (* for all elements of inpss? *)
         }
         else {
           error <- true;
