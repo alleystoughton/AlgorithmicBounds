@@ -1,4 +1,4 @@
-EasyCrypt Frameworks for Proving Lower and Upper Bounds
+EasyCrypt Frameworks for Proving Algorithmic Bounds
 ========================================================
 
 This repository contains a general
