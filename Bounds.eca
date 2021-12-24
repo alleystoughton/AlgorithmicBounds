@@ -716,12 +716,11 @@ module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
 (* we will show that, from the application of the conclusion of a
    lower bound theorem for adversary Adv and bound lb, applied to
    lower bound algorithm UBAlg_to_LBAlg(Alg), for an upper bound
-   algorithm Alg, and for any ub < lb, we can conclude that the
-   probability that the upper bound game G(Alg, Adv).main() returns
-   without error and with the final stage being <= ub is 0%r
+   algorithm Alg, and for any ub < lb, we can conclude that with
+   probability 1%r, UB.G(Alg, Adv).main() terminates with Alg either
+   having committed an error or with the final stage being > up
 
-   to prove this, we need two helper lemmas, where the first is used
-   to prove the second *)
+   to prove this, we need three helper lemmas *)
 
 lemma prob_le_ub_lb_succ_equiv
       (ub : int)
@@ -943,7 +942,7 @@ by byequiv
     ub Alg Adv alg_term_invar adv_term_invar _ _ _ _ _).
 qed.
 
-lemma lb_conseq_for_ub
+lemma lb_conseq_for_ub0
       (lb ub : int)
       (Alg <: UB.ALG) (Adv <: ADV{Alg})
       (alg_term_invar : glob Alg -> bool)
@@ -968,8 +967,9 @@ lemma lb_conseq_for_ub
        res.`1 \/ lb <= res.`2] = 1%r =>
   (* assuming ub < lb: *)
   ub < lb =>
-  (* there is zero probability that UB.G(Alg, Adv).main() succeeds
-     with a final stage that is no more than ub *)
+  (* there is 0%r probability that UB.G(Alg, Adv).main() terminates
+     without Alg having committed an error and with a final stage that
+     is no more than ub *)
   Pr[UB.G(Alg, Adv).main() @ &m :
        ! res.`1 /\ res.`2 <= ub] = 0%r.
 proof.
@@ -1025,4 +1025,56 @@ have contrad_lb_eq0 :
     by rewrite lb_prob1.
 move : contrad_lb_gt0.
 by rewrite contrad_lb_eq0.
+qed.
+
+lemma lb_conseq_for_ub1
+      (lb ub : int)
+      (Alg <: UB.ALG) (Adv <: ADV{Alg})
+      (alg_term_invar : glob Alg -> bool)
+      (adv_term_invar : glob Adv -> bool)
+      &m :
+  phoare
+  [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.make_query_or_report_output :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Alg.query_result :
+   alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
+  phoare
+  [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
+  phoare
+  [Adv.ans_query :
+   adv_term_invar (glob Adv) ==> adv_term_invar (glob Adv)] = 1%r =>
+  (* assuming a lower bound result for bound lb and Adv, applied to
+     LB.G(UBAlg_to_LBAlg(Alg) : *)
+  Pr[LB.G(UBAlg_to_LBAlg(Alg), Adv).main() @ &m :
+       res.`1 \/ lb <= res.`2] = 1%r =>
+  (* assuming ub < lb: *)
+  ub < lb =>
+  (* with probability 1%r, UB.G(Alg, Adv).main() terminates
+     with either Alg having committed an error or with the
+     final stage being > ub *)
+  Pr[UB.G(Alg, Adv).main() @ &m :
+       res.`1 \/ ub < res.`2] = 1%r.
+proof.
+move =>
+  Alg_init_term Alg_make_query_or_report_output_term Alg_query_result_term
+  Adv_init_term Adv_ans_query_term lb_prob1 lt_ub_lb.
+have -> :
+  Pr[UB.G(Alg, Adv).main() @ &m : res.`1 \/ ub < res.`2] =
+  Pr[UB.G(Alg, Adv).main() @ &m : ! (!res.`1 /\ res.`2 <= ub)].
+    rewrite Pr [mu_eq] /#.
+  rewrite Pr [mu_not].
+rewrite
+  (lb_conseq_for_ub0 lb ub Alg Adv alg_term_invar adv_term_invar &m
+   Alg_init_term Alg_make_query_or_report_output_term
+   Alg_query_result_term Adv_init_term Adv_ans_query_term
+   lb_prob1) //.
+have -> // : Pr[UB.G(Alg, Adv).main() @ &m : true] = 1%r.
+byphoare => //.
+rewrite
+  (UB.G_ll Alg Adv alg_term_invar adv_term_invar
+   Alg_init_term Alg_make_query_or_report_output_term
+   Alg_query_result_term Adv_init_term Adv_ans_query_term).
 qed.
