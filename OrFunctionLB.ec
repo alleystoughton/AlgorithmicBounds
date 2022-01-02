@@ -257,8 +257,7 @@ lemma filter_all_queries_false_init_inpss_f_false (queries : int fset) :
 proof.
 move => qir_queries.
 exists (nseq arity false).
-split.
-rewrite mem_filter.
+split; first rewrite mem_filter.
 split.
 by rewrite all_queries_false_nseq.
 rewrite nseq_false_in_init_inpss.
