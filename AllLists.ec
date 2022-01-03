@@ -167,7 +167,7 @@ rewrite allP => z; by rewrite mem_nseq => [#] _ => ->>.
 qed.
 
 (* makes a list of length n all of whose elements are either
-   x1 or x2; when the elements index i is in zs, x1 is used;
+   x1 or x2; when the elements index i satisfies f, x1 is used;
    otherwise x2 is used *)
 
 op make_list_either (x1 x2 : 'a, f : int -> bool, n : int) : 'a list =
