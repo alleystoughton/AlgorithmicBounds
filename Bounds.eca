@@ -33,14 +33,14 @@ op arity : {int | 0 <= arity} as ge0_arity.  (* arity of f *)
 
 type aux.  (* auxiliary value, given to f *)
 
-(* if xs : inp list has size arity and all of its elements
-   are in univ, then good aux xs returns true iff xs is
+(* if inps : inp list has size arity and all of its elements
+   are in univ, then good aux inps returns true iff inps is
    a valid argument to f aux *)
 
 op good : aux -> inp list -> bool.
 
-(* an argument xs to f aux should be a list of inputs of size arity,
-   all of whose elements are in univ, and where good aux xs holds -
+(* an argument inps to f aux should be a list of inputs of size arity,
+   all of whose elements are in univ, and where good aux inps holds -
    note that there may be no such lists *)
 
 op f : aux -> inp list -> out option.
@@ -48,16 +48,16 @@ op f : aux -> inp list -> out option.
 (* when argument to f has the correct arity, is over univ, and
    satisfies good aux, we get Some of an answer *)
 
-axiom good (aux : aux, xs : inp list) :
-  size xs = arity => all (mem univ) xs => good aux xs =>
-  exists (y : out), f aux xs = Some y.
+axiom good (aux : aux, inps : inp list) :
+  size inps = arity => all (mem univ) inps => good aux inps =>
+  exists (y : out), f aux inps = Some y.
 
 (* when argument to f has the wrong arity, or is not over univ,
    or does not satisfy good aux, we get None *)
 
-axiom bad (aux : aux, xs : inp list) :
-  size xs <> arity \/ ! (all (mem univ) xs) \/ ! good aux xs =>
-  f aux xs = None.
+axiom bad (aux : aux, inps : inp list) :
+  size inps <> arity \/ ! (all (mem univ) inps) \/ ! good aux inps =>
+  f aux inps = None.
 
 (* end of theory parameters *)
 
