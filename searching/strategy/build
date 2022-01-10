@@ -1,5 +1,5 @@
 #!/bin/bash
 
-ocamlbuild -use-ocamlfind strategy.native
-
-mv strategy.native strategy
+rm -f strategy
+dune build
+ln -s _build/default/src/strategy.exe strategy

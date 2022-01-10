@@ -43,7 +43,7 @@ let string_to_inp_opt (s : string) : char option =
 let rec sorted (xs : inp list) : bool =
   match xs with
   | []           -> true
-  | [x]          -> true
+  | [_]          -> true
   | x :: y :: zs -> x <= y && sorted (y :: zs)
 
 (* prod xss yss returns all lists that can be formed by

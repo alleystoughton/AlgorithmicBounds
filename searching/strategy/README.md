@@ -8,12 +8,15 @@ least index where a given element is located.
 
 To build the executable, you should first install
 [OCaml](https://ocaml.org), the OCaml Package Manager
-[`opam`](https://opam.ocaml.org), and [OCaml
-Batteries](https://ocaml-batteries-team.github.io/batteries-included/hdoc2/).
-(You can install OCaml Batteries by running `opam install batteries`.)
+[`opam`](https://opam.ocaml.org), [OCaml
+Batteries](https://ocaml-batteries-team.github.io/batteries-included/hdoc2/)
+and the Dune OCaml build system (https://dune.build).
+(You can install OCaml Batteries by running `opam install batteries`,
+and you can install Dune by running `opam install dune`.)
 The source for the program is in the subdirectory [`src`](src).
 The `build` bash script can be used to build the executable,
-`strategy`.
+`strategy`, and the `build-cleanup` bash script will remove the
+`_build` directory and the `strategy` executable.
 
 Here is the usage message for the `strategy` program:
 
