@@ -1,5 +1,5 @@
 #!/bin/bash
 
-rm -f strategy
 dune build
-ln -s _build/default/src/strategy.exe strategy
+rm -f strategy
+cp _build/default/src/strategy.exe strategy
