@@ -466,6 +466,53 @@ by rewrite div2_sum_le_bigger_or_eq.
 by rewrite -ltzE div2_sum_lt_bigger.
 qed.
 
+(* connections of %/ and %%/ with / and floor/ceil *)
+
+lemma int_div_pos_floor (n d : int) :
+  0 < d => n %/ d = floor (n%r / d%r).
+proof.
+move => gt0_d; rewrite eq_sym.
+have ne0_d : d <> 0 by rewrite IntOrder.gtr_eqF.
+rewrite (divz_eq n d); pose m := n %/ d; pose l := n %% d.
+have ge0_l : 0 <= l by rewrite modz_ge0.
+have lt_l_d : l < d by rewrite ltz_pmod.
+rewrite divzMDl // pdiv_small //=.
+rewrite fromintD fromintM.
+rewrite RField.mulrDl -RField.mulrA RField.mulfV 1:eq_fromint //=.
+have ge0_l_div_d_r : 0%r <= l%r / d%r.
+  by rewrite RealOrder.divr_ge0 le_fromint // ltzW.
+have lt1_l_div_d_r : l%r / d%r < 1%r.
+  by rewrite RealOrder.ltr_pdivr_mulr 1:lt_fromint //= lt_fromint.
+apply floorE; split => [| _].
+by rewrite RealOrder.ler_addl.
+by rewrite fromintD RealOrder.ltr_add2l.
+qed.
+
+lemma int_div_up_pos_ceil (n d : int) :
+  0 < d => n %%/ d = ceil (n%r / d%r).
+proof.
+move => gt0_d; rewrite /(%%/) eq_sym.
+have ne0_d : d <> 0 by rewrite IntOrder.gtr_eqF.
+rewrite (divz_eq n d); pose m := n %/ d; pose l := n %% d.
+have ge0_l : 0 <= l by rewrite modz_ge0.
+have lt_l_d : l < d by rewrite ltz_pmod.
+case (l = 0) => [-> /= | ne0_l].
+rewrite dvdz_mull 1:dvdzz /= mulzK //.
+by rewrite fromintM -RField.mulrA RField.mulfV 1:eq_fromint //= from_int_ceil.
+have gt0_l : 0 < l by rewrite ltz_def.
+have ge0_l_div_d_r : 0%r <= l%r / d%r.
+  by rewrite RealOrder.divr_ge0 le_fromint // ltzW.
+have le1_l_div_d_r : l%r / d%r <= 1%r.
+  by rewrite RealOrder.ler_pdivr_mulr 1:lt_fromint //= le_fromint ltzW.
+rewrite divzMDl // pdiv_small //=.
+rewrite dvdzE modzMDl pmod_small // ne0_l /=.
+rewrite fromintD fromintM.
+rewrite RField.mulrDl -RField.mulrA RField.mulfV 1:eq_fromint //=.
+apply ceilE; split => [| _].
+by rewrite -addzA /= RealOrder.ltr_addl RealOrder.divr_gt0 lt_fromint.
+by rewrite fromintD RealOrder.ler_add2l.
+qed.
+
 (* rounding down integer logarithm (default) *)
 
 lemma exists_int_log (b n : int) :
@@ -1003,6 +1050,8 @@ have n_eq_b2_il_bn_plus1 : n = b ^ (int_log b n + 1).
 have := int_log_ub_lt b n _ _ => //.
 by rewrite {1}n_eq_b2_il_bn_plus1.
 qed.
+
+(* connections of int_log and int_log_up with real log and floor/ceil *)
 
 lemma floor_real_log (b n : int) :
   2 <= b => 1 <= n =>
