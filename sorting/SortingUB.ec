@@ -56,8 +56,11 @@ move => /= n IH.
 rewrite /wc wf_recur 1:wf_lt_nat /wc_wf_rec_def.
 case (n <= 1) => [// | gt1_n].
 rewrite lerNgt /= in gt1_n.
-have -> /= : lt_nat (n %/ 2) n by smt().
-have -> /= : lt_nat (n %%/ 2) n by smt().
+have lt_nat_n_div2_n : lt_nat (n %/ 2) n by smt().
+rewrite lt_nat_n_div2_n /=.
+have lt_nat_n_div2up_n : lt_nat (n %%/ 2) n.
+  smt(int_div2_up_ge1_implies_ge1 int_div2_up_lt_self_if_ge2).
+rewrite lt_nat_n_div2up_n /=.
 rewrite -/wc /#.
 qed.
 
@@ -75,7 +78,8 @@ move => ge2_n.
 rewrite /wc wf_recur 1:wf_lt_nat /wc_wf_rec_def.
 have -> /= : ! n <= 1 by smt().
 have -> /= : lt_nat (n %/ 2) n by smt().
-have -> // : lt_nat (n %%/ 2) n by smt().
+have -> // : lt_nat (n %%/ 2) n.
+  smt(int_div2_up_ge1_implies_ge1 int_div2_up_lt_self_if_ge2).
 qed.
 
 lemma wc_eq (n : int) :
@@ -91,11 +95,14 @@ by rewrite int_log1_eq0 //= expr1.
 have ge2_n : 2 <= n by smt().
 rewrite /wc wf_recur 1:wf_lt_nat /wc_wf_rec_def.
 have -> /= : ! (n <= 1) by smt().
-have -> /= : lt_nat (n %/ 2) n by smt().
-have -> /= : lt_nat (n %%/ 2) n by smt().
+have lt_nat_n_div2_n : lt_nat (n %/ 2) n by smt().
+rewrite lt_nat_n_div2_n /=.
+have lt_nat_n_div2up_n : lt_nat (n %%/ 2) n.
+  smt(int_div2_up_ge1_implies_ge1 int_div2_up_lt_self_if_ge2).
+rewrite lt_nat_n_div2up_n /=.
 rewrite -/wc.
 rewrite (IH (n %/ 2)) 1:/# 1:/#.
-rewrite (IH (n %%/ 2)) 1:/# 1:/#.
+rewrite (IH (n %%/ 2)) 1:lt_nat_n_div2up_n 1:int_div2_up_ge1_implies_ge1 //.
 rewrite int_log_div //=.
 have -> :
   n %/ 2 * (int_log 2 n - 1) - (2 ^ int_log 2 n - n %/ 2 - 1) =
@@ -937,11 +944,18 @@ proof.
 move => ge2_n.
 have -> : n ^ 2 = (n %/ 2 + n %%/ 2) ^ 2 by rewrite {1}div2_plus_div2up_eq.
 rewrite 3!expr2.
-have -> /# :
-  (n %/ 2 + n %%/ 2) * (n %/ 2 + n %%/ 2) =
-  (n %/ 2) * (n %/ 2) + (n %/ 2) * (n %%/ 2) +
-  (n %%/ 2) * (n %/ 2) + (n %%/ 2) * (n %%/ 2).
+have -> :
+  1 + n %/ 2 * (n %/ 2) + n %%/ 2 * (n %%/ 2) =
+  (n %/ 2 * (n %/ 2) + n %%/ 2 * (n %%/ 2)) + 1.
   algebra.
+have -> :
+  (n %/ 2 + n %%/ 2) * (n %/ 2 + n %%/ 2) =
+  ((n %/ 2) * (n %/ 2) + (n %%/ 2) * (n %%/ 2)) +
+  ((n %/ 2) * (n %%/ 2) + (n %%/ 2) * (n %/ 2)).
+  algebra.
+have ge1_n_div2 : 1 <= n %/ 2 by smt().
+have ge1_n_div2up : 1 <= n %%/ 2 by smt(int_div2_up_ge1_implies_ge1).
+rewrite ltz_add2l /#.
 qed.
 
 (* termination metric for step *)
@@ -970,6 +984,9 @@ move => xs /= pl_xs.
 case (size xs <= 1) => [le1_size_xs _ | gt1_size_xs _].
 have -> : size xs = 1 by smt(size_ge0 size_eq0).
 by rewrite expr2.
+have size_xs_eq := div2_plus_div2up_eq (size xs).
+have ge0_size_xs_int_div_up2 : 1 <= size xs %%/ 2.
+  smt(int_div2_up_ge1_implies_ge1).
 have -> : size (take (size xs %/ 2) xs) = size xs %/ 2.
   rewrite size_take /#.
 have -> : size (drop (size xs %/ 2) xs) = size xs %%/ 2.
@@ -1244,6 +1261,9 @@ move => xs /= prop_t.
 case (size xs <= 1) => [le1_size_xs _ | gt1_size_xs _].
 by rewrite wc_when_le1.
 rewrite lerNgt /= in gt1_size_xs.
+have size_xs_eq := div2_plus_div2up_eq (size xs).
+have ge0_size_xs_int_div_up2 : 1 <= size xs %%/ 2.
+  smt(int_div2_up_ge1_implies_ge1).
 have -> : size (take (size xs %/ 2) xs) = size xs %/ 2.
   rewrite size_take /#.
 have -> : size (drop (size xs %/ 2) xs) = size xs %%/ 2.

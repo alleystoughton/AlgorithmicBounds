@@ -295,7 +295,8 @@ proof.
 rewrite /bound_invar; progress; first 3 smt().
 have ge2_win_siz : 2 <= win_size low high by smt().
 rewrite -ltzE divpow2up_ge2_lt_int_log_up 1:ge1_arity // /#.
-rewrite (divpow2up_next_new_lb (win_size low high)) 1:ge1_arity // /#.
+rewrite (divpow2up_next_new_lb (win_size low high)) 1:ge1_arity //.
+smt(div2_plus_div2up_eq).
 qed.
 
 lemma bound_invar_new_window_down (low high stage) :
@@ -304,7 +305,8 @@ lemma bound_invar_new_window_down (low high stage) :
 proof.
 rewrite /bound_invar; progress; first 3 smt().
 rewrite -ltzE divpow2up_ge2_lt_int_log_up 1:ge1_arity // /#.
-rewrite (divpow2up_next_new_lb (win_size low high)) 1:ge1_arity // /#.
+rewrite (divpow2up_next_new_lb (win_size low high)) 1:ge1_arity //.
+smt(div2_plus_div2up_eq).
 qed.
 
 (* the main lemma: *)

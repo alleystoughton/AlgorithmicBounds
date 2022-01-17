@@ -110,25 +110,25 @@ lemma query_lt_mid_new_le (win_beg win_end i : int) :
   win_beg <= i <= win_end => win_beg < win_end =>
   i < (win_beg + win_end) %%/ 2 =>
   i + 1 <= win_end.
-proof. smt(). qed.
+proof. smt(div2_plus_div2up_eq). qed.
 
 lemma query_lt_mid_new_size_lb (win_beg win_end i : int) :
   win_beg <= i <= win_end => i < (win_beg + win_end) %%/ 2 =>
   (win_size false win_beg win_end) %%/ 2 <=
   win_size false (i + 1) win_end.
-proof. smt(). qed.
+proof. smt(div2_plus_div2up_eq). qed.
 
 lemma query_ge_mid_new_le (win_beg win_end i : int) :
   win_beg <= i <= win_end => win_beg < win_end =>
  (win_beg + win_end) %%/ 2 <= i =>
   win_beg <= i - 1.
-proof. smt(). qed.
+proof. smt(div2_plus_div2up_eq). qed.
 
 lemma query_ge_mid_new_size_lb (win_beg win_end i : int) :
   win_beg <= i <= win_end => (win_beg + win_end) %%/ 2 <= i =>
   (win_size false win_beg win_end) %/ 2 <=
   win_size false win_beg (i - 1).
-proof. smt(). qed.
+proof. smt(div2_plus_div2up_eq). qed.
 
 (* window invariant *)
 
@@ -462,11 +462,11 @@ split => [eq_win_end_arity_min1 | lt_win_end_arity_min1].
 rewrite (divpow2up_next_new_ub (win_size false win_beg win_end)) //.
 smt(ge1_arity).
 smt(divpow2up_next_new_ub).
-smt(query_lt_mid_new_size_lb).
-rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //.
-smt(ge1_arity).
-smt(divpow2_next_new_ub).
-smt(query_lt_mid_new_size_lb ler_trans).
+rewrite query_lt_mid_new_size_lb /#.
+rewrite (divpow2_next_new_ub (win_size false win_beg win_end)) //
+        1:ge1_arity 1:bnd_invar_impl_lt //.
+by rewrite (ler_trans (win_size false win_beg win_end %%/ 2))
+           1:int_div2_le_int_div2_up query_lt_mid_new_size_lb.
 qed.
 
 lemma bound_invar_next_new_end (win_beg win_end i stage : int) :

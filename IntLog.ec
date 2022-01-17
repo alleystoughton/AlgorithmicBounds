@@ -229,7 +229,7 @@ qed.
 
 (* like m %/ d, but add 1 if non-zero remainder: *)
 
-op (%%/) (m d : int) : int =
+op nosmt (%%/) (m d : int) : int =
   m %/ d + ((d %| m) ? 0 : 1).
 
 lemma int_div_up_dvdz_b (b n : int) :
@@ -278,7 +278,7 @@ lemma int_div2_up_eq0_implies_eq0 (m : int) :
   0 %%/ 2 = 0.
 proof. trivial. qed.
 
-lemma int_div_up_ge_b_implies_ge1 (b m : int) :
+lemma int_div_up_b_ge1_ge_b_implies_ge1 (b m : int) :
   1 <= b => b <= m => 1 <= m %%/ b.
 proof.
 move => ge1_b le_b_m; rewrite /(%%/).
