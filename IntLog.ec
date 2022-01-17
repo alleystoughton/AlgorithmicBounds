@@ -468,41 +468,43 @@ qed.
 
 (* connections of %/ and %%/ with / and floor/ceil *)
 
-lemma int_div_pos_floor (n d : int) :
-  0 < d => n %/ d = floor (n%r / d%r).
+lemma int_div_pos_floor (n b : int) :
+  1 <= b => n %/ b = floor (n%r / b%r).
 proof.
-move => gt0_d; rewrite eq_sym.
-have ne0_d : d <> 0 by rewrite IntOrder.gtr_eqF.
-rewrite (divz_eq n d); pose m := n %/ d; pose l := n %% d.
+move => ge1_b; rewrite eq_sym.
+have gt0_b : 0 < b by rewrite ltzE.
+have ne0_d : b <> 0 by rewrite IntOrder.gtr_eqF.
+rewrite (divz_eq n b); pose m := n %/ b; pose l := n %% b.
 have ge0_l : 0 <= l by rewrite modz_ge0.
-have lt_l_d : l < d by rewrite ltz_pmod.
+have lt_l_b : l < b by rewrite ltz_pmod.
 rewrite divzMDl // pdiv_small //=.
 rewrite fromintD fromintM.
 rewrite RField.mulrDl -RField.mulrA RField.mulfV 1:eq_fromint //=.
-have ge0_l_div_d_r : 0%r <= l%r / d%r.
+have ge0_l_div_b_r : 0%r <= l%r / b%r.
   by rewrite RealOrder.divr_ge0 le_fromint // ltzW.
-have lt1_l_div_d_r : l%r / d%r < 1%r.
+have lt1_l_div_b_r : l%r / b%r < 1%r.
   by rewrite RealOrder.ltr_pdivr_mulr 1:lt_fromint //= lt_fromint.
 apply floorE; split => [| _].
 by rewrite RealOrder.ler_addl.
 by rewrite fromintD RealOrder.ltr_add2l.
 qed.
 
-lemma int_div_up_pos_ceil (n d : int) :
-  0 < d => n %%/ d = ceil (n%r / d%r).
+lemma int_div_up_pos_ceil (n b : int) :
+  1 <= b => n %%/ b = ceil (n%r / b%r).
 proof.
-move => gt0_d; rewrite /(%%/) eq_sym.
-have ne0_d : d <> 0 by rewrite IntOrder.gtr_eqF.
-rewrite (divz_eq n d); pose m := n %/ d; pose l := n %% d.
+move => ge1_b; rewrite /(%%/) eq_sym.
+have gt0_b : 0 < b by rewrite ltzE.
+have ne0_b : b <> 0 by rewrite IntOrder.gtr_eqF.
+rewrite (divz_eq n b); pose m := n %/ b; pose l := n %% b.
 have ge0_l : 0 <= l by rewrite modz_ge0.
-have lt_l_d : l < d by rewrite ltz_pmod.
+have lt_l_b : l < b by rewrite ltz_pmod.
 case (l = 0) => [-> /= | ne0_l].
 rewrite dvdz_mull 1:dvdzz /= mulzK //.
 by rewrite fromintM -RField.mulrA RField.mulfV 1:eq_fromint //= from_int_ceil.
 have gt0_l : 0 < l by rewrite ltz_def.
-have ge0_l_div_d_r : 0%r <= l%r / d%r.
+have ge0_l_div_b_r : 0%r <= l%r / b%r.
   by rewrite RealOrder.divr_ge0 le_fromint // ltzW.
-have le1_l_div_d_r : l%r / d%r <= 1%r.
+have le1_l_div_b_r : l%r / b%r <= 1%r.
   by rewrite RealOrder.ler_pdivr_mulr 1:lt_fromint //= le_fromint ltzW.
 rewrite divzMDl // pdiv_small //=.
 rewrite dvdzE modzMDl pmod_small // ne0_l /=.
@@ -1053,9 +1055,9 @@ qed.
 
 (* connections of int_log and int_log_up with real log and floor/ceil *)
 
-lemma floor_real_log (b n : int) :
+lemma int_log_floor_log (b n : int) :
   2 <= b => 1 <= n =>
-  floor (log b%r n%r) = int_log b n.
+  int_log b n = floor (log b%r n%r).
 proof.
 move => ge2_b ge1_n.
 have [low_le high_le] := real_log_bounds b n _ _ => //.
@@ -1073,9 +1075,9 @@ have -> : int_log b n + 1 = int_log_up b n.
 by rewrite real_log_ub_lt.
 qed.
 
-lemma ceil_real_log (b n : int) :
+lemma int_log_up_ceil_log (b n : int) :
   2 <= b => 1 <= n =>
-  ceil (log b%r n%r) = int_log_up b n.
+  int_log_up b n = ceil (log b%r n%r).
 proof.
 move => ge2_b ge1_n.
 have [low_le high_le] := real_log_bounds b n _ _ => //.
