@@ -28,17 +28,15 @@ module Alg : ALG = {
   var low  : int  (* low <= high; definitely at least one aux at index *)
   var high : int  (* in this range, but no aux at index < low *)
 
-  var mid  : int  (* temporary variable *)
-
   proc init(aux' : aux) : unit = {
     aux <- aux';
     low <- 0;
     high <- arity - 1;
-    mid <- 0;  (* value doesn't matter, but must initialize *)
   }
 
   proc make_query_or_report_output() : response = {
     var r : response;
+    var mid : int;
     if (low = high) {
       r <- Response_Report low;
     }
@@ -50,6 +48,7 @@ module Alg : ALG = {
   }
 
   proc query_result(x : inp) : unit = {
+    var mid : int <- (low + high) %/ 2;
     if (x < aux) {
       low <- mid + 1;
     }
@@ -353,15 +352,14 @@ seq 1 :
    correct_invar inpss aux queries' Alg.low Alg.high /\
    Alg.low <> Alg.high /\
    bound_invar Alg.low Alg.high stage' /\
-   Alg.mid = (Alg.low + Alg.high) %/ 2 /\
-   resp = Response_Query Alg.mid /\
+   resp = Response_Query ((Alg.low + Alg.high) %/ 2) /\
    i = oget (dec_response_query resp) /\
    queries = queries' `|` fset1 i /\ stage = stage' + 1).
 call (_ : true).
 auto; progress [-delta]; smt().
 wp.
 inline Alg.query_result.
-sp 2; elim* => inp.
+sp 3; elim* => inp.
 if.
 auto; progress [-delta].
 smt(fcardUindep1 correct_invar_window_not_queries correct_invar_range).
