@@ -1717,11 +1717,11 @@ qed.
 
 op nosmt invar (inpss : bool list list, qs : int fset, t : term) : bool =
   inpss_invar () inpss /\
+  proper t /\
   all
   (fun inps =>
      repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len)
   inpss /\
-  proper t /\
   wc_term t + card qs <= wc len /\
   poten_cmps_invar t qs.
 
@@ -1763,8 +1763,8 @@ lemma invar_start :
 proof.
 rewrite /invar /=.
 split; first rewrite inpss_invar_init.
-split; first by rewrite allP.
 split; first rewrite proper_list_range_len.
+split; first by rewrite allP.
 split; first by rewrite fcards0 /= size_range_len.
 rewrite poten_cmps_invar_start.
 qed.
@@ -1775,16 +1775,16 @@ lemma invar_is_worked_step
   invar inpss qs (of_worked (step t)).
 proof.
 rewrite /invar =>
-  [#] inpss_invar_inpss all_inpss_repr prop_t wc_term_ineq
+  [#] inpss_invar_inpss prop_t all_inpss_repr wc_term_ineq
   pci_t_qs is_wkd_step_t.
 split; first trivial.
+split; first by rewrite is_worked_proper_step.
 split.
 rewrite allP => inps inps_in_inpss /=.
 rewrite is_worked_repr_step_cmp_of_rel //.
 smt(inpss_invar_all_good_aux allP).
 rewrite allP in all_inpss_repr.
 by rewrite all_inpss_repr.
-split; first by rewrite is_worked_proper_step.
 split; first smt(wc_term_step).
 by rewrite poten_cms_invar_is_worked.
 qed.
@@ -1798,9 +1798,10 @@ lemma invar_is_compare_answer
   (oget (answer t b)).
 proof.
 rewrite /invar =>
-  [#] inpss_invar_inpss all_inpss_repr prop_t wc_term_ineq
+  [#] inpss_invar_inpss prop_t all_inpss_repr wc_term_ineq
   pci_t_qs is_cmp_step_t.
 split; first by rewrite inpss_invar_filter_nth.
+split; first by rewrite proper_answer // -is_compare_step_iff_good_answer.
 split.
 rewrite allP => inps inps_in_filter_nth_inpss_enc_of_cmp_stp_t_b /=.
 rewrite mem_filter /= in inps_in_filter_nth_inpss_enc_of_cmp_stp_t_b.
@@ -1814,7 +1815,6 @@ have -> :
   by rewrite is_compare_proper_step_range2.
 rewrite allP in all_inpss_repr.
 by rewrite is_compare_step_answer_repr // all_inpss_repr.
-split; first by rewrite proper_answer // -is_compare_step_iff_good_answer.
 split.
 rewrite fcardUindep1 1:is_compare_poten_cmps_invar_not_query // !addrA -ltzE.
 rewrite (ltr_le_trans (wc_term t + card qs)) //.
