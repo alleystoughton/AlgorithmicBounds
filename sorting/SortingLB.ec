@@ -520,7 +520,7 @@ qed.
    lower-approximations of our target (int_log_up (fact len)), plus
    our target itself *)
 
-(* first approximation: (len * int_log 2 len %/ 2) *)
+(* first approximation: (len * int_log 2 len) %/ 2 *)
 
 lemma lower_bound_approx &m :
   exists (Adv <: ADV),
@@ -535,7 +535,7 @@ lemma lower_bound_approx &m :
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r =>
   Pr[G(Alg, Adv).main() @ &m :
-       res.`1 \/ len * int_log 2 len %/ 2 <= res.`2] = 1%r.
+       res.`1 \/ (len * int_log 2 len) %/ 2 <= res.`2] = 1%r.
 proof.
 apply (lower_bound_gen (len * int_log 2 len %/ 2) &m _).
 rewrite (ler_trans (int_log 2 (fact len))).
