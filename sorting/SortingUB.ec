@@ -27,7 +27,7 @@ import UB.
    proof would have failed)
 
    we don't need that wc n is *equal* to the worst case number of
-   comparisions actually used by merge sort, although we were able to
+   comparisons actually used by merge sort, although we were able to
    experimentally check that this is true for n <= 11 *)
 
 op wc_wf_rec_def : (int, int) wf_rec_def =
@@ -1223,7 +1223,7 @@ move => i j us vs /= _.
 by case (cmp i j) => [cmp_i_j | not_cmp_i_j].
 qed.
 
-(* an upper bound on the number of comparisions/answers it will
+(* an upper bound on the number of comparisons/answers it will
    take to turn a term into list *)
 
 op wc_term (t : term) : int =
