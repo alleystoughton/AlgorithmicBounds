@@ -1,11 +1,14 @@
 (* OCaml program to:
 
    (1) generate and print out the two lower-approximations to the
-   target sorting lower bound, plus the target itself, for a range of
-   values of len
+   target (int_log_up 2 (fact len)) sorting lower bound, plus the target
+   itself, for a range of values of len
 
    (2) compare int_log_up 2 (fact len) (our greatest lower bound) and
-   wc len (our smallest upper bound), for a range of values of len *)
+   wc len (our smallest upper bound), for a range of values of len
+
+   (3) compare wc len and our upper-approximation n * int_log 2 n for
+   a range of values of len *)
 
 open Batteries
 open Big_int  (* arbitrary precision integers *)
@@ -137,3 +140,28 @@ let pr_low_upp ((n, (i, j)) : int * (int * int)) : unit =
 
 let run_low_upp (n : int) : unit =
   List.iter pr_low_upp (range_low_upp n)
+
+(* return wc n, n * int_log 2 n, and their difference *)
+
+let upp_approx (n : int) : int * int * int =
+  let a = wc n in
+  let b = Int.( * ) n (il (of_int n)) in
+  let c = Int.(-) b a in
+  (a, b, c)
+
+(* run upp_approx on a range, from 1 to n, collecting the results *)
+
+let rec range_upp_approx (n : int) : (int * (int * int * int)) list =
+  if n = 0
+  then []
+  else range_upp_approx (Int.(-) n 1) @ [(n, upp_approx n)]
+
+(* print a result of upp_approx *)
+
+let pr_upp_approx ((n, (i, j, k)) : int * (int * int * int)) : unit =
+  printf "%3d:   %5d    %5d    %5d\n" n i j k
+
+(* run upp_approx on a range, from 1 to n, and print the results *)
+
+let run_upp_approx (n : int) : unit =
+  List.iter pr_upp_approx (range_upp_approx n)

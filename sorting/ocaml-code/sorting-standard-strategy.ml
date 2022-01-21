@@ -1,5 +1,5 @@
-(* OCaml program for simulating lower bound game executions
-   over all query sequences, returning the minimum final
+(* OCaml program for simulating lower bound game executions for our
+   adversary and over all query sequences, returning the minimum final
    stage numbers *)
 
 open Batteries
@@ -73,9 +73,10 @@ let rec search
            else search (stage + 1) inpss_q_true (remove queries q))
         queries)
 
-(* work through all lower bound game executions, for all query
-   sequences (restricted to queries of the form (i, j) where 0 <= i <
-   j < len), returning the minimum final stage number *)
+(* work through all lower bound game executions for our adversary, and
+   for all query sequences (restricted to queries of the form (i, j)
+   where 0 <= i < j < len), returning the minimum final stage
+   number *)
 
 let minimum_stage_of_game_run (len : int) : int =
   search 0 (all_perms (upto len)) (queries len)

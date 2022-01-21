@@ -20,13 +20,15 @@ require import IntLog.  (* integer logarithms *)
 require import SortingProb.
 import UB.
 
-(* wc n recursively calculates an upper bound on the worst case number
-   of comparisons actually used by merge sort (see below) when given
-   lists of size n
+(* wc n is a recurrence that we prove is an upper bound on the worst
+   case numer of comparisons actually used by merge sort (see below)
+   when given lists of size n (unlike in a conventional upper bound
+   proof, if we had gotten the definition of wc wrong, our upper bound
+   proof would have failed)
 
-   in our proofs, we don't need that wc n is *equal* to the worst case
-   number of comparisions actually used by merge sort, although we
-   were able to experimentally check that this is true for n <= 11 *)
+   we don't need that wc n is *equal* to the worst case number of
+   comparisions actually used by merge sort, although we were able to
+   experimentally check that this is true for n <= 11 *)
 
 op wc_wf_rec_def : (int, int) wf_rec_def =
   fun (n : int,            (* input *)
@@ -149,8 +151,16 @@ by rewrite odd_iff_plus1_even /= exprS 1:int_log_ge0 // dvdz_mulr.
 by rewrite {1}eq /= exprS 1:int_log_ge0 // mulKz.
 qed.
 
-(* for some values of n, e.g., n = 7, wc n = n * int_log 2 n,
-   but for some others, wc n < n * int_log 2 n *)
+(* for some small number of values of n, wc n = n * int_log 2 n, but
+   for most values of n, wc n < n * int_log 2 n
+
+   according to an OCaml program we wrote (see
+   ocaml-code/bounds-compare.ml), there is a periodicity to the
+   above which presumably could be proved using lemma wc_eq
+
+   e.g., when n = 4095, both are 45045; but when n = 4096 there is a
+   gap of 4095 that becomes one smaller at each increment of n until
+   the gap becomes 0 again when n = 8192 and both are 98292 *)
 
 lemma wc_le (n : int) :
   1 <= n => wc n <= n * int_log 2 n.
