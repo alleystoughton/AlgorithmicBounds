@@ -15,7 +15,7 @@ require import AllCore List FSetAux StdOrder.
 require export FRange.    (* finite ranges as sets *)
 require export AllLists.  (* generating all lists of length over universe *)
 
-(* theory parameters - used to express computational problem *)
+(* theory parameters - used to express computational problems *)
 
 type inp.  (* type of inputs *)
 
