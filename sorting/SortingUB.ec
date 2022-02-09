@@ -1,8 +1,7 @@
-(* Application of Upper Bounds Framework to Comparison-based
-   Sorting and the Merge Sort Algorithm *)
+(* Upper Bound Proof for Merge Sort Algorithm *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021 - Boston University
+ * Copyright (c) - 2021-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -14,9 +13,9 @@ timeout 2.  (* can increase *)
 require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial WF.
 import IntOrder.
 
-require import IntLog.  (* integer logarithms *)
+require import IntLog.  (* working with bounds involving integer logarithms *)
 
-(* comparison-based sorting problem, plus bounds frameworks *)
+(* comparison-based sorting problem, plus bounds framework *)
 require import SortingProb.
 import UB.
 

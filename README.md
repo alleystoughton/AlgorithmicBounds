@@ -1,12 +1,12 @@
-EasyCrypt Frameworks for Proving Algorithmic Bounds
-========================================================
+EasyCrypt Framework for Proving Algorithmic Bounds in Query Model
+=================================================================
 
 This repository contains a general
-[EasyCrypt](https://www.easycrypt.info/trac/) framework for expressing
-worst case lower bounds problems using the adversarial method
-(adversary arguments), a general EasyCrypt framework for expressing
-worst case upper bounds of algorithms, and applications of these
-frameworks.
+[EasyCrypt](https://github.com/EasyCrypt/easycrypt) framework for
+expressing computational problems in the query model, and for proving
+worst case lower bounds for computational problems using the
+adversarial method (adversary arguments), and proving worst case upper
+bounds for algorithms solving the computational problems.
 
 This is joint work between Boston University faculty
 
@@ -22,19 +22,26 @@ and Stuyvesant High School student and BU RISE program intern
 
 * Carol Chen (cchen20@stuy.edu)
 
-We have general EasyCrypt frameworks for expressing lower and
-upper bounds problems
+Our bounds framework is
 
- * [`Bounds.eca` - lower and upper bounds frameworks](../main/Bounds.eca)
+ * [`Bounds.eca` - lower and upper bounds framework](../main/Bounds.eca)
 
-We have applied these frameworks to
+and is supplemented by
+
+ * [`IntLog.ec` - working with bounds involving integer logarithms](IntLog.ec)
+ * [`FSetAux.ec` - auxiliary lemmas on finite sets](FSetAux.ec)
+ * [`FRange.ec` - finite ranges as sets](FRange.ec)
+ * [`AllLists.ec` - generating all lists of given length over universe](AllLists.ec)
+ * [`WF.ec` - well founded relations, induction and recursion)(WF.ec)
+
+We have applied our bounds framework to
 
  * [proving a lower bound for computing the or (disjunction)
    function of a list of booleans](../main/OrFunctionLB.ec)
 
  * [proving a lower bound for searching for the least index into an
    ordered list (in which duplicate elements are allowed) where a
-   given element is located, as well as proving an upper bound for
+   given element is located, as well as proving an identical upper bound for
    the binary search algorithm for this problem](../main/searching)
 
  * [proving a lower bound for determining how a list of distinct

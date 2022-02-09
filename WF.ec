@@ -1,5 +1,7 @@
+(* Well-founded Relations, Induction and Recursion *)
+
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021-2021 - Boston University
+ * Copyright (c) - 2021-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)

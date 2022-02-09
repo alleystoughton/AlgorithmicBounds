@@ -1,10 +1,9 @@
 Searching in an Ordered List
 ========================================================
 
-We have applied our general lower and upper bounds frameworks to the
-problem of searching for the least index into an ordered list (in
-which duplicate elements are allowed) where a given element is
-located.
+We have applied our general bounds framework to the problem of
+searching for the least index into an ordered list (in which duplicate
+elements are allowed) where a given element is located.
 
 * [`SearchingProb.ec` - definition of searching problem](SearchingProb.ec)
 * [`SearchingLB.ec` - lower bound proof](SearchingLB.ec)

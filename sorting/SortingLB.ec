@@ -1,8 +1,7 @@
-(* Application of Adversarial Lower Bounds Framework to
-   Comparison-based Sorting *)
+(* Lower Bound Proof for Comparison-based Sorting *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021 - Boston University
+ * Copyright (c) - 2021-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -14,10 +13,10 @@ timeout 2.  (* can increase *)
 require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial.
 import IntOrder.
 
-require import IntLog.     (* integer logarithms *)
+require import IntLog.     (* bounds involving integer logarithms *)
 require import ListSizes.  (* showing uniq lists have the same size *)
 
-(* comparison-based sorting problem, plus bounds frameworks *)
+(* comparison-based sorting problem, plus bounds framework *)
 require import SortingProb.
 import LB.
 

@@ -1,7 +1,7 @@
 (* Problem Specification for Comparison-based Sorting of Lists *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021 - Boston University
+ * Copyright (c) - 2021-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -38,7 +38,7 @@ timeout 2.  (* can increase *)
 require import AllCore List IntDiv StdOrder IntMin FSetAux Perms Binomial.
 import IntOrder.
 
-require Bounds.   (* upper and lower bounds abstract theory *)
+require Bounds.  (* bounds abstract theory *)
 
 op len : int.  (* size of list of distinct elements *)
 

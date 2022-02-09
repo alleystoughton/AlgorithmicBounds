@@ -1,7 +1,7 @@
-(* Generating All Lists of Length Over Universe *)
+(* Generating All Lists of Given Length Over Finite Universe *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2020-2021 - Boston University
+ * Copyright (c) - 2020-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)

@@ -1,7 +1,7 @@
-(* Application of Adversarial Lower Bounds Framework to Or Function *)
+(* Lower Bound Proof for Or Function *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2020-2021 - Boston University
+ * Copyright (c) - 2020-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -18,7 +18,7 @@ timeout 2.  (* can increase *)
 
 require import AllCore List FSetAux.
 
-require Bounds.   (* upper and lower bounds abstract theory *)
+require Bounds.   (* bounds abstract theory *)
 
 type inp = bool.
 

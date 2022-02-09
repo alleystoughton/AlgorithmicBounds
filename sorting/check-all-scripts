@@ -18,9 +18,10 @@ check() {
   fi;
 }
 
+check ListSizes.ec
 check SortingProb.ec
-check SortingUB.ec
 check SortingLB.ec
+check SortingUB.ec
 
 # success!
 

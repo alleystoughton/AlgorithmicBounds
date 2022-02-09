@@ -1,8 +1,7 @@
-(* integer logarithms - both rounding down (default) and rounding
-   up *)
+(* Working with Bounds Involving Integer Logarithms *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021 - Boston University
+ * Copyright (c) - 2021-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)

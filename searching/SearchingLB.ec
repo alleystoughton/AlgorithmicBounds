@@ -1,8 +1,7 @@
-(* Application of Adversarial Lower Bounds Framework to Searching in
-   Ordered Lists *)
+(* Lower Bound Proof for Searching in Ordered Lists *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021 - Boston University
+ * Copyright (c) - 2021-2022 - Boston University
  * Copyright (c) - 2021 - Carol Chen
  *
  * Distributed under the terms of the CeCILL-B-V1 license
@@ -15,11 +14,11 @@ timeout 2.  (* can increase *)
 require import AllCore List FSetAux StdOrder IntDiv.
 import IntOrder.
 
-require import IntLog.  (* integer logarithms *)
+require import IntLog.  (* working with bounds involving integer logarithms *)
 
 (* searching in ordered lists problem, including bounds frameworks *)
 require import SearchingProb.
-import LB.  (* lower bounds framework *)
+import LB.  (* lower bounds theory *)
 
 (* our adversary uses two elements of inp: *)
 

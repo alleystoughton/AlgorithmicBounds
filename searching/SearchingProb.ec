@@ -1,7 +1,7 @@
 (* Problem Specification for Searching in Ordered Lists *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021 - Boston University
+ * Copyright (c) - 2021-2022 - Boston University
  * Copyright (c) - 2021 - Carol Chen
  *
  * Distributed under the terms of the CeCILL-B-V1 license
@@ -23,7 +23,7 @@ timeout 2.  (* can increase *)
 require import AllCore List FSetAux StdOrder IntDiv.
 import IntOrder.
 
-require Bounds.   (* upper and lower bounds abstract theory *)
+require Bounds.  (* bounds abstract theory *)
 
 type inp = int.
 

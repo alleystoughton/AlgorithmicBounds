@@ -19,8 +19,8 @@ check() {
 }
 
 check SearchingProb.ec
-check SearchingUB.ec
 check SearchingLB.ec
+check SearchingUB.ec
 
 # success!
 

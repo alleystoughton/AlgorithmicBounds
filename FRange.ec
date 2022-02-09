@@ -1,7 +1,7 @@
-(* Theory of Finite Ranges as Sets *)
+(* Finite Ranges as Sets *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2020-2021 - Boston University
+ * Copyright (c) - 2020-2022 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)

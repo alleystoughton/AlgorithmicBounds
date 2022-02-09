@@ -1,4 +1,4 @@
-(* Frameworks for Proving Lower and Upper Bounds Results *)
+(* Framework for Proving Lower and Upper Bounds in Query Model *)
 
 (* --------------------------------------------------------------------
  * Copyright (c) - 2020-2022 - Boston University
@@ -15,7 +15,7 @@ require import AllCore List FSetAux StdOrder.
 require export FRange.    (* finite ranges as sets *)
 require export AllLists.  (* generating all lists of length over universe *)
 
-(* theory parameters *)
+(* theory parameters - used to express computational problem *)
 
 type inp.  (* type of inputs *)
 
@@ -288,7 +288,7 @@ module type ADV = {
   proc ans_query(i : int) : inp
 }.
 
-(* framework for proving worst case lower bounds results using the
+(* framework for proving worst case lower bound results using the
    adversarial method
 
    in this model, the algorithm makes queries about an input that it
@@ -296,7 +296,7 @@ module type ADV = {
    the input so that the answer is unambiguous (but it doesn't have
    to actually produce this answer)
 
-   this is formalized using a lower bounds game, which also features
+   this is formalized using a lower bound game, which also features
    an adversary whose job is to answer queries by the algorithm
 
    the game keeps track of the inputs that are consistent with the
@@ -332,7 +332,7 @@ module type ALG = {
   proc query_result(x : inp) : unit
 }.
 
-(* game connecting algorithm and adversary
+(* lower bound game connecting algorithm and adversary
 
    it has no global variables, and, since Adv.init and Alg.init
    initialize the global variables of Adv and Alg, respectively,
@@ -448,14 +448,14 @@ qed.
 
 end LB.
 
-(* framework for proving worst case upper bounds results
+(* framework for proving worst case upper bound results
 
    in this model, the algorithm makes queries about an input that it
    doesn't have direct access to; it is trying to learn enough about
    the input so that it can determine and report the corresponding
    output
 
-   this is formalized using an upper bounds game, which also features
+   this is formalized using an upper bound game, which also features
    an adversary whose job is to answer queries by the algorithm; the
    adversary could implement a fixed, non-probabilistic procedure,
    or it could be (probabilistically) adaptive
@@ -481,7 +481,7 @@ end LB.
    no more than an upper bound number of steps, as a function of
    the size of an input *)
 
-theory UB.  (* upper bounds framework *)
+theory UB.
 
 (* response from algorithm *)
 
@@ -543,7 +543,7 @@ module type ALG = {
   proc query_result(x : inp) : unit
 }.
 
-(* game connecting algorithm and adversary
+(* upper bound game connecting algorithm and adversary
 
    it has no global variables, and, since Alg.init and Adv.init
    initialize the global variables of Alg and Adv, running G won't
