@@ -24,7 +24,7 @@ and Stuyvesant High School student and BU RISE program intern
 
 Our bounds framework is
 
- * [`Bounds.eca` - lower and upper bounds framework](../main/Bounds.eca)
+ * [`Bounds.eca` - lower and upper bounds framework](Bounds.eca)
 
 and is supplemented by
 
@@ -37,15 +37,15 @@ and is supplemented by
 We have applied our bounds framework to
 
  * [proving a lower bound for computing the or (disjunction)
-   function of a list of booleans](../main/OrFunctionLB.ec)
+   function of a list of booleans](OrFunctionLB.ec)
 
  * [proving a lower bound for searching for the least index into an
    ordered list (in which duplicate elements are allowed) where a
    given element is located, as well as proving an identical upper bound for
-   the binary search algorithm for this problem](../main/searching)
+   the binary search algorithm for this problem](searching)
 
  * [proving a lower bound for determining how a list of distinct
     elements must be permuted in order to be sorted, as well as proving
     an upper bound for the merge sort algorithm, where an algorithm
     may only query how elements are related, but not the elements'
-    values themselves](../main/sorting)
+    values themselves](sorting)
