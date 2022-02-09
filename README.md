@@ -32,7 +32,7 @@ and is supplemented by
  * [`FSetAux.ec` - auxiliary lemmas on finite sets](FSetAux.ec)
  * [`FRange.ec` - finite ranges as sets](FRange.ec)
  * [`AllLists.ec` - generating all lists of given length over universe](AllLists.ec)
- * [`WF.ec` - well founded relations, induction and recursion)(WF.ec)
+ * [`WF.ec` - well founded relations, induction and recursion](WF.ec)
 
 We have applied our bounds framework to
 
