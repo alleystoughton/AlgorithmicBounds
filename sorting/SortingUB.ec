@@ -17,7 +17,7 @@ require import IntLog.  (* working with bounds involving integer logarithms *)
 
 (* comparison-based sorting problem, plus bounds framework *)
 require import SortingProb.
-import UB.
+import UB.  (* upper bounds theory *)
 
 (* wc n is a recurrence that we prove is an upper bound on the worst
    case numer of comparisons actually used by merge sort (see below)

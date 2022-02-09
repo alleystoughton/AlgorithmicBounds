@@ -18,7 +18,7 @@ require import ListSizes.  (* showing uniq lists have the same size *)
 
 (* comparison-based sorting problem, plus bounds framework *)
 require import SortingProb.
-import LB.
+import LB.  (* lower bounds theory *)
 
 (* the adversary *)
 
