@@ -11,6 +11,8 @@
 
    Makes no use of smt. *)
 
+prover [""].  (* no use of SMT provers *)
+
 require import AllCore StdOrder.
 import IntOrder.
 
