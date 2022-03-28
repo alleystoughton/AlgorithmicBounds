@@ -309,7 +309,7 @@ qed.
 
 (* the main lemma: *)
 
-lemma G_main (Adv <: ADV{Alg}) :
+lemma G_main (Adv <: ADV{-Alg}) :
   hoare
   [G(Alg, Adv).main :
    true ==>
@@ -399,7 +399,7 @@ qed.
 lemma upper_bound &m :
   islossless Alg.init /\ islossless Alg.make_query_or_report_output /\
   islossless Alg.query_result /\
-  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+  (forall (Adv <: ADV{-Alg}) (adv_term_invar : glob Adv -> bool),
    phoare
    [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
    phoare

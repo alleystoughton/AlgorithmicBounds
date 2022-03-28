@@ -726,7 +726,7 @@ qed.
 
 (* the main lemma *)
 
-lemma G_Adv_main (Alg <: ALG{Adv}) :
+lemma G_Adv_main (Alg <: ALG{-Adv}) :
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ int_log_up 2 arity <= res.`2].
 proof.
 proc.
@@ -822,7 +822,7 @@ qed.
 lemma lower_bound &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  forall (Alg <: ALG{-Adv}) (alg_term_invar : (glob Alg) -> bool),
   phoare
   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
   phoare

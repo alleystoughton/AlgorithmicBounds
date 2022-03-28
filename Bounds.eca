@@ -386,7 +386,7 @@ module G(Alg : ALG, Adv : ADV) = {
    other operators) invariants on the states of Alg/Adv, also with
    probability 1%r *)
 
-lemma G_ll (Alg <: ALG) (Adv <: ADV{Alg})
+lemma G_ll (Alg <: ALG) (Adv <: ADV{-Alg})
            (alg_term_invar : glob Alg -> bool)
            (adv_term_invar : glob Adv -> bool) :
   phoare
@@ -619,7 +619,7 @@ module G(Alg : ALG, Adv : ADV) = {
    other operators) invariants on the states of Alg/Adv, also with
    probability 1%r *)
 
-lemma G_ll (Alg <: ALG) (Adv <: ADV{Alg})
+lemma G_ll (Alg <: ALG) (Adv <: ADV{-Alg})
            (alg_term_invar : glob Alg -> bool)
            (adv_term_invar : glob Adv -> bool) :
   phoare
@@ -724,7 +724,7 @@ module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
 
 lemma prob_le_ub_lb_succ_equiv
       (ub : int)
-      (Alg <: UB.ALG) (Adv <: ADV{Alg})
+      (Alg <: UB.ALG) (Adv <: ADV{-Alg})
       (alg_term_invar : glob Alg -> bool)
       (adv_term_invar : glob Adv -> bool) :
   phoare
@@ -912,7 +912,7 @@ qed.
 
 lemma Prob_LE_UB_LB_Succ
       (ub : int)
-      (Alg <: UB.ALG) (Adv <: ADV{Alg})
+      (Alg <: UB.ALG) (Adv <: ADV{-Alg})
       (alg_term_invar : glob Alg -> bool)
       (adv_term_invar : glob Adv -> bool)
       &m :
@@ -944,7 +944,7 @@ qed.
 
 lemma lb_conseq_for_ub0
       (lb ub : int)
-      (Alg <: UB.ALG) (Adv <: ADV{Alg})
+      (Alg <: UB.ALG) (Adv <: ADV{-Alg})
       (alg_term_invar : glob Alg -> bool)
       (adv_term_invar : glob Adv -> bool)
       &m :
@@ -1029,7 +1029,7 @@ qed.
 
 lemma lb_conseq_for_ub1
       (lb ub : int)
-      (Alg <: UB.ALG) (Adv <: ADV{Alg})
+      (Alg <: UB.ALG) (Adv <: ADV{-Alg})
       (alg_term_invar : glob Alg -> bool)
       (adv_term_invar : glob Adv -> bool)
       &m :

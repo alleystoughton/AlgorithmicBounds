@@ -1851,7 +1851,7 @@ qed.
 
 (* here is our main lemma, parameterized by an upper bound: *)
 
-lemma G_main (bound : int) (Adv <: ADV{Alg}) :
+lemma G_main (bound : int) (Adv <: ADV{-Alg}) :
   wc len <= bound =>
   hoare
   [G(Alg, Adv).main :
@@ -1939,7 +1939,7 @@ lemma upper_bound_gen (bound : int) &m :
   phoare
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+  (forall (Adv <: ADV{-Alg}) (adv_term_invar : glob Adv -> bool),
    phoare
    [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
    phoare
@@ -1977,7 +1977,7 @@ lemma upper_bound_wc &m :
   phoare
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+  (forall (Adv <: ADV{-Alg}) (adv_term_invar : glob Adv -> bool),
    phoare
    [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
    phoare
@@ -1998,7 +1998,7 @@ lemma upper_bound_len_int_log2_len &m :
   phoare
   [Alg.query_result :
    alg_term_invar (glob Alg) ==> alg_term_invar (glob Alg)] = 1%r /\
-  (forall (Adv <: ADV{Alg}) (adv_term_invar : glob Adv -> bool),
+  (forall (Adv <: ADV{-Alg}) (adv_term_invar : glob Adv -> bool),
    phoare
    [Adv.init : true ==> adv_term_invar (glob Adv)] = 1%r =>
    phoare

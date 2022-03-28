@@ -217,7 +217,7 @@ qed.
 
 (* here is our main lemma, parameterized by a lower bound: *)
 
-lemma G_Adv_main (bound : int) (Alg <: ALG{Adv}) :
+lemma G_Adv_main (bound : int) (Alg <: ALG{-Adv}) :
   bound <= int_log_up 2 (fact len) =>
   hoare [G(Alg, Adv).main : true ==> res.`1 \/ bound <= res.`2].
 proof.
@@ -282,7 +282,7 @@ lemma lower_bound_gen (bound : int) &m :
   bound <= int_log_up 2 (fact len) =>
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  forall (Alg <: ALG{-Adv}) (alg_term_invar : (glob Alg) -> bool),
   phoare
   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
   phoare
@@ -524,7 +524,7 @@ qed.
 lemma lower_bound_approx &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  forall (Alg <: ALG{-Adv}) (alg_term_invar : (glob Alg) -> bool),
   phoare
   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
   phoare
@@ -550,7 +550,7 @@ qed.
 lemma lower_bound_precise_approx &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  forall (Alg <: ALG{-Adv}) (alg_term_invar : (glob Alg) -> bool),
   phoare
   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
   phoare
@@ -577,7 +577,7 @@ qed.
 lemma lower_bound_target &m :
   exists (Adv <: ADV),
   islossless Adv.init /\ islossless Adv.ans_query /\
-  forall (Alg <: ALG{Adv}) (alg_term_invar : (glob Alg) -> bool),
+  forall (Alg <: ALG{-Adv}) (alg_term_invar : (glob Alg) -> bool),
   phoare
   [Alg.init : true ==> alg_term_invar (glob Alg)] = 1%r =>
   phoare
