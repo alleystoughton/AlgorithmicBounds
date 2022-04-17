@@ -32,7 +32,7 @@ cd searching
 echo cd to searching
 echo ""
 
-check-all-scripts
+./check-all-scripts
 
 echo cd to ..
 cd ..
@@ -41,7 +41,7 @@ cd sorting
 echo cd to sorting
 echo ""
 
-check-all-scripts
+./check-all-scripts
 
 echo cd to ..
 cd ..
