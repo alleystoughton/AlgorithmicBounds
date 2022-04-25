@@ -800,7 +800,6 @@ smt(queries_in_range_add).
 have -> : Adv.win_empty{hr} = false by smt().
 rewrite (win_invar_nonempty_query_ge_mid _ Adv.win_end{hr}) /#.
 have -> : Adv.win_empty{hr} = false by smt().
-have -> : (if b \in univ then b else min_inp) = b by smt(b_in_univ).
 rewrite (inpss_win_invar_filter_mid_high_b _ _ Adv.win_end{hr} i{hr}) /#.
 have -> : Adv.win_empty{hr} = false by smt().
 rewrite (bound_invar_next_new_end _ Adv.win_end{hr}) // 4:fcard_ge0 /#.

@@ -1727,7 +1727,7 @@ qed.
 op nosmt invar (inpss : bool list list, qs : int fset, t : term) : bool =
   inpss_invar () inpss /\
   proper t /\
-  all
+  all  (* this will hold vacuously if Adv makes inpss empty *)
   (fun inps =>
      repr (cmp_of_rel inps) t = sort (cmp_of_rel inps) range_len)
   inpss /\
@@ -1907,7 +1907,7 @@ seq 1 :
    stp = step Alg.term /\ is_compare stp).
 call (_ : true); first auto; progress [-delta]; smt().
 inline Alg.query_result.
-sp 3; elim* => inp'.
+sp 2.
 rcondf 1; first auto => |> &hr _ inpss_ne_nil inv is_cmp_step_term.
 have prop_term : proper Alg.term{hr}.
   by rewrite (invar_impl_proper_term inpss{hr} queries').

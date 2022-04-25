@@ -195,7 +195,6 @@ qed.
 clone export Bounds as B with
   type inp <- inp,
   op univ  <- univ,
-  op def   <- min_inp,
   type out <- out,
   op arity <- arity,
   type aux <- aux,
@@ -208,8 +207,6 @@ rewrite (lez_trans 1) // ge1_arity.
 qed.
 
 realize univ_uniq. rewrite range_uniq. qed.
-
-realize univ_def. rewrite min_inp_univ. qed.
 
 realize good. smt(). qed.
 

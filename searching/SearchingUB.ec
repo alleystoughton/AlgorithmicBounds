@@ -85,7 +85,7 @@ op nosmt correct_invar
    (inpss : inp list list, aux : aux,
     queries : int fset, low high : int) : bool =
   0 <= low <= high < arity /\
-  all
+  all  (* this will hold vacuously if Adv makes inpss empty *)
   (fun inps =>
      mem_in_range inps aux low high /\
      ! mem_in_range inps aux 0 (low - 1))
@@ -343,8 +343,7 @@ rcondt 1; first auto; progress.
 smt(correct_invar_range).
 smt(correct_invar_range).
 smt(correct_invar_window_not_queries correct_invar_range).
-sp.
-elim* => stage' queries'.
+sp; elim* => stage' queries'.
 seq 1 :
   (aux = Alg.aux /\ stage' = card queries' /\
    inpss_invar aux inpss /\ inpss <> [] /\ !error /\ !don /\
@@ -358,7 +357,7 @@ call (_ : true).
 auto; progress [-delta]; smt().
 wp.
 inline Alg.query_result.
-sp 3; elim* => inp.
+sp 2.
 if.
 auto; progress [-delta].
 smt(fcardUindep1 correct_invar_window_not_queries correct_invar_range).

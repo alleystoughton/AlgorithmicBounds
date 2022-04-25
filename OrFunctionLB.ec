@@ -114,7 +114,6 @@ qed.
 clone import Bounds as B with
   type inp <- inp,
   op univ  <- univ,
-  op def   <- true,
   type out <- out,
   op arity <- arity,
   type aux <- aux,
@@ -125,8 +124,6 @@ proof *.
 realize ge0_arity. rewrite ge0_arity. qed.
 
 realize univ_uniq. by rewrite /univ. qed.
-
-realize univ_def. by rewrite /univ. qed.
 
 realize good.
 rewrite /f => aux xs -> _.

@@ -687,7 +687,6 @@ proof. smt(). qed.
 clone export Bounds as B with
   type inp <- inp,
   op univ  <- univ,
-  op def   <- true,
   type out <- out,
   op arity <- arity,
   type aux <- aux,
@@ -700,8 +699,6 @@ rewrite (lez_trans 1) // ge1_arity.
 qed.
 
 realize univ_uniq. by rewrite /univ. qed.
-
-realize univ_def. by rewrite /univ. qed.
 
 realize good. smt(f_is_some). qed.
 

@@ -21,10 +21,6 @@ type inp.  (* type of inputs *)
 
 op univ : inp list.  (* universe with concrete ordering *)
 
-op def : inp.  (* default inp *)
-
-axiom univ_def : mem univ def.  (* default inp is in univ *)
-
 axiom univ_uniq : uniq univ.  (* no duplicates in univ *)
 
 type out.  (* type of outputs *)
@@ -365,7 +361,6 @@ module G(Alg : ALG, Adv : ADV) = {
         queries <- queries `|` fset1 i;
         stage <- stage + 1;
         inp <@ Adv.ans_query(i);  (* ask Adv to answer query *)
-        inp <- (inp \in univ) ? inp : def;  (* use def if inp not in universe *)
         Alg.query_result(inp);  (* tell Alg result of its query *)
         (* get rid of lists of inputs that aren't consistent with answer;
            by lemma inpss_invar_filter_nth, inpss_invar is preserved *)
@@ -584,10 +579,7 @@ module G(Alg : ALG, Adv : ADV) = {
           queries <- queries `|` fset1 i;
           stage <- stage + 1;
           inp <@ Adv.ans_query(i);  (* ask Adv to answer query *)
-          (* use def if inp not in universe *)
-          inp <- (inp \in univ) ? inp : def;
-          (* tell Alg result of its query *)
-          Alg.query_result(inp);
+          Alg.query_result(inp);  (* tell Alg result of its query *)
           (* get rid of lists of inputs that aren't consistent with answer;
              by lemma inpss_invar_filter_nth, inpss_invar is preserved *)
           inpss <- filter_nth inpss i inp;
