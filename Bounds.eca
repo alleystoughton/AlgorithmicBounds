@@ -351,7 +351,7 @@ module G(Alg : ALG, Adv : ADV) = {
     var i : int;
     var inp : inp;
 
-    aux <- Adv.init();  (* initialize Adv, letting it choose aux *)
+    aux <@ Adv.init();  (* initialize Adv, letting it choose aux *)
     Alg.init(aux);  (* initialize Alg, giving it aux *)
     inpss <- init_inpss aux;  (* start with all good aux lists of inputs *)
     (* by lemma inpss_invar_init, the invariant is established *)
@@ -566,7 +566,7 @@ module G(Alg : ALG, Adv : ADV) = {
     var inp  : inp;
     var out  : out;
 
-    aux <- Adv.init();  (* initialize Adv, letting it choose aux *)
+    aux <@ Adv.init();  (* initialize Adv, letting it choose aux *)
     Alg.init(aux);  (* initialize Alg, giving it aux *)
     inpss <- init_inpss aux;  (* start with all good aux lists of inputs *)
     (* by lemma inpss_invar_init, the invariant is established *)
@@ -702,8 +702,11 @@ module UBAlg_to_LBAlg (UBAlg : UB.ALG) : LB.ALG = {
       i <- oget (UB.dec_response_query resp);
     }
     else {  (* is_response_report resp *)
-      i <- -1;  (* must be an error, as if game has not
-                   ended, there is no unambiguous answer *)
+      i <- -1;  (* for proof of prob_le_ub_lb_succ_equiv, must
+                   be an error so that when UBAlg answers
+                   before there is a unique answer in upper
+                   bound game, an error will also be issued
+                   in the lower bound game *)
     }
     return i;
   }
@@ -897,7 +900,7 @@ by rewrite queries_in_range_add.
 by rewrite fcardUindep1.
 smt(). smt().
 auto; smt(queries_in_range_card_le_arity).
-auto; smt(UB.not_is_response_query queries_in_range_card_le_arity).
+auto; smt(queries_in_range_card_le_arity).
 auto; progress [-delta].
 hoare.
 conseq (_ : _ ==> _ : = 1%r).
