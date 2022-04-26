@@ -21,9 +21,9 @@ import UB.  (* upper bounds theory *)
 
 (* wc n is a recurrence that we prove is an upper bound on the worst
    case numer of comparisons actually used by merge sort (see below)
-   when given lists of size n (unlike in a conventional upper bound
-   proof, if we had gotten the definition of wc wrong, our upper bound
-   proof would have failed)
+   when given lists of distinct elements of size n (unlike in a
+   conventional upper bound proof, if we had gotten the definition of
+   wc wrong, our upper bound proof would have failed)
 
    we don't need that wc n is *equal* to the worst case number of
    comparisons actually used by merge sort, although we were able to
