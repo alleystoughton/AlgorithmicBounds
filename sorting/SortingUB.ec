@@ -1666,7 +1666,7 @@ module Alg : ALG = {
       term <- List [0];  (* invariant only says term is proper *)
     }
     else {
-      term <- oget (answer term b);
+      term <- oget oterm;
     }
   }
 }.
@@ -1717,9 +1717,10 @@ lemma Alg_query_result_term :
 proof.
 proc; auto => &hr.
 rewrite /alg_term_invar => prop_term.
+rewrite /=.
 case (answer Alg.term{hr} b{hr} = None) => [_ | ans_term_b_ne_none].
 rewrite /proper_list0 /= in_range_len /= gt0_len.
-smt(proper_answer).
+smt(oget_some proper_answer).
 qed.
 
 (* here is the invariant for the proof of our main lemma *)
