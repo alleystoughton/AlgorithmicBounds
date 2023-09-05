@@ -169,50 +169,176 @@ rewrite wc_eq // ler_subl_addr ler_addl.
 smt(int_log_ub_lt).
 qed.
 
-(* we define the merge operator and prove properies of it *)
+(* define well-founded relation on pairs of lists: 
+   lt_sum_sizes_list_pair p1 p2 <=>
+   size p1.`1 + size p1.`2 <
+   size p2.`1 + size p2.`2 *)
 
-op merge (e : 'a -> 'a -> bool, xs ys : 'a list) : 'a list =
-  with xs = [],      ys = []      => []
-  with xs = [],      ys = _ :: _  => ys
-  with xs = _ :: _,  ys = []      => xs
-  with xs = u :: us, ys = v :: vs =>
-    if e u v
-    then u :: merge e us ys
-    else v :: merge e xs vs.
+op sum_sizes_list_pair (p : 'a list * 'a list) : int =
+  size p.`1 + size p.`2.
 
-lemma merge_nil_r (e : 'a -> 'a -> bool, xs : 'a list) :
-  merge e xs [] = xs.
+op lt_sum_sizes_list_pair : ('a list * 'a list) rel =
+  wf_pre sum_sizes_list_pair lt_nat.
+
+lemma wf_lt_sum_sizes_list_pair ['a] : wf lt_sum_sizes_list_pair<:'a>.
 proof.
-by case xs.
+rewrite wf_pre wf_lt_nat.
 qed.
+
+lemma lt_sum_sizes_list_pairP (p1 p2 : 'a list * 'a list) :
+  lt_sum_sizes_list_pair p1 p2 <=>
+  size p1.`1 + size p1.`2 <
+  size p2.`1 + size p2.`2.
+proof.
+rewrite /lt_sum_sizes_list_pair /wf_pre /lt_nat /sum_sizes_list_pair.
+smt(size_ge0).
+qed.
+
+lemma lt_sum_sizes_list_pair_first (x y : 'a, xs ys : 'a list) :
+  lt_sum_sizes_list_pair (xs, y :: ys) (x :: xs, y :: ys).
+proof.
+rewrite /lt_sum_sizes_list_pair /wf_pre /lt_nat /sum_sizes_list_pair /=.
+smt(size_ge0).
+qed.
+
+lemma lt_sum_sizes_list_pair_second (x y : 'a, xs ys : 'a list) :
+  lt_sum_sizes_list_pair (x :: xs, ys) (x :: xs, y :: ys).
+proof.
+rewrite /lt_sum_sizes_list_pair /wf_pre /lt_nat /sum_sizes_list_pair /=.
+smt(size_ge0).
+qed.
+
+(* we use this well-founded relation to define the merging of two
+   lists, parameterized by the comparison operator *)
+
+op merge_wf_rec_def (e : 'a -> 'a -> bool) :
+     ('a list * 'a list, 'a list) wf_rec_def =
+  fun (p : 'a list * 'a list,                (* input *)
+       f : 'a list * 'a list -> 'a list) =>  (* for recursive calls *)
+    let xs = p.`1 in let ys = p.`2 in
+    match xs with
+    | []      => ys
+    | u :: us =>
+        match ys with
+        | []      => xs
+        | v :: vs =>
+            if e u v
+            then u :: f (us, ys)
+            else v :: f (xs, vs)
+        end
+    end.
+
+(* the actual recursive definition: *)
+
+op merge (e : 'a -> 'a -> bool) (xs ys : 'a list) : 'a list =
+  wf_recur
+  lt_sum_sizes_list_pair  (* well-founded relation being used *)
+  []                      (* element to be returned if recursive calls
+                             don't respect well-founded relation *)
+  (merge_wf_rec_def e)    (* body of recursive definition *)
+  (xs, ys).
+
+lemma merge_def (e : 'a -> 'a -> bool) (xs ys : 'a list) :
+  wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) (xs, ys) =
+  merge e xs ys.
+proof. by rewrite /merge. qed.
 
 lemma merge_nil_l (e : 'a -> 'a -> bool, xs : 'a list) :
   merge e [] xs = xs.
 proof.
+rewrite /merge wf_recur 1:wf_lt_sum_sizes_list_pair.
+rewrite /merge_wf_rec_def /=.
 by case xs.
+qed.
+
+lemma merge_nil_r (e : 'a -> 'a -> bool, xs : 'a list) :
+  merge e xs [] = xs.
+proof.
+rewrite /merge wf_recur 1:wf_lt_sum_sizes_list_pair.
+rewrite /merge_wf_rec_def /=.
+by case xs.
+qed.
+
+lemma merge_non_nils (e : 'a -> 'a -> bool, x y : 'a, xs ys : 'a list) :
+  merge e (x :: xs) (y :: ys) =
+  if e x y
+  then x :: merge e xs (y :: ys)
+  else y :: merge e (x :: xs) ys.
+proof.
+rewrite /merge wf_recur 1:wf_lt_sum_sizes_list_pair.
+rewrite /merge_wf_rec_def /=.
+case (e x y) => [e_x_y | not_e_x_y].
+by rewrite lt_sum_sizes_list_pair_first.
+by rewrite lt_sum_sizes_list_pair_second.
 qed.
 
 lemma size_merge (e : 'a -> 'a -> bool, xs ys : 'a list) :
   size (merge e xs ys) = size xs + size ys.
 proof.
-move : ys.
-elim xs => [ys /= |].
-by rewrite merge_nil_l.
-move => x xs IHouter ys.
-elim ys => [// | y ys IHinner /=].
-case (e x y) => [e_x_y | not_e_x_y].
-rewrite IHouter /=; algebra.
-rewrite IHinner /=; algebra.
+rewrite /merge.
+have H :
+  forall (p : 'a list * 'a list),
+  size (wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) p) =
+  size p.`1 + size p.`2.
+  apply (wf_ind lt_sum_sizes_list_pair).
+  apply wf_lt_sum_sizes_list_pair.
+  move => [us vs] /= IH.
+  rewrite wf_recur 1:wf_lt_sum_sizes_list_pair {1}/merge_wf_rec_def /=.
+  case (us = []) => [-> // | us_non_nil].
+  have -> /= : us = head witness us :: behead us by rewrite head_behead.
+  case (vs = []) => [-> // | vs_non_nil /=].
+  have -> /= : vs = head witness vs :: behead vs by rewrite head_behead.
+  case (e (head witness us) (head witness vs)) => [e_true | e_false].
+  rewrite lt_sum_sizes_list_pair_first /= IH.
+  have {2}-> /= : us = head witness us :: behead us by rewrite head_behead.
+  have {3}-> /= : vs = head witness vs :: behead vs by rewrite head_behead.
+  rewrite lt_sum_sizes_list_pair_first.
+  smt().
+  rewrite lt_sum_sizes_list_pair_second /= IH.
+  have {3}-> /= : us = head witness us :: behead us by rewrite head_behead.
+  have {2}-> /= : vs = head witness vs :: behead vs by rewrite head_behead.
+  rewrite lt_sum_sizes_list_pair_second.
+  smt().
+apply H.
 qed.
 
-lemma cmp_head_merge (cmp : 'a -> 'a -> bool, n : 'a, xs ys : 'a list) :
-  cmp n (head n xs) => cmp n (head n ys) =>
-  cmp n (head n (merge cmp xs ys)).
+(* lemmas for proving merge_sorted *)
+
+lemma sorted_nonempty_behead (e : 'a -> 'a -> bool, us : 'a list) :
+   us <> [] => sorted e us => sorted e (behead us).
 proof.
-case xs => [| u us].
-by case ys.
-case ys => [// | v vs /=].
-by case (cmp u v).
+move => us_nonnil sorted_us.
+rewrite (path_sorted _ (head witness us)).
+move : sorted_us.
+by rewrite -(head_behead _ witness).
+qed.
+
+lemma cmp_head_merge_left (def : 'a, e : 'a -> 'a -> bool, xs ys : 'a list) :
+  xs <> [] => ys <> [] => sorted e xs =>
+  e (head def xs) (head def ys) =>
+  e (head def xs) (head def (merge e (behead xs) ys)).
+proof.
+case xs => [// | x xs _]; case ys => [// | y ys _ /=] => path_e_x_xs e_x_y.
+case (xs = []) => [-> | nonnil_xs].
+by rewrite merge_nil_l.
+move : path_e_x_xs.
+rewrite -(head_behead xs def) //= => [[e_x_head_xs path_e_head_xs_behead_xs]].
+rewrite merge_non_nils.
+by case (e (head def xs) y).
+qed.
+
+lemma cmp_head_merge_right (def : 'a, e : 'a -> 'a -> bool, xs ys : 'a list) :
+  xs <> [] => ys <> [] => sorted e ys =>
+  e (head def ys) (head def xs) =>
+  e (head def ys) (head def (merge e xs (behead ys))).
+proof.
+case ys => [// | y ys]; case xs => [// | x xs _ /=] => path_e_y_ys e_y_x.
+case (ys = []) => [-> | nonnil_xs].
+by rewrite merge_nil_r.
+move : path_e_y_ys.
+rewrite -(head_behead ys def) //= => [[e_y_head_ys path_e_head_ys_behead_ys]].
+rewrite merge_non_nils.
+by case (e x (head def ys)).
 qed.
 
 lemma merge_sorted (e : 'a -> 'a -> bool, xs ys : 'a list) :
@@ -221,35 +347,89 @@ lemma merge_sorted (e : 'a -> 'a -> bool, xs ys : 'a list) :
   sorted e xs => sorted e ys =>
   sorted e (merge e xs ys).
 proof.
-move => refl_e tot_e; move : ys.
-elim xs => [| u us IH_outer].
-by case.
-elim => [// | v vs /= IH_inner path_u_us path_v_vs].
-case (e u v) => [e_u_v | not_e_u_v].
-rewrite (pathP u); right; split => [| /=].
-by rewrite cmp_head_merge cmp_head_path_same_def.
-by rewrite IH_outer (path_sorted _ u).
-rewrite (pathP v); right; split => [| /=].
-rewrite cmp_head_merge cmp_head_path_same_def //= path_u_us /= 1:/#.
-by rewrite IH_inner // (path_sorted _ v).
+move => refl_e tot_e.
+rewrite /merge.
+have H :
+  forall (p : 'a list * 'a list),
+  sorted e p.`1 => sorted e p.`2 =>
+  sorted e (wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) p).
+  apply (wf_ind lt_sum_sizes_list_pair).
+  apply wf_lt_sum_sizes_list_pair.
+  move => [us vs] /= IH sorted_us sorted_vs.
+  rewrite wf_recur 1:wf_lt_sum_sizes_list_pair {1}/merge_wf_rec_def /=.
+  case (us = []) => [-> // | us_non_nil].
+  have us_eq /= : us = head witness us :: behead us by rewrite head_behead.
+  rewrite us_eq.
+  case (vs = []) => [-> /= | vs_non_nil /=].
+  move : sorted_us; by rewrite us_eq.
+  have vs_eq : vs = head witness vs :: behead vs by rewrite head_behead.
+  rewrite vs_eq.
+  case (e (head witness us) (head witness vs)) => [e_true | e_false].
+  rewrite e_true /= lt_sum_sizes_list_pair_first /=.
+  rewrite -vs_eq (pathP witness e).
+  right; split.
+  by rewrite (merge_def e (behead us) vs) (cmp_head_merge_left witness).
+  rewrite IH //.
+  rewrite us_eq vs_eq lt_sum_sizes_list_pair_first.
+  by rewrite /= sorted_nonempty_behead.
+  rewrite e_false /= lt_sum_sizes_list_pair_second /=.
+  rewrite -us_eq (pathP witness e).
+  right; split.
+  rewrite (merge_def e us (behead vs)) (cmp_head_merge_right witness) //#.
+  rewrite IH //.
+  rewrite us_eq vs_eq lt_sum_sizes_list_pair_second.
+  by rewrite /= sorted_nonempty_behead.
+apply (H (xs, ys)).
 qed.
 
 lemma perm_eq_merge (e : 'a -> 'a -> bool, xs ys : 'a list) :
   perm_eq (merge e xs ys) (xs ++ ys).
 proof.
-move : ys.
-elim xs => [ys /= | x xs IH_outer ys].
-rewrite merge_nil_l perm_eq_refl.
-elim ys => [/= | v vs IH_inner /=].
-rewrite cats0 perm_eq_refl.
-case (e x v) => [e_x_v | not_e_x_v].
-rewrite -cat1s -(cat1s _ (xs ++ v :: vs)) perm_cat2l IH_outer.
-rewrite -cat1s (perm_eq_trans ([v] ++ (x :: xs ++ vs)))
-        1:perm_cat2l 1:IH_inner.
-have -> : [v] ++ (x :: xs ++ vs) = [v] ++ [x] ++ (xs ++ vs) by smt(catA).
-have -> : x :: (xs ++ v :: vs) = [x] ++ xs ++ ([v] ++ vs) by smt(catA).
-rewrite perm_catCAl -!catA perm_cat2l !catA.
-rewrite perm_catCAl -!catA perm_cat2l perm_eq_refl.
+have H :
+  forall (p : 'a list * 'a list),
+  perm_eq  
+  (wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) p)
+  (p.`1 ++ p.`2).
+  apply (wf_ind lt_sum_sizes_list_pair).
+  apply wf_lt_sum_sizes_list_pair.
+  move => [us vs] /= IH.
+  rewrite wf_recur 1:wf_lt_sum_sizes_list_pair {1}/merge_wf_rec_def.
+  case (us = []) => [-> //= | us_non_nil].
+  rewrite perm_eq_refl.
+  have us_eq /= : us = head witness us :: behead us by rewrite head_behead.
+  rewrite us_eq /=.
+  case (vs = []) => [-> /= | vs_non_nil /=].
+  rewrite cats0 perm_eq_refl.
+  have vs_eq : vs = head witness vs :: behead vs by rewrite head_behead.
+  rewrite vs_eq /=.
+  case (e (head witness us) (head witness vs)) => [e_true | e_false].
+  rewrite lt_sum_sizes_list_pair_first /=.
+  have /= := IH (behead us, head witness vs :: behead vs) _.
+    rewrite {2}us_eq {3}vs_eq lt_sum_sizes_list_pair_first.
+  rewrite -vs_eq -(cat1s (head witness us)).
+  rewrite -(cat1s _ (behead us ++ vs)) catA.
+  pose recur :=
+    wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) (behead us, vs).
+  move => H.
+  by rewrite -catA perm_cat2l.
+  rewrite lt_sum_sizes_list_pair_second /=.
+  have /= := IH (head witness us :: behead us, behead vs) _.
+    rewrite {3}us_eq {2}vs_eq lt_sum_sizes_list_pair_second.
+  rewrite -(cat1s (head witness us)).
+  rewrite -(cat1s _ (behead us ++ behead vs)).
+  rewrite -(cat1s _ (behead us ++ head witness vs :: behead vs)).
+  rewrite -(cat1s (head witness vs)).
+  have -> : head witness vs :: behead vs = [head witness vs] ++ behead vs
+    by rewrite cat1s.    
+  rewrite (cat1s (head witness us) (behead us)) !catA head_behead //.
+  pose recur :=
+    wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) (us, behead vs).
+  move => H.
+  rewrite perm_eq_sym perm_catCAl.
+  rewrite -catA perm_cat2l.
+  rewrite perm_eq_sym in H.
+  rewrite (perm_eq_trans recur) // perm_eq_refl.
+apply (H (xs, ys)).
 qed.
 
 lemma perm_eq_merge_perms (e : 'a -> 'a -> bool, xs ys us vs : 'a list) :
@@ -923,8 +1103,10 @@ have of_list_t_eq := head_behead (of_list t) 0 _ => //.
 have of_list_u_eq := head_behead (of_list u) 0 _ => //.
 case (cmp (head 0 (of_list t)) (head 0 (of_list u))) =>
   [cmp_t_u | not_cmp_t_u].
-by rewrite -{3}of_list_t_eq -{3}of_list_u_eq /= cmp_t_u.
-by rewrite -{3}of_list_t_eq -{3}of_list_u_eq /= not_cmp_t_u.
+rewrite -{3}of_list_t_eq -{3}of_list_u_eq.
+by rewrite merge_non_nils /= cmp_t_u.
+rewrite -{3}of_list_t_eq -{3}of_list_u_eq //.
+by rewrite merge_non_nils /= not_cmp_t_u.
 qed.
 
 lemma is_worked_repr_step_cmp_of_rel (inps : inp list, t : term) :
