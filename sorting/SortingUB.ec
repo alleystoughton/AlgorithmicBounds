@@ -169,7 +169,7 @@ rewrite wc_eq // ler_subl_addr ler_addl.
 smt(int_log_ub_lt).
 qed.
 
-(* define well-founded relation on pairs of lists: 
+(* define well-founded relation on pairs of lists:
    lt_sum_sizes_list_pair p1 p2 <=>
    size p1.`1 + size p1.`2 <
    size p2.`1 + size p2.`2 *)
@@ -247,15 +247,14 @@ lemma merge_nil_l (e : 'a -> 'a -> bool, xs : 'a list) :
   merge e [] xs = xs.
 proof.
 rewrite /merge wf_recur 1:wf_lt_sum_sizes_list_pair.
-rewrite /merge_wf_rec_def /=.
-by case xs.
+by rewrite {1}/merge_wf_rec_def.
 qed.
 
 lemma merge_nil_r (e : 'a -> 'a -> bool, xs : 'a list) :
   merge e xs [] = xs.
 proof.
 rewrite /merge wf_recur 1:wf_lt_sum_sizes_list_pair.
-rewrite /merge_wf_rec_def /=.
+rewrite {1}/merge_wf_rec_def /=.
 by case xs.
 qed.
 
@@ -266,7 +265,7 @@ lemma merge_non_nils (e : 'a -> 'a -> bool, x y : 'a, xs ys : 'a list) :
   else y :: merge e (x :: xs) ys.
 proof.
 rewrite /merge wf_recur 1:wf_lt_sum_sizes_list_pair.
-rewrite /merge_wf_rec_def /=.
+rewrite {1}/merge_wf_rec_def /=.
 case (e x y) => [e_x_y | not_e_x_y].
 by rewrite lt_sum_sizes_list_pair_first.
 by rewrite lt_sum_sizes_list_pair_second.
@@ -280,24 +279,23 @@ have H :
   forall (p : 'a list * 'a list),
   size (wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) p) =
   size p.`1 + size p.`2.
+  (* *)
   apply (wf_ind lt_sum_sizes_list_pair).
   apply wf_lt_sum_sizes_list_pair.
   move => [us vs] /= IH.
   rewrite wf_recur 1:wf_lt_sum_sizes_list_pair {1}/merge_wf_rec_def /=.
   case (us = []) => [-> // | us_non_nil].
-  have -> /= : us = head witness us :: behead us by rewrite head_behead.
+  have us_eq : us = head witness us :: behead us by rewrite head_behead.
+  rewrite us_eq /=.
   case (vs = []) => [-> // | vs_non_nil /=].
-  have -> /= : vs = head witness vs :: behead vs by rewrite head_behead.
-  case (e (head witness us) (head witness vs)) => [e_true | e_false].
-  rewrite lt_sum_sizes_list_pair_first /= IH.
-  have {2}-> /= : us = head witness us :: behead us by rewrite head_behead.
-  have {3}-> /= : vs = head witness vs :: behead vs by rewrite head_behead.
-  rewrite lt_sum_sizes_list_pair_first.
+  have vs_eq : vs = head witness vs :: behead vs by rewrite head_behead.
+  rewrite vs_eq /=.
+  case (e (head witness us) (head witness vs)) => _.
+  rewrite lt_sum_sizes_list_pair_first /= IH /=.
+  rewrite {2}us_eq {3}vs_eq lt_sum_sizes_list_pair_first.
   smt().
-  rewrite lt_sum_sizes_list_pair_second /= IH.
-  have {3}-> /= : us = head witness us :: behead us by rewrite head_behead.
-  have {2}-> /= : vs = head witness vs :: behead vs by rewrite head_behead.
-  rewrite lt_sum_sizes_list_pair_second.
+  rewrite lt_sum_sizes_list_pair_second /= IH /=.
+  rewrite {2}vs_eq {3}us_eq lt_sum_sizes_list_pair_second.
   smt().
 apply H.
 qed.
@@ -322,7 +320,7 @@ case xs => [// | x xs _]; case ys => [// | y ys _ /=] => path_e_x_xs e_x_y.
 case (xs = []) => [-> | nonnil_xs].
 by rewrite merge_nil_l.
 move : path_e_x_xs.
-rewrite -(head_behead xs def) //= => [[e_x_head_xs path_e_head_xs_behead_xs]].
+rewrite -(head_behead _ def) //= => [[e_x_head_xs path_e_head_xs_behead_xs]].
 rewrite merge_non_nils.
 by case (e (head def xs) y).
 qed.
@@ -336,7 +334,7 @@ case ys => [// | y ys]; case xs => [// | x xs _ /=] => path_e_y_ys e_y_x.
 case (ys = []) => [-> | nonnil_xs].
 by rewrite merge_nil_r.
 move : path_e_y_ys.
-rewrite -(head_behead ys def) //= => [[e_y_head_ys path_e_head_ys_behead_ys]].
+rewrite -(head_behead _ def) //= => [[e_y_head_ys path_e_head_ys_behead_ys]].
 rewrite merge_non_nils.
 by case (e x (head def ys)).
 qed.
@@ -353,6 +351,7 @@ have H :
   forall (p : 'a list * 'a list),
   sorted e p.`1 => sorted e p.`2 =>
   sorted e (wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) p).
+  (* *)
   apply (wf_ind lt_sum_sizes_list_pair).
   apply wf_lt_sum_sizes_list_pair.
   move => [us vs] /= IH sorted_us sorted_vs.
@@ -387,9 +386,10 @@ lemma perm_eq_merge (e : 'a -> 'a -> bool, xs ys : 'a list) :
 proof.
 have H :
   forall (p : 'a list * 'a list),
-  perm_eq  
+  perm_eq
   (wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) p)
   (p.`1 ++ p.`2).
+  (* *)
   apply (wf_ind lt_sum_sizes_list_pair).
   apply wf_lt_sum_sizes_list_pair.
   move => [us vs] /= IH.
@@ -402,33 +402,28 @@ have H :
   rewrite cats0 perm_eq_refl.
   have vs_eq : vs = head witness vs :: behead vs by rewrite head_behead.
   rewrite vs_eq /=.
-  case (e (head witness us) (head witness vs)) => [e_true | e_false].
+  case (e (head witness us) (head witness vs)) => _.
   rewrite lt_sum_sizes_list_pair_first /=.
   have /= := IH (behead us, head witness vs :: behead vs) _.
     rewrite {2}us_eq {3}vs_eq lt_sum_sizes_list_pair_first.
   rewrite -vs_eq -(cat1s (head witness us)).
   rewrite -(cat1s _ (behead us ++ vs)) catA.
-  pose recur :=
-    wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) (behead us, vs).
   move => H.
   by rewrite -catA perm_cat2l.
   rewrite lt_sum_sizes_list_pair_second /=.
   have /= := IH (head witness us :: behead us, behead vs) _.
     rewrite {3}us_eq {2}vs_eq lt_sum_sizes_list_pair_second.
-  rewrite -(cat1s (head witness us)).
-  rewrite -(cat1s _ (behead us ++ behead vs)).
-  rewrite -(cat1s _ (behead us ++ head witness vs :: behead vs)).
-  rewrite -(cat1s (head witness vs)).
-  have -> : head witness vs :: behead vs = [head witness vs] ++ behead vs
-    by rewrite cat1s.    
-  rewrite (cat1s (head witness us) (behead us)) !catA head_behead //.
-  pose recur :=
-    wf_recur lt_sum_sizes_list_pair [] (merge_wf_rec_def e) (us, behead vs).
+  rewrite -us_eq.
+  have -> :
+    head witness us :: (behead us ++ behead vs) = us ++ behead vs.
+    by rewrite -cat1s catA cat1s -us_eq.
+  have -> :
+    head witness us :: (behead us ++ head witness vs :: behead vs) =
+    us ++ [head witness vs] ++ behead vs.
+    by rewrite -cat1s catA cat1s -us_eq -cat1s catA.
+  rewrite -cat1s.
   move => H.
-  rewrite perm_eq_sym perm_catCAl.
-  rewrite -catA perm_cat2l.
-  rewrite perm_eq_sym in H.
-  rewrite (perm_eq_trans recur) // perm_eq_refl.
+  by rewrite perm_eq_sym perm_catCA -catA perm_cat2l perm_eq_sym.
 apply (H (xs, ys)).
 qed.
 
