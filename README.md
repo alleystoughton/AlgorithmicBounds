@@ -14,13 +14,20 @@ This is joint work between Boston University faculty
 * [Marco Gaboardi](https://cs-people.bu.edu/gaboardi/) (gaboardi@bu.edu)
 * [Alley Stoughton](http://alleystoughton.us) (stough@bu.edu)
 
-in collaboration with Boston University doctoral student
+in collaboration with Boston University doctoral student and now
+Monmouth University faculty member
 
-* [Weihao Qu](https://www.bu.edu/cs/profiles/weihao-qu/) (weihaoqu@bu.edu)
+* [Weihao Qu](https://weihaoqu.com) (wqu@monmouth.edu)
 
-and Stuyvesant High School student and BU RISE program intern
+and Stuyvesant High School student, BU RISE program intern, and now
+MIT undergraduate
 
-* Carol Chen (cchen20@stuy.edu)
+* Carol Chen (carol120@mit.edu)
+
+Our preliminary work was reported in the 13th International Conference on
+Interactive Theorem Proving (ITP 2022) paper <a
+href="https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ITP.2022.30">"Formalizing
+Algorithmic Bounds in the Query Model in EasyCrypt"</a>.
 
 Our bounds framework is
 
