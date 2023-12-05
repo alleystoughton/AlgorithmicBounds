@@ -605,12 +605,15 @@ lemma proper_list_cat_iff (xs ys : int list) :
 proof.
 rewrite /proper_list all_cat cat_uniq has_sym.
 split =>
-  [[#] xs_cat_ys_ne_nil -> -> -> -> -> /# |
+  [[#] xs_cat_ys_ne_nil -> -> -> -> -> /= |
    [[#] -> /= -> -> -> // |
     [[#] -> /= xs_ne_nil -> -> |
      [#] xs_ne_nil -> -> ys_ne_nil -> -> -> /=]
    ]
   ].
+move : xs_cat_ys_ne_nil.
+case xs => [// | x xs /=].
+by case ys.
 by rewrite cats0 in_nilE has_pred0.
 by rewrite cat_eq_nil_iff negb_and xs_ne_nil.
 qed.
