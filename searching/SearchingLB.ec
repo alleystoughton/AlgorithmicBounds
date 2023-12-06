@@ -83,7 +83,7 @@ module Adv : ADV = {
         j <- witness;  (* answer doesn't matter *)
       }
     }
-    (* win_beg <= i <= win_end /\ win_beg < win_end*)
+    (* win_beg <= i <= win_end /\ win_beg < win_end *)
     elif (i < (win_beg + win_end) %%/ 2) {  (* < midpoint (as real) *)
       j <- a; win_beg <- i + 1;
     }
