@@ -909,7 +909,10 @@ have of_list_t_not_in_of_list_u : ! has (mem (of_list u)) (of_list t).
 have of_list_u_not_in_of_list_t : ! has (mem (of_list t)) (of_list u).
   smt(has_sym).
 split; first by rewrite of_list_u_eq.
-split; rewrite of_list_t_eq; smt(hasPn).
+split.
+rewrite negb_or.
+split; smt(hasPn).
+rewrite of_list_t_eq; smt(hasPn).
 qed.
 
 lemma is_worked_proper_step (t : term) :
