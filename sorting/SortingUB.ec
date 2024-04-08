@@ -1134,7 +1134,8 @@ lemma square_divide_lt (n : int) :
   1 + (n %/ 2) ^ 2 + (n %%/ 2) ^ 2 < n ^ 2.
 proof.
 move => ge2_n.
-have -> : n ^ 2 = (n %/ 2 + n %%/ 2) ^ 2 by rewrite {1}div2_plus_div2up_eq.
+have -> : n ^ 2 = (n %/ 2 + n %%/ 2) ^ 2.
+by rewrite {1}(div2_plus_div2up_eq n).
 rewrite 3!expr2.
 have -> :
   1 + n %/ 2 * (n %/ 2) + n %%/ 2 * (n %%/ 2) =

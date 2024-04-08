@@ -70,7 +70,7 @@ lemma sub_range_card_leq (xs : int fset, n : int) :
   card xs <= n.
 proof.
 move => ge0_n xs_sub_range.
-rewrite -card_frange // subset_leq_fcard => i i_in_xs.
+rewrite -(card_frange n) // subset_leq_fcard => i i_in_xs.
 by rewrite range_impl_frange xs_sub_range.
 qed.
 
