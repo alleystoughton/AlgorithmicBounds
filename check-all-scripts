@@ -22,7 +22,6 @@ check IntLog.ec
 check FSetAux.ec
 check FRange.ec
 check AllLists.ec
-check WF.ec
 
 check Bounds.eca
 

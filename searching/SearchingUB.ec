@@ -1,7 +1,7 @@
 (* Upper Bound Proof for Binary Search Algorithm *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021-2022 - Boston University
+ * Copyright (c) - 2021-2024 - Boston University
  * Copyright (c) - 2021 - Carol Chen
  *
  * Distributed under the terms of the CeCILL-B-V1 license
@@ -81,7 +81,7 @@ qed.
 op mem_in_range (xs : 'a list, y : 'a, i j : int) : bool =
   exists (k : int), i <= k <= j /\ nth witness xs k = y.
 
-op nosmt correct_invar
+op [smt_opaque] correct_invar
    (inpss : inp list list, aux : aux,
     queries : int fset, low high : int) : bool =
   0 <= low <= high < arity /\
@@ -246,7 +246,7 @@ qed.
 op win_size (low high : int) : int =
   high - low + 1.
 
-op nosmt bound_invar (low high stage : int) : bool =
+op [smt_opaque] bound_invar (low high stage : int) : bool =
   0 <= low <= high < arity /\
   0 <= stage <= int_log_up 2 arity /\
   win_size low high <= divpow2up arity stage.

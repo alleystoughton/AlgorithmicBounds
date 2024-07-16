@@ -1,7 +1,7 @@
 (* Working with Bounds Involving Integer Logarithms *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021-2022 - Boston University
+ * Copyright (c) - 2021-2024 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -228,7 +228,7 @@ qed.
 
 (* like m %/ d, but add 1 if non-zero remainder: *)
 
-op nosmt (%%/) (m d : int) : int =
+op [smt_opaque] (%%/) (m d : int) : int =
   m %/ d + ((d %| m) ? 0 : 1).
 
 lemma int_div_up_dvdz_b (b n : int) :
@@ -577,7 +577,7 @@ qed.
 
 (* integer logarithm (should not be applied when b <= 1 or n <= 0) *)
 
-op nosmt int_log (b n : int) : int =
+op [smt_opaque] int_log (b n : int) : int =
   choiceb
   (fun (k : int) => 0 <= k /\ b ^ k <= n < b ^ (k + 1))
   0.

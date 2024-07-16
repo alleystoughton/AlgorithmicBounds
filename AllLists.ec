@@ -1,7 +1,7 @@
 (* Generating All Lists of Given Length Over Finite Universe *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2020-2022 - Boston University
+ * Copyright (c) - 2020-2024 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -18,7 +18,7 @@ by rewrite flatten_nil.
 by rewrite flatten_cons all_cat IH.
 qed.
 
-op nosmt next (xs : 'a list, yss : 'a list list) : 'a list list =
+op [smt_opaque] next (xs : 'a list, yss : 'a list list) : 'a list list =
   flatten
   (map
    (fun x =>

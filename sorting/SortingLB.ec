@@ -1,7 +1,7 @@
 (* Lower Bound Proof for Comparison-based Sorting *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021-2022 - Boston University
+ * Copyright (c) - 2021-2024 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)

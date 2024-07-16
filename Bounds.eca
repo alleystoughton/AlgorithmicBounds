@@ -1,7 +1,7 @@
 (* Framework for Proving Lower and Upper Bounds in Query Model *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2020-2022 - Boston University
+ * Copyright (c) - 2020-2024 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -67,7 +67,7 @@ op init_inpss (aux : aux) : inp list list =
 (* inpss invariant: all lists of possible inputs must be distinct, and
    they must cause (f aux) to return non-None answers: *)
 
-op nosmt inpss_invar (aux : aux, inpss : inp list list) : bool =
+op [smt_opaque] inpss_invar (aux : aux, inpss : inp list list) : bool =
   uniq inpss /\ all is_some (map (f aux) inpss).
 
 lemma inpss_invar_uniq (aux : aux, inpss : inp list list) :

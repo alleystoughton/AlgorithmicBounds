@@ -1,7 +1,7 @@
 (* Lower Bound Proof for Searching in Ordered Lists *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021-2022 - Boston University
+ * Copyright (c) - 2021-2024 - Boston University
  * Copyright (c) - 2021 - Carol Chen
  *
  * Distributed under the terms of the CeCILL-B-V1 license
@@ -22,8 +22,8 @@ import LB.  (* lower bounds theory *)
 
 (* our adversary uses two elements of inp: *)
 
-op nosmt a : inp = min_inp.
-op nosmt b : inp = min_inp + 1.
+op [smt_opaque] a : inp = min_inp.
+op [smt_opaque] b : inp = min_inp + 1.
 
 lemma a_in_univ : a \in univ.
 proof.
@@ -131,13 +131,13 @@ proof. smt(div2_plus_div2up_eq). qed.
 
 (* window invariant *)
 
-op nosmt win_invar (win_beg win_end : int, win_empty : bool) : bool =
+op [smt_opaque] win_invar (win_beg win_end : int, win_empty : bool) : bool =
   0 <= win_beg <= win_end < arity /\
   (win_empty => win_beg = win_end /\ win_end < arity - 1).
 
 (* invariant relating current list of input lists and window *)
 
-op nosmt inpss_win_invar
+op [smt_opaque] inpss_win_invar
    (inpss : inp list list, win_beg win_end : int,
     win_empty : bool) : bool =
   inpss_invar b inpss /\  (* not necessary, but easier to understand *)
@@ -160,7 +160,7 @@ op nosmt inpss_win_invar
 
 (* invariant about lower bound *)
 
-op nosmt bound_invar
+op [smt_opaque] bound_invar
    (win_beg win_end : int, win_empty : bool, stage : int) : bool =
   (win_end = arity - 1 =>
    divpow2up arity stage <= win_size win_empty win_beg win_end) /\

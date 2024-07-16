@@ -1,7 +1,7 @@
 (* Upper Bound Proof for Merge Sort Algorithm *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021-2022 - Boston University
+ * Copyright (c) - 2021-2024 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -1372,7 +1372,7 @@ lemma is_compare_step_answer_repr (cmp : int -> int -> bool, t : term) :
   repr cmp t.
 proof.
 elim t => //.
-smt().
+move => ns /=; by case (size ns <= 1).
 move => i t IH /= [#] i_in_range prop_t _.
 case (is_worked (step t)) => [// | not_is_wkd_step_t].
 case (is_compare (step t)) => [is_cmp_step_t _ | //].
@@ -1909,7 +1909,7 @@ qed.
 
 (* here is the invariant for the proof of our main lemma *)
 
-op nosmt invar (inpss : bool list list, qs : int fset, t : term) : bool =
+op [smt_opaque] invar (inpss : bool list list, qs : int fset, t : term) : bool =
   inpss_invar () inpss /\
   proper t /\
   all  (* this will hold vacuously if Adv makes inpss empty *)

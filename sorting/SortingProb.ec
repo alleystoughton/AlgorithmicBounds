@@ -1,7 +1,7 @@
 (* Problem Specification for Comparison-based Sorting of Lists *)
 
 (* --------------------------------------------------------------------
- * Copyright (c) - 2021-2022 - Boston University
+ * Copyright (c) - 2021-2024 - Boston University
  *
  * Distributed under the terms of the CeCILL-B-V1 license
  * -------------------------------------------------------------------- *)
@@ -73,9 +73,9 @@ qed.
 (* enc and dec take us back and forth between pairs (i, j) : int *
    int, were 0 <= i, j < len, and m : int, where 0 <= m < arity *)
 
-op nosmt enc (p : int * int) : int = p.`1 * len + p.`2.
+op [smt_opaque] enc (p : int * int) : int = p.`1 * len + p.`2.
 
-op nosmt dec (n : int) : int * int = (n %/ len, n %% len).
+op [smt_opaque] dec (n : int) : int * int = (n %/ len, n %% len).
 
 lemma enc_bounds (p : int * int) :
   0 <= p.`1 < len => 0 <= p.`2 < len =>
@@ -154,7 +154,7 @@ op univ : inp list = [true; false].  (* so no restriction *)
 op rel (xs : inp list, i j : int) : bool =
   nth false xs (enc (i, j)).
 
-op nosmt total_ordering (xs : inp list) : bool =
+op [smt_opaque] total_ordering (xs : inp list) : bool =
   size xs = arity /\
   (* reflexivity *)
   (forall (i : int), 0 <= i < len => rel xs i i) /\
@@ -216,7 +216,7 @@ op good (aux : aux, xs : inp list) : bool =
    we only care what cmp_of_rel xs i j is when 0 <= i < len and 0 <= j
    < len *)
 
-op nosmt cmp_of_rel (xs : inp list) (i j : int) : bool =
+op [smt_opaque] cmp_of_rel (xs : inp list) (i j : int) : bool =
   if 0 <= i < len /\ 0 <= j < len
     then rel xs i j
   else if 0 <= i < len
@@ -244,7 +244,7 @@ rewrite total_ordering_size // enc_bounds //.
 smt().
 qed.
 
-op nosmt cmp_tot_ord (xs: inp list) : bool =
+op [smt_opaque] cmp_tot_ord (xs: inp list) : bool =
   size xs = arity /\
   (* reflexivity *)
   (forall (i : int), cmp_of_rel xs i i) /\
