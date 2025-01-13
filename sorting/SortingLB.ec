@@ -499,7 +499,8 @@ have /# :
   have e : 2 ^ int_log 2 n <= n by smt(int_log_lb_le).
   rewrite (lez_trans (2 * n)) 1:/#.
   have bound : 2 <= (int_log 2 n) %/ 2 by smt(int_log_le int_log16_eq_4).
-  rewrite -(ler_pmul2l n) in bound; smt().
+  rewrite -(ler_pmul2l n) 1:/# (mulrC _ 2) in bound.
+  rewrite (lez_trans (n * (int_log 2 n %/ 2))) //#.
 qed.
 
 lemma conditional_precise_ge11 (n : int) :
