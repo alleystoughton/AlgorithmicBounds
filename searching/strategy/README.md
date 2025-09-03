@@ -66,7 +66,7 @@ Continuing from that point, the algorithm can then query index `0` or
 answer of the searching function, i.e., the minimum list index where
 `b` occurs.
 
-If you only want to know the maximum path length of the strategy, instead
+If you only want to know the minimum path length of the strategy, instead
 of the details of the strategy, you can run
 ```
 $ strategy -mpl 2 3 b
