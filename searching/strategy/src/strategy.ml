@@ -20,7 +20,10 @@
    (+) the arity of the lists of elements of the universe that are
        being searched;
 
-   (+) the element being searched for *)
+   (+) the element being searched for
+
+   the option -minimum-path-length says to only print out the minimum
+   path length of the optimal strategy *)
 
 open Batteries
 open List
